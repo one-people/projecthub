@@ -1,4 +1,3 @@
-import { useNavigate } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import { notificationService } from "~/services/notification.service";
 import { session } from "~/auth/session";
@@ -6,7 +5,9 @@ import { db } from "~/repositories/db";
 import { formatRelative } from "~/lib/date";
 import type { Notification } from "~/models/notification";
 import { Icon } from "~/components/ui/Icon";
-import { useI18n } from "~/lib/i18n";
+import { useI18n, t as translate } from "~/lib/i18n";
+
+export const handle = { crumb: () => ({ label: translate("notifications") }) };
 
 const TYPE_LABELS: Record<Notification["type"], string> = {
   mention: "提及了你",
@@ -16,7 +17,6 @@ const TYPE_LABELS: Record<Notification["type"], string> = {
 };
 
 export default function NotificationsRoute() {
-  const navigate = useNavigate();
   const { t } = useI18n();
   const [items, setItems] = useState<Notification[]>([]);
   const [userName, setUserName] = useState("");
@@ -45,12 +45,9 @@ export default function NotificationsRoute() {
     users.find((u) => u.id === id)?.avatarColor ?? "#94A3B8";
 
   return (
-    <main className="page">
+    <div>
       <div className="page-toolbar">
-        <button className="app-header__back" onClick={() => navigate("/")} aria-label="返回首页">
-          <Icon name="back" size={18} />
-        </button>
-        <h1 style={{ fontSize: 18 }}>
+        <h1 style={{ fontSize: 18, margin: 0 }}>
           {t("notifications")}
           <span className="hint" style={{ marginLeft: 10 }}>{userName}</span>
         </h1>
@@ -96,6 +93,6 @@ export default function NotificationsRoute() {
           )}
         </ul>
       </div>
-    </main>
+    </div>
   );
 }

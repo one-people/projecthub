@@ -12,6 +12,9 @@ import { db } from "~/repositories/db";
 import { applyFilters, applySort } from "~/lib/list-query";
 import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
+import { t as translate } from "~/lib/i18n";
+
+export const handle = { crumb: () => ({ label: translate("list") }) };
 
 const PREF_KEY = "listView";
 
@@ -41,7 +44,7 @@ export default function ListRoute() {
     void (async () => {
       const p = await projectRepository.get(projectId);
       if (!p) {
-        navigate("/");
+        navigate("/projects");
         return;
       }
       const [users, prefs] = await Promise.all([
@@ -74,15 +77,9 @@ export default function ListRoute() {
 
   return (
     <main>
-      <header className="app-header">
-        <button
-          className="app-header__back"
-          onClick={() => navigate("/")}
-          aria-label="返回项目列表"
-        >
-          <Icon name="back" size={18} />
-        </button>
-        <span className="app-header__title">{project.name}</span>
+      <div className="page-toolbar">
+        <h1 style={{ fontSize: 18, margin: 0 }}>{project.name}</h1>
+        <span className="page-toolbar__spacer" />
         <nav className="segmented" aria-label="视图切换">
           <button
             className="segmented__item"
@@ -96,7 +93,7 @@ export default function ListRoute() {
             列表
           </span>
         </nav>
-      </header>
+      </div>
       <div className="toolbar">
         <FilterBar
           filters={filters}

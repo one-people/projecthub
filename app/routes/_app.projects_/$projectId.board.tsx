@@ -12,6 +12,9 @@ import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
 import { uuid } from "~/lib/id";
 import { Icon } from "~/components/ui/Icon";
+import { t as translate } from "~/lib/i18n";
+
+export const handle = { crumb: () => ({ label: translate("board") }) };
 
 const ROLE_LABELS: Record<RoleId, string> = {
   admin: "管理员",
@@ -57,7 +60,7 @@ export default function BoardRoute() {
         if (e instanceof Response && e.status === 403) {
           setError("403：当前身份无权访问该项目");
         } else {
-          navigate("/");
+          navigate("/projects");
         }
       }
     })();
@@ -127,18 +130,12 @@ export default function BoardRoute() {
 
   return (
     <main>
-      <header className="app-header">
-        <button
-          className="app-header__back"
-          onClick={() => navigate("/")}
-          aria-label="返回项目列表"
-        >
-          <Icon name="back" size={18} />
-        </button>
-        <span className="app-header__title">{project.name}</span>
+      <div className="page-toolbar">
+        <h1 style={{ fontSize: 18, margin: 0 }}>{project.name}</h1>
         <span className="badge badge--role" aria-label={`当前角色：${ROLE_LABELS[role]}`}>
           {ROLE_LABELS[role]}
         </span>
+        <span className="page-toolbar__spacer" />
         <nav className="segmented" aria-label="视图切换">
           <span className="segmented__item segmented__item--active">
             <Icon name="kanban" size={15} />
@@ -152,25 +149,23 @@ export default function BoardRoute() {
             列表
           </button>
         </nav>
-        <div className="app-header__actions">
-          <form onSubmit={handleCreate} style={{ display: "flex", gap: 8 }}>
-            <input
-              className="input"
-              style={{ width: 210 }}
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="新任务标题，回车创建"
-              aria-label="新任务标题"
-              disabled={!canCreate}
-              title={canCreate ? undefined : "当前角色无创建任务权限"}
-            />
-            <button className="btn btn--primary" type="submit" disabled={!canCreate}>
-              <Icon name="plus" size={15} />
-              新建任务
-            </button>
-          </form>
-        </div>
-      </header>
+        <form onSubmit={handleCreate} style={{ display: "flex", gap: 8 }}>
+          <input
+            className="input"
+            style={{ width: 210 }}
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="新任务标题，回车创建"
+            aria-label="新任务标题"
+            disabled={!canCreate}
+            title={canCreate ? undefined : "当前角色无创建任务权限"}
+          />
+          <button className="btn btn--primary" type="submit" disabled={!canCreate}>
+            <Icon name="plus" size={15} />
+            新建任务
+          </button>
+        </form>
+      </div>
       {error && (
         <div className="alert" role="alert">
           {error}

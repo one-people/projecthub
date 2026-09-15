@@ -1,14 +1,14 @@
-import { useNavigate } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
 import { backupService } from "~/services/backup.service";
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
 import { generateKeyBetween } from "~/lib/fractional-index";
-import { useI18n } from "~/lib/i18n";
+import { useI18n, t as translate } from "~/lib/i18n";
+
+export const handle = { crumb: () => ({ label: translate("settings") }) };
 import { Icon } from "~/components/ui/Icon";
 
 export default function SettingsRoute() {
-  const navigate = useNavigate();
   const { t, locale, setLocale } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
@@ -73,12 +73,9 @@ export default function SettingsRoute() {
   }
 
   return (
-    <main className="page">
+    <div>
       <div className="page-toolbar">
-        <button className="app-header__back" onClick={() => navigate("/")} aria-label="返回首页">
-          <Icon name="back" size={18} />
-        </button>
-        <h1 style={{ fontSize: 18 }}>{t("settings")}</h1>
+        <h1 style={{ fontSize: 18, margin: 0 }}>{t("settings")}</h1>
       </div>
 
       <div className="stack" style={{ marginTop: 16 }}>
@@ -136,6 +133,6 @@ export default function SettingsRoute() {
           </button>
         </section>
       </div>
-    </main>
+    </div>
   );
 }
