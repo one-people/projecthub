@@ -77,6 +77,8 @@ export const projectRepository = {
         order,
         archived: false,
         completedAt: null,
+        deletedAt: null,
+        deletedByProjectId: null,
         createdAt: now,
         updatedAt: now,
         version: 0,

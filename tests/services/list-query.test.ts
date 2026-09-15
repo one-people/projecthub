@@ -18,6 +18,8 @@ function task(patch: Partial<Task>): Task {
     order: "a0",
     archived: false,
     completedAt: null,
+    deletedAt: null,
+    deletedByProjectId: null,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
     version: 0,

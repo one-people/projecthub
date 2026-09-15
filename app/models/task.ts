@@ -29,6 +29,8 @@ export const taskSchema = z.object({
   subtasks: z.array(subtaskSchema).default([]),
   order: z.string().default("a0"), // fractional indexing
   archived: z.boolean().default(false),
+  deletedAt: z.string().nullable().default(null),
+  deletedByProjectId: z.string().nullable().default(null),
   completedAt: z.string().nullable().default(null),
   createdAt: z.string(),
   updatedAt: z.string(),

@@ -6,6 +6,7 @@ export const commentSchema = z.object({
   authorId: z.string(),
   contentRich: z.unknown().nullable().default(null), // TipTap JSON
   mentions: z.array(z.string()).default([]), // 被 @ 的 userId
+  deletedAt: z.string().nullable().default(null),
   createdAt: z.string(),
   updatedAt: z.string(),
   version: z.number().int().nonnegative().default(0),

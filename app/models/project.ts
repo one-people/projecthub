@@ -14,6 +14,7 @@ export const projectSchema = z.object({
   description: z.string().default(""),
   statusColumns: z.array(statusColumnSchema),
   memberRoles: z.record(z.string()), // userId -> roleId
+  deletedAt: z.string().nullable().default(null),
   createdAt: z.string(),
   updatedAt: z.string(),
   version: z.number().int().nonnegative().default(0),
