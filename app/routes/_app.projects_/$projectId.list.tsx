@@ -92,6 +92,13 @@ export default function ListRoute() {
             <Icon name="list" size={15} />
             列表
           </span>
+          <button
+            className="segmented__item"
+            onClick={() => navigate(`/projects/${project.id}/settings`)}
+          >
+            <Icon name="settings" size={15} />
+            设置
+          </button>
         </nav>
       </div>
       <div className="toolbar">

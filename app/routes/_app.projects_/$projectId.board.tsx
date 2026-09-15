@@ -148,6 +148,13 @@ export default function BoardRoute() {
             <Icon name="list" size={15} />
             列表
           </button>
+          <button
+            className="segmented__item"
+            onClick={() => navigate(`/projects/${project.id}/settings`)}
+          >
+            <Icon name="settings" size={15} />
+            设置
+          </button>
         </nav>
         <form onSubmit={handleCreate} style={{ display: "flex", gap: 8 }}>
           <input
