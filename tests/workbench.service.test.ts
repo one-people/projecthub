@@ -13,8 +13,8 @@ async function seed() {
   await db.users.add({ id: uid, name: "我", avatarColor: "#3B82F6", createdAt: now });
   await db.projects.add({
     id: "p1", name: "项目A", description: "", statusColumns: [
-      { id: "c1", name: "待办", order: 0 }, { id: "c2", name: "完成", order: 1 },
-    ], memberRoles: { [uid]: "member" }, createdAt: now, updatedAt: now,
+      { id: "c1", name: "待办", order: 0, isDone: false }, { id: "c2", name: "完成", order: 1, isDone: true },
+    ], memberRoles: { [uid]: "member" }, createdAt: now, updatedAt: now, version: 0,
   });
   await db.tasks.bulkAdd([
     { id: "t1", projectId: "p1", title: "待处理", descriptionRich: null, status: "c1", assigneeId: uid, dueDate: today, priority: "high", labels: [], subtasks: [], order: "a0", archived: false, completedAt: null, createdAt: now, updatedAt: now, version: 0 },
