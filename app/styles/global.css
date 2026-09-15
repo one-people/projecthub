@@ -849,3 +849,9 @@ select.input {
 }
 @keyframes shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* ===== Trash ===== */
+.trash-list { list-style: none; padding: 0; margin: 12px 0 0; }
+.trash-item { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--color-border); }
+.trash-item__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trash-item__retain { font-size: 12px; color: var(--color-text-secondary); min-width: 72px; }

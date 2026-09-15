@@ -59,6 +59,18 @@ export const zhCN = {
   myProjects: "我的项目",
   goProjects: "去项目列表",
   allProjects: "全部项目",
+  trashHint: "条目保留 30 天后自动清除",
+  tabProjects: "项目",
+  tabTasks: "任务",
+  tabComments: "评论",
+  restore: "恢复",
+  purge: "彻底删除",
+  confirmPurge: "彻底删除后无法恢复，确定继续？",
+  deletedAtLabel: "删除时间",
+  retention: "剩余保留",
+  purgeForbidden: "仅管理员可彻底删除",
+  restoreWithProject: "随项目删除，请恢复所属项目",
+  trashEmpty: "回收站是空的",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;
