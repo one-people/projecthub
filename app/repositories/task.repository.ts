@@ -6,6 +6,12 @@ function validate(row: unknown): Task {
   return taskSchema.parse(row);
 }
 
+export class VersionConflictError extends Error {
+  constructor(id: string) {
+    super(`Task ${id} 已被其他修改更新，请刷新后重试`);
+  }
+}
+
 export const taskRepository = {
   async listByProject(projectId: string): Promise<Task[]> {
     const rows = await db.tasks.where("projectId").equals(projectId).toArray();
@@ -44,9 +50,12 @@ export const taskRepository = {
     return task;
   },
 
-  async update(id: string, patch: Partial<TaskInput>): Promise<Task> {
+  async update(id: string, patch: Partial<TaskInput>, expectedVersion?: number): Promise<Task> {
     const existing = await this.get(id);
     if (!existing) throw new Error(`Task ${id} not found`);
+    if (expectedVersion !== undefined && expectedVersion !== existing.version) {
+      throw new VersionConflictError(id);
+    }
     const next = validate({
       ...existing,
       ...patch,
