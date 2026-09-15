@@ -15,7 +15,7 @@ describe("userService", () => {
   it("非 admin 不能创建用户", async () => {
     await expect(
       userService.create("u1", "member", { name: "新用户", email: "a@b.c", avatarColor: "#10B981" }),
-    ).rejects.toThrow(/权限/);
+    ).rejects.toThrow(/仅管理员/);
   });
 
   it("admin 创建用户并写审计", async () => {
