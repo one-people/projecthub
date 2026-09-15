@@ -114,7 +114,7 @@ export default function BoardRoute() {
     const firstColumn = project.statusColumns.find((c) => c.order === 0);
     if (!firstColumn) return;
     try {
-      await taskService.create(role, {
+      await taskService.create(actorId, role, {
         id: uuid(),
         projectId: project.id,
         title,

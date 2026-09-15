@@ -4,6 +4,7 @@ import { broadcastChange } from "~/repositories/broadcast";
 import { can, type RoleId } from "~/auth/rbac";
 import { extractMentionIds } from "./mention.service";
 import { notificationService } from "./notification.service";
+import { auditService } from "./audit.service";
 import type { Comment, CommentInput } from "~/models/comment";
 
 export class PermissionError extends Error {}
@@ -60,6 +61,7 @@ export const commentService = {
       });
     }
 
+    await auditService.log(actorId, "create", "comment", comment.id, `评论了任务「${taskTitle}」`);
     broadcastChange({ table: "comments", ids: [comment.id] });
     return comment;
   },

@@ -2,6 +2,7 @@ import { taskRepository } from "~/repositories/task.repository";
 import { db } from "~/repositories/db";
 import { can, type RoleId } from "~/auth/rbac";
 import { notificationService } from "./notification.service";
+import { auditService } from "./audit.service";
 import type { Task, TaskInput } from "~/models/task";
 
 export class PermissionError extends Error {}
@@ -18,11 +19,14 @@ export const taskService = {
   },
 
   async create(
+    actorId: string,
     actorRole: RoleId,
     input: Omit<TaskInput, "createdAt" | "updatedAt" | "version">,
   ): Promise<Task> {
     assertPermission(actorRole, "task:create");
-    return taskRepository.create(input);
+    const task = await taskRepository.create(input);
+    await auditService.log(actorId, "create", "task", task.id, `创建了任务「${task.title}」`);
+    return task;
   },
 
   async moveTask(
@@ -49,14 +53,15 @@ export const taskService = {
       });
     }
     // 状态自动流转：落入「完成列」记录 completedAt，离开则清除
+    let result = task;
     if (targetColumn?.isDone && !task.completedAt) {
-      return taskRepository.update(taskId, {
+      result = await taskRepository.update(taskId, {
         completedAt: new Date().toISOString(),
-      });
+      }, task.version);
+    } else if (!targetColumn?.isDone && task.completedAt) {
+      result = await taskRepository.update(taskId, { completedAt: null }, task.version);
     }
-    if (!targetColumn?.isDone && task.completedAt) {
-      return taskRepository.update(taskId, { completedAt: null });
-    }
-    return task;
+    await auditService.log(actorId, "update", "task", taskId, `移动了任务「${task.title}」`);
+    return result;
   },
 };

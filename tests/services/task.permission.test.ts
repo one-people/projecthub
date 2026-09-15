@@ -32,7 +32,7 @@ describe("taskService RBAC", () => {
 
   it("只读访客不能创建任务", async () => {
     await expect(
-      taskService.create("guest", {
+      taskService.create("actor", "guest", {
         id: "t-new",
         projectId: project.id,
         title: "新任务",

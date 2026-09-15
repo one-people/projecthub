@@ -9,6 +9,7 @@ import {
 } from "@remix-run/react";
 import { useEffect } from "react";
 import { initLocale } from "~/lib/i18n";
+import { trashService } from "~/services/trash.service";
 import "./styles/global.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -32,6 +33,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   useEffect(() => {
     void initLocale();
+    void trashService.purgeExpired();
   }, []);
   return <Outlet />;
 }
