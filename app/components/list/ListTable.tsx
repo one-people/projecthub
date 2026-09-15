@@ -12,11 +12,16 @@ export interface ListTableProps {
   columns: StatusColumn[];
   assigneeNames: Record<string, string>;
   onOpenTask: (task: Task) => void;
+  selection?: {
+    selected: Set<string>;
+    onToggle: (taskId: string) => void;
+    onToggleAll: () => void;
+  };
 }
 
 const VIRTUALIZE_THRESHOLD = 100;
 const ROW_HEIGHT = 44;
-const GRID_COLS = "minmax(200px, 2fr) 110px 110px 110px 90px 110px";
+const GRID_COLS = "36px minmax(200px, 2fr) 110px 110px 110px 90px 110px";
 
 const PRIORITY_ORDER: Record<string, number> = {
   urgent: 0,
@@ -33,6 +38,7 @@ function TaskCells({
   columns,
   assigneeNames,
   onOpenTask,
+  selection,
 }: Omit<ListTableProps, "tasks"> & { task: Task }) {
   const overdue = isOverdue(task.dueDate) && !task.completedAt;
   const prio = PRIORITY_META[task.priority];
@@ -47,6 +53,16 @@ function TaskCells({
         if (e.key === "Enter") onOpenTask(task);
       }}
     >
+      <span onClick={(e) => e.stopPropagation()}>
+        {selection ? (
+          <input
+            type="checkbox"
+            checked={selection.selected.has(task.id)}
+            onChange={() => selection.onToggle(task.id)}
+            aria-label={`选择任务 ${task.title}`}
+          />
+        ) : null}
+      </span>
       <span className="data-row__title" style={{ display: "flex", gap: 6, alignItems: "center" }}>
         {task.completedAt ? (
           <Icon name="check" size={14} className="data-muted" />
@@ -67,9 +83,10 @@ function TaskCells({
   );
 }
 
-export function ListTable({ tasks, columns, assigneeNames, onOpenTask }: ListTableProps) {
+export function ListTable({ tasks, columns, assigneeNames, onOpenTask, selection }: ListTableProps) {
   useI18n(); // 语言切换时重渲染
   const headers: [string, string][] = [
+    ["", ""],
     ["colTitle", "标题"],
     ["colStatus", "状态"],
     ["colAssignee", "负责人"],
@@ -87,7 +104,17 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask }: ListTab
 
   const header = (
     <div className="data-grid" role="row" style={{ gridTemplateColumns: GRID_COLS }}>
-      {headers.map(([key, fallback]) => (
+      <div role="columnheader" className="data-grid__header">
+        {selection ? (
+          <input
+            type="checkbox"
+            checked={tasks.length > 0 && tasks.every((tk) => selection.selected.has(tk.id))}
+            onChange={selection.onToggleAll}
+            aria-label="全选任务"
+          />
+        ) : null}
+      </div>
+      {headers.slice(1).map(([key, fallback]) => (
         <div
           key={key}
           role="columnheader"
@@ -110,6 +137,7 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask }: ListTab
             columns={columns}
             assigneeNames={assigneeNames}
             onOpenTask={onOpenTask}
+            selection={selection}
           />
         ))}
         {tasks.length === 0 && (
@@ -141,6 +169,7 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask }: ListTab
                 columns={columns}
                 assigneeNames={assigneeNames}
                 onOpenTask={onOpenTask}
+                selection={selection}
               />
             </div>
           ))}

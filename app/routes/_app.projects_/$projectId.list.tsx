@@ -12,7 +12,12 @@ import { db } from "~/repositories/db";
 import { applyFilters, applySort } from "~/lib/list-query";
 import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
-import { t as translate } from "~/lib/i18n";
+import { t as translate, useI18n } from "~/lib/i18n";
+import { session } from "~/auth/session";
+import { can, type RoleId } from "~/auth/rbac";
+import { trashService } from "~/services/trash.service";
+import { useToast } from "~/components/ui/Toast";
+import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 
 export const handle = { crumb: () => ({ label: translate("list") }) };
 
@@ -30,12 +35,17 @@ async function savePrefs(projectId: string, prefs: { filters: Filters; sort: Sor
 
 export default function ListRoute() {
   const navigate = useNavigate();
+  const toast = useToast();
+  const { t } = useI18n();
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assigneeNames, setAssigneeNames] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortRule>({ field: "updatedAt", direction: "desc" });
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBatch, setConfirmBatch] = useState(false);
+  const [me, setMe] = useState<{ id: string; role: RoleId } | null>(null);
 
   const projectId = window.location.pathname.split("/")[2] ?? "";
 
@@ -53,6 +63,8 @@ export default function ListRoute() {
       ]);
       setProject(p);
       setAssigneeNames(Object.fromEntries(users.map((u) => [u.id, u.name])));
+      const current = await session.currentUser();
+      setMe({ id: current.id, role: (p.memberRoles[current.id] as RoleId | undefined) ?? "member" });
       setFilters(prefs.filters);
       setSort(prefs.sort);
       // liveQuery：本页与其他标签页对任务表的任何变更都会实时刷新
@@ -108,6 +120,12 @@ export default function ListRoute() {
           assigneeOptions={Object.entries(assigneeNames).map(([id, name]) => ({ id, name }))}
         />
         <SortMenu rule={sort} onChange={(s) => updatePrefs({ sort: s })} />
+        {selected.size > 0 && me && can(me.role, "task:delete") && (
+          <button className="btn btn--danger" onClick={() => setConfirmBatch(true)}>
+            <Icon name="trash" size={14} />
+            {t("batchDelete")}（{selected.size}）
+          </button>
+        )}
       </div>
       <div style={{ padding: "0 16px 16px" }} className="card" aria-label="任务列表">
         <ListTable
@@ -115,12 +133,49 @@ export default function ListRoute() {
           columns={project.statusColumns}
           assigneeNames={assigneeNames}
           onOpenTask={setOpenTask}
+          selection={{
+            selected,
+            onToggle: (taskId) =>
+              setSelected((prev) => {
+                const next = new Set(prev);
+                if (next.has(taskId)) next.delete(taskId);
+                else next.add(taskId);
+                return next;
+              }),
+            onToggleAll: () =>
+              setSelected((prev) =>
+                prev.size === visible.length ? new Set() : new Set(visible.map((tk) => tk.id)),
+              ),
+          }}
         />
       </div>
       <TaskDialog
         task={openTask ? tasks.find((t) => t.id === openTask.id) ?? openTask : null}
         statusName={project.statusColumns.find((c) => c.id === openTask?.status)?.name}
         onClose={() => setOpenTask(null)}
+      />
+      <ConfirmDialog
+        open={confirmBatch}
+        title={t("batchDelete")}
+        message={t("confirmBatchDelete")}
+        danger
+        onConfirm={async () => {
+          if (!me) return;
+          const ids = [...selected];
+          for (const id of ids) {
+            await trashService.deleteTask(me.id, me.role, id);
+          }
+          setSelected(new Set());
+          setConfirmBatch(false);
+          toast.success(`${t("deleted")}（${ids.length}）`, {
+            undo: async () => {
+              for (const id of ids) {
+                await trashService.restoreTask(me.id, me.role, id);
+              }
+            },
+          });
+        }}
+        onCancel={() => setConfirmBatch(false)}
       />
     </main>
   );

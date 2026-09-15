@@ -11,6 +11,11 @@ import { uuid } from "~/lib/id";
 import { Icon } from "~/components/ui/Icon";
 import { PRIORITY_META } from "~/lib/priority";
 import type { RoleId } from "~/auth/rbac";
+import { can } from "~/auth/rbac";
+import { trashService } from "~/services/trash.service";
+import { useToast } from "~/components/ui/Toast";
+import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
+import { useI18n } from "~/lib/i18n";
 
 export interface TaskDialogProps {
   task: Task | null;
@@ -20,9 +25,12 @@ export interface TaskDialogProps {
 
 export function TaskDialog({ task, statusName, onClose }: TaskDialogProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const toast = useToast();
+  const { t } = useI18n();
   const [comments, setComments] = useState<Comment[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [actor, setActor] = useState<{ id: string; role: RoleId } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (task) closeRef.current?.focus();
@@ -80,6 +88,16 @@ export function TaskDialog({ task, statusName, onClose }: TaskDialogProps) {
       <div className="modal">
         <div className="modal__header">
           <h2 style={{ fontSize: 18 }}>{task.title}</h2>
+          {actor && can(actor.role, "task:delete") && (
+            <button
+              className="btn btn--danger"
+              style={{ marginLeft: "auto", marginRight: 8 }}
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Icon name="trash" size={14} />
+              删除
+            </button>
+          )}
           <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label="关闭">
             <Icon name="close" />
           </button>
@@ -129,6 +147,27 @@ export function TaskDialog({ task, statusName, onClose }: TaskDialogProps) {
           />
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title={t("deleteTask")}
+        message={t("confirmDeleteTask")}
+        danger
+        onConfirm={async () => {
+          if (!task || !actor) return;
+          try {
+            await trashService.deleteTask(actor.id, actor.role, task.id);
+            setConfirmDelete(false);
+            onClose();
+            toast.success(t("deleted"), {
+              undo: () => trashService.restoreTask(actor.id, actor.role, task.id),
+            });
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "error");
+          }
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }
