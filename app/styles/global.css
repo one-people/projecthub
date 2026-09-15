@@ -821,3 +821,31 @@ select.input {
 .breadcrumbs__item { display: inline-flex; align-items: center; gap: 4px; }
 .breadcrumbs__item a { color: var(--color-text-secondary); text-decoration: none; }
 .breadcrumbs__item a:hover { color: var(--color-primary-strong); }
+
+/* ===== Workbench ===== */
+.workbench { display: flex; flex-direction: column; gap: 16px; }
+.workbench__hero { display: flex; align-items: center; justify-content: space-between; }
+.workbench__body { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .workbench__body { grid-template-columns: 1fr; } }
+.my-task-list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; }
+.my-task {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 10px 8px; border: none; border-bottom: 1px solid var(--color-border);
+  background: none; cursor: pointer; color: var(--color-text);
+}
+.my-task:hover { background: var(--color-bg); }
+.my-task__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-task--overdue { color: var(--color-danger); display: inline-flex; gap: 4px; align-items: center; }
+.side-project-list { list-style: none; padding: 0; margin: 8px 0 0; }
+.side-project {
+  display: flex; justify-content: space-between; align-items: center; width: 100%;
+  padding: 9px 8px; border: none; background: none; cursor: pointer;
+  border-radius: 6px; color: var(--color-text);
+}
+.side-project:hover { background: var(--color-bg); }
+.skeleton {
+  background: linear-gradient(90deg, var(--color-bg), var(--color-border), var(--color-bg));
+  background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 8px;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
