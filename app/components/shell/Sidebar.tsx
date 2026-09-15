@@ -7,7 +7,7 @@ import { useI18n } from "~/lib/i18n";
 import { Icon, type IconName } from "~/components/ui/Icon";
 import { UserCard } from "./UserCard";
 
-export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+export function Sidebar({ collapsed, onToggle, onSearch }: { collapsed: boolean; onToggle: () => void; onSearch: () => void }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [unread, setUnread] = useState(0);
@@ -46,7 +46,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <span className="brand__mark"><Icon name="brand" size={16} /></span>
           {!collapsed && <span>ProjectHub</span>}
         </button>
-        <button className="sidebar__search" disabled title="全局搜索（阶段三开放）">
+        <button className="sidebar__search" onClick={onSearch} title={`${t("globalSearch")} (/)`}>
           <Icon name="search" size={15} />
           {!collapsed && <span className="hint">{t("searchPlaceholder")}</span>}
         </button>
