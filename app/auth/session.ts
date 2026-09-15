@@ -20,6 +20,8 @@ export const session = {
       user = {
         id: uuid(),
         name: "本地用户",
+        email: "",
+        active: true,
         avatarColor: COLORS[0]!,
         createdAt: new Date().toISOString(),
       };
@@ -44,6 +46,8 @@ export async function seedUsers(names: string[]): Promise<User[]> {
   const users = names.map((name, i) => ({
     id: uuid(),
     name,
+    email: "",
+    active: true,
     avatarColor: COLORS[i % COLORS.length]!,
     createdAt: now,
   }));

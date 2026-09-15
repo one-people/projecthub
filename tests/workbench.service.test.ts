@@ -10,7 +10,7 @@ const overdue = new Date(Date.now() - 86400000).toISOString();
 
 async function seed() {
   const uid = uuid();
-  await db.users.add({ id: uid, name: "我", avatarColor: "#3B82F6", createdAt: now });
+  await db.users.add({ id: uid, name: "我", email: "", active: true, avatarColor: "#3B82F6", createdAt: now });
   await db.projects.add({
     id: "p1", name: "项目A", description: "", statusColumns: [
       { id: "c1", name: "待办", order: 0, isDone: false }, { id: "c2", name: "完成", order: 1, isDone: true },
