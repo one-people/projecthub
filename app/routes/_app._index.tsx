@@ -5,7 +5,9 @@ import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
 import { workbenchService, type WorkbenchData } from "~/services/workbench.service";
 import { PRIORITY_META } from "~/lib/priority";
-import { formatDate, isOverdue } from "~/lib/date";
+import { formatDate, formatRelative, isOverdue } from "~/lib/date";
+import { auditService } from "~/services/audit.service";
+import type { AuditLog } from "~/models/auditLog";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { Icon } from "~/components/ui/Icon";
 import { TaskDialog } from "~/components/task/TaskDialog";
@@ -23,6 +25,7 @@ export default function WorkbenchRoute() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tab, setTab] = useState<Tab>("pending");
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [activity, setActivity] = useState<AuditLog[]>([]);
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -32,9 +35,11 @@ export default function WorkbenchRoute() {
       unsub = () => sub.unsubscribe();
     })();
     const sub2 = liveQuery(() => db.projects.toArray()).subscribe(setProjects);
+    const sub3 = liveQuery(() => auditService.list({ limit: 20 })).subscribe(setActivity);
     return () => {
       unsub?.();
       sub2.unsubscribe();
+      sub3.unsubscribe();
     };
   }, []);
 
@@ -131,6 +136,19 @@ export default function WorkbenchRoute() {
                   </button>
                 </li>
               ))}
+            </ul>
+          </section>
+
+          <section className="card" style={{ marginTop: 16 }}>
+            <h2 className="section-title"><Icon name="bell" size={15} />{t("activity")}</h2>
+            <ul className="activity-list">
+              {activity.map((a) => (
+                <li key={a.id}>
+                  <span className="hint">{a.summary}</span>
+                  <span className="hint" style={{ whiteSpace: "nowrap" }}>{formatRelative(a.createdAt, locale)}</span>
+                </li>
+              ))}
+              {activity.length === 0 && <li className="hint">{t("noNotifications")}</li>}
             </ul>
           </section>
         </aside>
