@@ -21,7 +21,8 @@ export const workbenchService = {
       db.tasks.toArray(),
       db.projects.toArray(),
     ]);
-    const mine = allTasks.filter(
+    const live = allTasks.filter((t) => t.deletedAt === null);
+    const mine = live.filter(
       (t) => t.assigneeId === userId && t.completedAt === null,
     );
     const dayStart = new Date();
@@ -42,13 +43,15 @@ export const workbenchService = {
         .slice()
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .slice(0, 20),
-      projects: projects.map((p) => ({
-        id: p.id,
-        name: p.name,
-        openTaskCount: allTasks.filter(
-          (t) => t.projectId === p.id && t.completedAt === null,
-        ).length,
-      })),
+      projects: projects
+        .filter((p) => p.deletedAt === null)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          openTaskCount: live.filter(
+            (t) => t.projectId === p.id && t.completedAt === null,
+          ).length,
+        })),
     };
   },
 };

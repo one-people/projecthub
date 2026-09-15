@@ -9,7 +9,15 @@ function validate(row: unknown): Comment {
 export const commentRepository = {
   async listByTask(taskId: string): Promise<Comment[]> {
     const rows = await db.comments.where("taskId").equals(taskId).toArray();
-    return rows.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)).map(validate);
+    return rows
+      .filter((r) => r.deletedAt === null)
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))
+      .map(validate);
+  },
+
+  async listDeleted(): Promise<Comment[]> {
+    const rows = await db.comments.toArray();
+    return rows.filter((r) => r.deletedAt !== null).map(validate);
   },
 
   async create(

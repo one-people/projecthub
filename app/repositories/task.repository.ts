@@ -9,7 +9,17 @@ function validate(row: unknown): Task {
 export const taskRepository = {
   async listByProject(projectId: string): Promise<Task[]> {
     const rows = await db.tasks.where("projectId").equals(projectId).toArray();
-    return rows.map(validate);
+    return rows.filter((r) => r.deletedAt === null).map(validate);
+  },
+
+  async listDeleted(): Promise<Task[]> {
+    const rows = await db.tasks.toArray();
+    return rows.filter((r) => r.deletedAt !== null).map(validate);
+  },
+
+  async getDeleted(id: string): Promise<Task | undefined> {
+    const row = await db.tasks.get(id);
+    return row && row.deletedAt !== null ? validate(row) : undefined;
   },
 
   async get(id: string): Promise<Task | undefined> {
@@ -59,7 +69,7 @@ export const taskRepository = {
     });
   },
 
-  async remove(id: string): Promise<void> {
+  async purge(id: string): Promise<void> {
     await db.transaction("rw", db.tasks, db.comments, async () => {
       await db.tasks.delete(id);
       await db.comments.where("taskId").equals(id).delete();

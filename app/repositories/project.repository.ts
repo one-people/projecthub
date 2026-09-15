@@ -18,7 +18,12 @@ export const DEFAULT_COLUMNS = [
 export const projectRepository = {
   async list(): Promise<Project[]> {
     const rows = await db.projects.orderBy("updatedAt").reverse().toArray();
-    return rows.map(validate);
+    return rows.filter((r) => r.deletedAt === null).map(validate);
+  },
+
+  async listDeleted(): Promise<Project[]> {
+    const rows = await db.projects.toArray();
+    return rows.filter((r) => r.deletedAt !== null).map(validate);
   },
 
   async get(id: string): Promise<Project | undefined> {
