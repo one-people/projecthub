@@ -13,7 +13,12 @@ export type IconName =
   | "user"
   | "download"
   | "upload"
-  | "zap";
+  | "zap"
+  | "home"
+  | "trash"
+  | "search"
+  | "chevronRight"
+  | "panel";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   kanban: (
@@ -106,6 +111,32 @@ const PATHS: Record<IconName, React.ReactNode> = {
   zap: (
     <>
       <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="m3 10 9-7 9 7" />
+      <path d="M5 9v11h14V9" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M6 6l1 14h10l1-14" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </>
+  ),
+  chevronRight: <path d="m9 6 6 6-6 6" />,
+  panel: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16" />
     </>
   ),
 };
