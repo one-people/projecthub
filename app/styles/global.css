@@ -874,3 +874,10 @@ select.input {
 }
 .toast__close { border: none; background: none; color: inherit; cursor: pointer; display: inline-flex; }
 .confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ===== Users page / forms ===== */
+.user-list { list-style: none; padding: 0; margin: 0; }
+.user-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--color-border); }
+.field-error { color: var(--color-danger); font-size: 12px; display: block; margin-top: 4px; }
+.color-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.color-dot.is-selected { border-color: var(--color-text); }
