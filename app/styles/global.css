@@ -881,3 +881,13 @@ select.input {
 .field-error { color: var(--color-danger); font-size: 12px; display: block; margin-top: 4px; }
 .color-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
 .color-dot.is-selected { border-color: var(--color-text); }
+.badge--success { background: var(--color-primary-soft); color: var(--color-primary-strong); }
+.badge--info { background: #DBEAFE; color: #1D4ED8; }
+@media (prefers-color-scheme: dark) {
+  .badge--info { background: #1E3A5F; color: #93C5FD; }
+}
+
+/* ===== Audit ===== */
+.audit-list { list-style: none; padding: 0; margin: 0; }
+.audit-item { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--color-border); }
+.audit-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 0 0; }
