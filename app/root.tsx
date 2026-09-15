@@ -10,6 +10,7 @@ import {
 import { useEffect } from "react";
 import { initLocale } from "~/lib/i18n";
 import { trashService } from "~/services/trash.service";
+import { ToastProvider } from "~/components/ui/Toast";
 import "./styles/global.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -35,7 +36,11 @@ export default function App() {
     void initLocale();
     void trashService.purgeExpired();
   }, []);
-  return <Outlet />;
+  return (
+    <ToastProvider>
+      <Outlet />
+    </ToastProvider>
+  );
 }
 
 export function ErrorBoundary() {
