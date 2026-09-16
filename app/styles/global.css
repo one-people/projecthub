@@ -816,19 +816,25 @@ select.input {
 }
 .shell__content { flex: 1; padding: 20px; }
 
-/* 浅色极简侧边栏 */
+/* 浅色极简侧边栏（分组结构） */
 .sidebar {
   width: 240px; flex-shrink: 0; display: flex; flex-direction: column;
   border-right: 1px solid var(--color-border); background: var(--color-surface);
   transition: width 150ms ease; overflow: hidden;
 }
 .sidebar.is-collapsed { width: 64px; }
-.sidebar__top { flex: 1; padding: 14px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.sidebar__header {
+  display: flex; align-items: center; gap: 4px;
+  padding: 12px 10px 6px; border-bottom: 1px solid var(--color-border);
+}
 .sidebar__brand {
   display: flex; align-items: center; gap: 8px; font-weight: 600;
   background: none; border: none; cursor: pointer; padding: 6px 8px;
   color: var(--color-text); font-size: 15px; letter-spacing: -0.01em;
+  flex: 1; min-width: 0;
 }
+.sidebar__header .icon-btn { flex-shrink: 0; }
+.sidebar__top { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
 .sidebar__search {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 6px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
@@ -837,7 +843,6 @@ select.input {
   transition: border-color 150ms ease, color 150ms ease;
 }
 .sidebar__search:hover { border-color: var(--color-border-strong); color: var(--color-text-secondary); }
-.sidebar__nav { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; }
 .sidebar__item {
   display: flex; align-items: center; gap: 10px; padding: 7px 10px;
   border-radius: var(--radius-md); color: var(--color-text-secondary); text-decoration: none;
@@ -854,16 +859,26 @@ select.input {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 5px;
 }
 .sidebar__group { margin-top: 14px; display: flex; flex-direction: column; gap: 1px; }
-.sidebar__group .field-label {
-  color: var(--color-text-muted); font-size: 11px;
-  text-transform: uppercase; letter-spacing: 0.06em; padding: 0 10px 2px;
+.sidebar__group-label {
+  margin: 0 0 2px; padding: 0 10px;
+  color: var(--color-text-muted); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
 }
-.sidebar__group .sidebar__item { font-size: 13px; }
+.sidebar__projects { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.sidebar__project-dot {
+  width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0;
+  background: var(--color-border-strong);
+}
+.sidebar__item.is-active .sidebar__project-dot { background: var(--color-text); }
+.sidebar__project-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .sidebar__bottom {
   padding: 10px; border-top: 1px solid var(--color-border);
   display: flex; flex-direction: column; gap: 8px;
 }
 .sidebar.is-collapsed .sidebar__bottom { align-items: center; }
+.sidebar.is-collapsed .sidebar__group { margin-top: 10px; }
 
 .user-card { position: relative; }
 .user-card__trigger {
