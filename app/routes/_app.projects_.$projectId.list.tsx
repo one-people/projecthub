@@ -2,7 +2,8 @@ import { useNavigate } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import { liveQuery } from "dexie";
 import { Icon } from "~/components/ui/Icon";
-import { FilterBar, EMPTY_FILTERS, type Filters } from "~/components/list/FilterBar";
+import { FilterChips } from "~/components/list/FilterChips";
+import { EMPTY_FILTERS, type Filters } from "~/lib/list-view";
 import { SortMenu, type SortRule } from "~/components/list/SortMenu";
 import { ListTable } from "~/components/list/ListTable";
 import { TaskDialog } from "~/components/task/TaskDialog";
@@ -114,7 +115,7 @@ export default function ListRoute() {
         </nav>
       </div>
       <div className="toolbar">
-        <FilterBar
+        <FilterChips
           filters={filters}
           onChange={(f) => updatePrefs({ filters: f })}
           assigneeOptions={Object.entries(assigneeNames).map(([id, name]) => ({ id, name }))}

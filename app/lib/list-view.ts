@@ -1,4 +1,21 @@
-import type { Filters } from "~/components/list/FilterBar";
+import type { Priority } from "~/models/task";
+
+export type DueFilter = "all" | "today" | "week" | "overdue" | "none";
+export type StatusFilter = "all" | "open" | "done";
+
+export interface Filters {
+  assigneeId: string; // "" = 全部
+  due: DueFilter;
+  priority: Priority | "all";
+  status: StatusFilter;
+}
+
+export const EMPTY_FILTERS: Filters = {
+  assigneeId: "all",
+  due: "all",
+  priority: "all",
+  status: "all",
+};
 
 export const PALETTE = [
   "#1E293B", "#0F766E", "#B45309", "#7C3AED",

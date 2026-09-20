@@ -5,7 +5,7 @@ import {
   activeFilterChips,
   PALETTE,
 } from "~/lib/list-view";
-import { EMPTY_FILTERS } from "~/components/list/FilterBar";
+import { EMPTY_FILTERS } from "~/lib/list-view";
 
 describe("statusColor", () => {
   it("返回固定的确切颜色", () => {

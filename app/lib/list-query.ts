@@ -1,5 +1,5 @@
 import type { Task } from "~/models/task";
-import type { Filters } from "~/components/list/FilterBar";
+import type { Filters } from "~/lib/list-view";
 import type { SortRule } from "~/components/list/SortMenu";
 import { priorityRank } from "~/components/list/ListTable";
 

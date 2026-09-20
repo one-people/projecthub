@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyFilters, applySort } from "~/lib/list-query";
-import { EMPTY_FILTERS, type Filters } from "~/components/list/FilterBar";
+import { EMPTY_FILTERS, type Filters } from "~/lib/list-view";
 import type { Task } from "~/models/task";
 
 function task(patch: Partial<Task>): Task {
