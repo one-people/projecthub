@@ -11,6 +11,7 @@ import { taskService } from "~/services/task.service";
 import { projectRepository } from "~/repositories/project.repository";
 import { db } from "~/repositories/db";
 import { applyFilters, applySort } from "~/lib/list-query";
+import { uuid } from "~/lib/id";
 import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
 import { t as translate, useI18n } from "~/lib/i18n";
@@ -47,6 +48,8 @@ export default function ListRoute() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBatch, setConfirmBatch] = useState(false);
   const [me, setMe] = useState<{ id: string; role: RoleId } | null>(null);
+  const [search, setSearch] = useState("");
+  const [newTitle, setNewTitle] = useState("");
 
   const projectId = window.location.pathname.split("/")[2] ?? "";
 
@@ -86,7 +89,10 @@ export default function ListRoute() {
 
   if (!project) return <main className="page"><p className="empty">加载中…</p></main>;
 
-  const visible = applySort(applyFilters(tasks, filters), sort);
+  const searched = search.trim()
+    ? tasks.filter((tk) => tk.title.toLowerCase().includes(search.trim().toLowerCase()))
+    : tasks;
+  const visible = applySort(applyFilters(searched, filters), sort);
 
   return (
     <main>
@@ -114,26 +120,59 @@ export default function ListRoute() {
           </button>
         </nav>
       </div>
-      <div className="toolbar">
+      <div className="db-toolbar">
+        <label className="db-toolbar__search">
+          <Icon name="search" size={14} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="搜索任务…"
+            aria-label="搜索任务"
+          />
+        </label>
         <FilterChips
           filters={filters}
           onChange={(f) => updatePrefs({ filters: f })}
           assigneeOptions={Object.entries(assigneeNames).map(([id, name]) => ({ id, name }))}
         />
         <SortMenu rule={sort} onChange={(s) => updatePrefs({ sort: s })} />
-        {selected.size > 0 && me && can(me.role, "task:delete") && (
-          <button className="btn btn--danger" onClick={() => setConfirmBatch(true)}>
-            <Icon name="trash" size={14} />
-            {t("batchDelete")}（{selected.size}）
-          </button>
-        )}
+        <span className="db-toolbar__spacer" />
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const title = newTitle.trim();
+            if (!title || !project || !me) return;
+            const firstColumn = project.statusColumns.find((c) => c.order === 0);
+            if (!firstColumn) return;
+            await taskService.create(me.id, me.role, {
+              id: uuid(),
+              projectId: project.id,
+              title,
+              status: firstColumn.id,
+            });
+            setNewTitle("");
+          }}
+          style={{ display: "flex", gap: 8 }}
+        >
+          <input
+            className="input"
+            style={{ width: 200 }}
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="新任务标题，回车创建"
+            aria-label="新任务标题"
+          />
+          <button className="btn btn--primary" type="submit">+ 新建</button>
+        </form>
       </div>
-      <div style={{ padding: "0 16px 16px" }} className="card" aria-label="任务列表">
+      <div className="card" style={{ padding: "0 8px 8px", margin: "0 16px 16px" }} aria-label="任务列表">
         <ListTable
           tasks={visible}
           columns={project.statusColumns}
           assigneeNames={assigneeNames}
           onOpenTask={setOpenTask}
+          sort={sort}
+          onSortChange={(s) => updatePrefs({ sort: s })}
           selection={{
             selected,
             onToggle: (taskId) =>
@@ -150,6 +189,19 @@ export default function ListRoute() {
           }}
         />
       </div>
+      {selected.size > 0 && (
+        <div className="db-actionbar" role="toolbar" aria-label="批量操作">
+          <span className="db-actionbar__count">已选 {selected.size} 项</span>
+          {me && can(me.role, "task:delete") && (
+            <button className="db-actionbar__btn db-actionbar__btn--danger" onClick={() => setConfirmBatch(true)}>
+              {t("batchDelete")}
+            </button>
+          )}
+          <button className="db-actionbar__btn" onClick={() => setSelected(new Set())}>
+            取消
+          </button>
+        </div>
+      )}
       <TaskDialog
         task={openTask ? tasks.find((t) => t.id === openTask.id) ?? openTask : null}
         statusName={project.statusColumns.find((c) => c.id === openTask?.status)?.name}
