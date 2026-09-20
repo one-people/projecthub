@@ -1,10 +1,11 @@
 import type { Priority } from "~/models/task";
+import type { Dict } from "~/locales/zh-CN";
 
 export type DueFilter = "all" | "today" | "week" | "overdue" | "none";
 export type StatusFilter = "all" | "open" | "done";
 
 export interface Filters {
-  assigneeId: string; // "" = 全部
+  assigneeId: string; // "all" = 全部（兼容历史数据中的 ""）
   due: DueFilter;
   priority: Priority | "all";
   status: StatusFilter;
@@ -36,18 +37,22 @@ export function avatarColor(name: string): string {
   return PALETTE[hash(name) % PALETTE.length]!;
 }
 
-const DUE_LABEL: Record<string, string> = {
-  today: "今天", week: "本周", overdue: "已逾期", none: "无日期",
+// 纯数据层：chip 只携带 i18n key，展示文案由组件层调用 t() 翻译
+const DUE_LABEL: Record<string, keyof Dict> = {
+  today: "dueToday", week: "dueWeek", overdue: "dueOverdue", none: "dueNone",
 };
-const PRIORITY_LABEL: Record<string, string> = {
-  urgent: "紧急", high: "高", medium: "中", low: "低", none: "无",
+const PRIORITY_LABEL: Record<string, keyof Dict> = {
+  urgent: "prioUrgent", high: "prioHigh", medium: "prioMedium", low: "prioLow", none: "prioNone",
 };
-const STATUS_LABEL: Record<string, string> = { open: "未完成", done: "已完成" };
+const STATUS_LABEL: Record<string, keyof Dict> = { open: "statusOpen", done: "statusDone" };
 
 export interface FilterChip {
   key: "assigneeId" | "due" | "priority" | "status";
-  label: string;
+  labelKey: keyof Dict;
+  /** 直接展示的原始值（负责人姓名，或未知枚举的原始字符串） */
   value: string;
+  /** 存在时表示 value 是 i18n key，由组件翻译展示 */
+  valueKey?: keyof Dict;
 }
 
 export function activeFilterChips(
@@ -56,24 +61,37 @@ export function activeFilterChips(
 ): FilterChip[] {
   const chips: FilterChip[] = [];
   if (filters.assigneeId !== "all" && filters.assigneeId !== "") {
+    const name = assigneeOptions.find((a) => a.id === filters.assigneeId)?.name;
     chips.push({
       key: "assigneeId",
-      label: "负责人",
-      value: assigneeOptions.find((a) => a.id === filters.assigneeId)?.name ?? "未知",
+      labelKey: "colAssignee",
+      value: name ?? "unknownUser",
+      valueKey: name ? undefined : "unknownUser",
     });
   }
   if (filters.due !== "all") {
-    chips.push({ key: "due", label: "截止日期", value: DUE_LABEL[filters.due] ?? filters.due });
+    chips.push({
+      key: "due",
+      labelKey: "colDueDate",
+      value: filters.due,
+      valueKey: DUE_LABEL[filters.due],
+    });
   }
   if (filters.priority !== "all") {
     chips.push({
       key: "priority",
-      label: "优先级",
-      value: PRIORITY_LABEL[filters.priority] ?? filters.priority,
+      labelKey: "colPriority",
+      value: filters.priority,
+      valueKey: PRIORITY_LABEL[filters.priority],
     });
   }
   if (filters.status !== "all") {
-    chips.push({ key: "status", label: "状态", value: STATUS_LABEL[filters.status] ?? filters.status });
+    chips.push({
+      key: "status",
+      labelKey: "colStatus",
+      value: filters.status,
+      valueKey: STATUS_LABEL[filters.status],
+    });
   }
   return chips;
 }

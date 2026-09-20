@@ -87,7 +87,7 @@ export default function ListRoute() {
     void savePrefs(projectId, merged);
   }
 
-  if (!project) return <main className="page"><p className="empty">加载中…</p></main>;
+  if (!project) return <main className="page"><p className="empty">{t("loading")}</p></main>;
 
   const canCreate = me ? can(me.role, "task:create") : false;
 
@@ -101,24 +101,24 @@ export default function ListRoute() {
       <div className="page-toolbar">
         <h1 style={{ fontSize: 18, margin: 0 }}>{project.name}</h1>
         <span className="page-toolbar__spacer" />
-        <nav className="segmented" aria-label="视图切换">
+        <nav className="segmented" aria-label={t("viewSwitch")}>
           <button
             className="segmented__item"
             onClick={() => navigate(`/projects/${project.id}/board`)}
           >
             <Icon name="kanban" size={15} />
-            看板
+            {t("board")}
           </button>
           <span className="segmented__item segmented__item--active">
             <Icon name="list" size={15} />
-            列表
+            {t("list")}
           </span>
           <button
             className="segmented__item"
             onClick={() => navigate(`/projects/${project.id}/settings`)}
           >
             <Icon name="settings" size={15} />
-            设置
+            {t("settings")}
           </button>
         </nav>
       </div>
@@ -128,8 +128,8 @@ export default function ListRoute() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索任务…"
-            aria-label="搜索任务"
+            placeholder={t("searchTasks")}
+            aria-label={t("searchTasks")}
           />
         </label>
         <FilterChips
@@ -155,7 +155,7 @@ export default function ListRoute() {
               });
               setNewTitle("");
             } catch (e) {
-              toast.error(e instanceof Error ? e.message : "创建失败");
+              toast.error(e instanceof Error ? e.message : t("createFailed"));
             }
           }}
           style={{ display: "flex", gap: 8 }}
@@ -165,15 +165,15 @@ export default function ListRoute() {
             style={{ width: 200 }}
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="新任务标题，回车创建"
-            aria-label="新任务标题"
+            placeholder={t("newTaskTitle")}
+            aria-label={t("newTaskTitle")}
             disabled={!canCreate}
-            title={canCreate ? undefined : "当前角色无创建任务权限"}
+            title={canCreate ? undefined : t("noCreatePermission")}
           />
-          <button className="btn btn--primary" type="submit" disabled={!canCreate}>+ 新建</button>
+          <button className="btn btn--primary" type="submit" disabled={!canCreate}>{t("createNew")}</button>
         </form>
       </div>
-      <div className="card" style={{ padding: "0 8px 8px", margin: "0 16px 16px" }} aria-label="任务列表">
+      <div className="card" style={{ padding: "0 8px 8px", margin: "0 16px 16px" }} aria-label={t("taskList")}>
         <ListTable
           tasks={visible}
           columns={project.statusColumns}
@@ -198,15 +198,15 @@ export default function ListRoute() {
         />
       </div>
       {selected.size > 0 && (
-        <div className="db-actionbar" role="toolbar" aria-label="批量操作">
-          <span className="db-actionbar__count">已选 {selected.size} 项</span>
+        <div className="db-actionbar" role="toolbar" aria-label={t("batchActions")}>
+          <span className="db-actionbar__count">{t("selectedCount", { count: selected.size })}</span>
           {me && can(me.role, "task:delete") && (
             <button className="db-actionbar__btn db-actionbar__btn--danger" onClick={() => setConfirmBatch(true)}>
               {t("batchDelete")}
             </button>
           )}
           <button className="db-actionbar__btn" onClick={() => setSelected(new Set())}>
-            取消
+            {t("cancel")}
           </button>
         </div>
       )}

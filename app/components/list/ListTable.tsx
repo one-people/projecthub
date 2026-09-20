@@ -6,6 +6,7 @@ import { formatDate, formatRelative, isOverdue } from "~/lib/date";
 import { t, useI18n } from "~/lib/i18n";
 import { PRIORITY_META } from "~/lib/priority";
 import { avatarColor, statusColor } from "~/lib/list-view";
+import type { Dict } from "~/locales/zh-CN";
 import type { SortField, SortRule } from "~/components/list/SortMenu";
 
 export interface ListTableProps {
@@ -34,6 +35,10 @@ function isToday(iso: string | null): boolean {
     && d.getDate() === now.getDate();
 }
 
+const PRIORITY_LABEL_KEY: Record<Task["priority"], keyof Dict> = {
+  urgent: "prioUrgent", high: "prioHigh", medium: "prioMedium", low: "prioLow", none: "prioNone",
+};
+
 function StatusBadge({ task, columns }: { task: Task; columns: StatusColumn[] }) {
   const col = columns.find((c) => c.id === task.status);
   return (
@@ -48,11 +53,11 @@ function AssigneeCell({ task, assigneeNames }: { task: Task; assigneeNames: Reco
     return (
       <span className="db-assignee">
         <span className="db-avatar db-avatar--empty">?</span>
-        <span className="db-muted">未指派</span>
+        <span className="db-muted">{t("unassigned")}</span>
       </span>
     );
   }
-  const name = assigneeNames[task.assigneeId] ?? "未知";
+  const name = assigneeNames[task.assigneeId] ?? t("unknownUser");
   return (
     <span className="db-assignee">
       <span className="db-avatar" style={{ background: avatarColor(name) }}>
@@ -64,7 +69,7 @@ function AssigneeCell({ task, assigneeNames }: { task: Task; assigneeNames: Reco
 }
 
 function DueCell({ task }: { task: Task }) {
-  if (!task.dueDate) return <span className="db-muted">无</span>;
+  if (!task.dueDate) return <span className="db-muted">{t("prioNone")}</span>;
   const overdue = isOverdue(task.dueDate) && !task.completedAt;
   const cls = overdue ? "db-due db-due--overdue" : isToday(task.dueDate) ? "db-due db-due--today" : "db-due";
   return (
@@ -80,7 +85,7 @@ function PriorityPill({ task }: { task: Task }) {
   return (
     <span className="db-prio" style={{ background: `${prio.color}1A`, color: prio.color }}>
       <span className="prio__dot" style={{ background: prio.color }} />
-      {prio.label}
+      {t(PRIORITY_LABEL_KEY[task.priority])}
     </span>
   );
 }
@@ -95,7 +100,7 @@ function TaskCells({
       onClick={() => onOpenTask(task)}
       tabIndex={0}
       role="button"
-      aria-label={`打开任务 ${task.title}`}
+      aria-label={t("openTaskAria", { title: task.title })}
       onKeyDown={(e) => { if (e.key === "Enter") onOpenTask(task); }}
     >
       <span onClick={(e) => e.stopPropagation()}>
@@ -105,7 +110,7 @@ function TaskCells({
             className="db-row__check"
             checked={selection.selected.has(task.id)}
             onChange={() => selection.onToggle(task.id)}
-            aria-label={`选择任务 ${task.title}`}
+            aria-label={t("selectTaskAria", { title: task.title })}
           />
         ) : null}
       </span>
@@ -141,15 +146,15 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask, sort, onS
   }
 
   // 可排序列头（状态列不支持排序——SortField 无 status，用纯文本列头）
-  const sortableHeader = (field: SortField, key: string, fallback: string) => (
+  const sortableHeader = (field: SortField, labelKey: keyof Dict) => (
     <div role="columnheader" className="db-grid__header">
       <button
         type="button"
         className="db-grid__header--sortable"
         onClick={() => headerClick(field)}
-        aria-label={`按${fallback}排序`}
+        aria-label={t("sortBy", { field: t(labelKey) })}
       >
-        {t(key as never, undefined) || fallback}
+        {t(labelKey)}
         {sort?.field === field ? (sort.direction === "asc" ? " ↑" : " ↓") : ""}
       </button>
     </div>
@@ -163,22 +168,22 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask, sort, onS
             type="checkbox"
             checked={tasks.length > 0 && tasks.every((tk) => selection.selected.has(tk.id))}
             onChange={selection.onToggleAll}
-            aria-label="全选任务"
+            aria-label={t("selectAllTasks")}
           />
         ) : null}
       </div>
-      {sortableHeader("title", "colTitle", "标题")}
-      <div role="columnheader" className="db-grid__header">{t("colStatus" as never, undefined) || "状态"}</div>
-      {sortableHeader("assignee", "colAssignee", "负责人")}
-      {sortableHeader("dueDate", "colDueDate", "截止日期")}
-      {sortableHeader("priority", "colPriority", "优先级")}
-      {sortableHeader("updatedAt", "colUpdatedAt", "更新时间")}
+      {sortableHeader("title", "colTitle")}
+      <div role="columnheader" className="db-grid__header">{t("colStatus")}</div>
+      {sortableHeader("assignee", "colAssignee")}
+      {sortableHeader("dueDate", "colDueDate")}
+      {sortableHeader("priority", "colPriority")}
+      {sortableHeader("updatedAt", "colUpdatedAt")}
     </div>
   );
 
   if (tasks.length <= VIRTUALIZE_THRESHOLD) {
     return (
-      <div role="table" aria-label="任务列表">
+      <div role="table" aria-label={t("taskList")}>
         {header}
         {tasks.map((task) => (
           <TaskCells
