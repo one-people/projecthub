@@ -30,12 +30,20 @@ export function FilterChips({ filters, onChange, assigneeOptions }: FilterChipsP
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
 
   return (
-    <div ref={wrapRef} style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+    <div
+      ref={wrapRef}
+      style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setPopover(null);
+      }}
+    >
       {chips.map((chip) => (
         <span key={chip.key} className="db-popover__wrap">
           <button
             type="button"
             className="db-chip"
+            aria-haspopup="dialog"
+            aria-expanded={popover === chip.key}
             onClick={() => setPopover(popover === chip.key ? null : chip.key)}
           >
             {chip.label}
@@ -45,7 +53,10 @@ export function FilterChips({ filters, onChange, assigneeOptions }: FilterChipsP
             type="button"
             className="db-chip__x"
             aria-label={`移除筛选 ${chip.label}`}
-            onClick={() => set({ [chip.key]: "all" } as Partial<Filters>)}
+            onClick={() => {
+              set({ [chip.key]: "all" } as Partial<Filters>);
+              setPopover((p) => (p === chip.key ? null : p));
+            }}
           >
             ×
           </button>
@@ -60,6 +71,8 @@ export function FilterChips({ filters, onChange, assigneeOptions }: FilterChipsP
         <button
           type="button"
           className="db-chip db-chip--add"
+          aria-haspopup="dialog"
+          aria-expanded={popover === "add"}
           onClick={() => setPopover(popover === "add" ? null : "add")}
         >
           + 筛选
