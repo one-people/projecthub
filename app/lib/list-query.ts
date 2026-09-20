@@ -1,7 +1,7 @@
 import type { Task } from "~/models/task";
 import type { Filters } from "~/lib/list-view";
 import type { SortRule } from "~/components/list/SortMenu";
-import { priorityRank } from "~/components/list/ListTable";
+import { priorityRank } from "~/lib/priority";
 
 const DAY = 24 * 3600 * 1000;
 

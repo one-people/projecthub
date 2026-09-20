@@ -4,14 +4,17 @@ import type { StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
 import { formatDate, formatRelative, isOverdue } from "~/lib/date";
 import { t, useI18n } from "~/lib/i18n";
-import { Icon } from "~/components/ui/Icon";
 import { PRIORITY_META } from "~/lib/priority";
+import { avatarColor, statusColor } from "~/lib/list-view";
+import type { SortField, SortRule } from "~/components/list/SortMenu";
 
 export interface ListTableProps {
   tasks: Task[];
   columns: StatusColumn[];
   assigneeNames: Record<string, string>;
   onOpenTask: (task: Task) => void;
+  sort?: SortRule;
+  onSortChange?: (rule: SortRule) => void;
   selection?: {
     selected: Set<string>;
     onToggle: (taskId: string) => void;
@@ -20,80 +23,106 @@ export interface ListTableProps {
 }
 
 const VIRTUALIZE_THRESHOLD = 100;
-const ROW_HEIGHT = 44;
-const GRID_COLS = "36px minmax(200px, 2fr) 110px 110px 110px 90px 110px";
+const ROW_HEIGHT = 40;
 
-const PRIORITY_ORDER: Record<string, number> = {
-  urgent: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-  none: 4,
-};
+function isToday(iso: string | null): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+}
 
-export const priorityRank = (p: string) => PRIORITY_ORDER[p] ?? 9;
+function StatusBadge({ task, columns }: { task: Task; columns: StatusColumn[] }) {
+  const col = columns.find((c) => c.id === task.status);
+  return (
+    <span className="db-badge" style={{ background: statusColor(task.status) }}>
+      {col?.name ?? task.status}
+    </span>
+  );
+}
 
-function TaskCells({
-  task,
-  columns,
-  assigneeNames,
-  onOpenTask,
-  selection,
-}: Omit<ListTableProps, "tasks"> & { task: Task }) {
+function AssigneeCell({ task, assigneeNames }: { task: Task; assigneeNames: Record<string, string> }) {
+  if (!task.assigneeId) {
+    return (
+      <span className="db-assignee">
+        <span className="db-avatar db-avatar--empty">?</span>
+        <span className="db-muted">未指派</span>
+      </span>
+    );
+  }
+  const name = assigneeNames[task.assigneeId] ?? "未知";
+  return (
+    <span className="db-assignee">
+      <span className="db-avatar" style={{ background: avatarColor(name) }}>
+        {name.charAt(0)}
+      </span>
+      <span className="db-assignee__name">{name}</span>
+    </span>
+  );
+}
+
+function DueCell({ task }: { task: Task }) {
+  if (!task.dueDate) return <span className="db-muted">无</span>;
   const overdue = isOverdue(task.dueDate) && !task.completedAt;
+  const cls = overdue ? "db-due db-due--overdue" : isToday(task.dueDate) ? "db-due db-due--today" : "db-due";
+  return (
+    <span className={cls}>
+      {overdue && <span className="db-due__dot" />}
+      {formatDate(task.dueDate)}
+    </span>
+  );
+}
+
+function PriorityPill({ task }: { task: Task }) {
   const prio = PRIORITY_META[task.priority];
   return (
+    <span className="db-prio" style={{ background: `${prio.color}1A`, color: prio.color }}>
+      <span className="prio__dot" style={{ background: prio.color }} />
+      {prio.label}
+    </span>
+  );
+}
+
+function TaskCells({
+  task, columns, assigneeNames, onOpenTask, selection,
+}: Omit<ListTableProps, "tasks" | "sort" | "onSortChange"> & { task: Task }) {
+  const done = Boolean(task.completedAt);
+  return (
     <div
-      className={`data-grid data-row${overdue ? " data-row--overdue" : ""}`}
+      className="db-grid db-row"
       onClick={() => onOpenTask(task)}
       tabIndex={0}
       role="button"
       aria-label={`打开任务 ${task.title}`}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") onOpenTask(task);
-      }}
+      onKeyDown={(e) => { if (e.key === "Enter") onOpenTask(task); }}
     >
       <span onClick={(e) => e.stopPropagation()}>
         {selection ? (
           <input
             type="checkbox"
+            className="db-row__check"
             checked={selection.selected.has(task.id)}
             onChange={() => selection.onToggle(task.id)}
             aria-label={`选择任务 ${task.title}`}
           />
         ) : null}
       </span>
-      <span className="data-row__title" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        {task.completedAt ? (
-          <Icon name="check" size={14} className="data-muted" />
-        ) : null}
+      <span className={done ? "db-row__title db-row__title--done" : "db-row__title"}>
         {task.title}
       </span>
-      <span>{columns.find((c) => c.id === task.status)?.name ?? task.status}</span>
-      <span>
-        {task.assigneeId ? (assigneeNames[task.assigneeId] ?? "未知") : "未指派"}
-      </span>
-      <span>{formatDate(task.dueDate) ?? "无"}</span>
-      <span className="prio">
-        <span className="prio__dot" style={{ background: prio.color }} />
-        {prio.label}
-      </span>
-      <span className="data-muted">{formatRelative(task.updatedAt)}</span>
+      <span><StatusBadge task={task} columns={columns} /></span>
+      <span><AssigneeCell task={task} assigneeNames={assigneeNames} /></span>
+      <span><DueCell task={task} /></span>
+      <span><PriorityPill task={task} /></span>
+      <span className="db-muted">{formatRelative(task.updatedAt)}</span>
     </div>
   );
 }
 
-export function ListTable({ tasks, columns, assigneeNames, onOpenTask, selection }: ListTableProps) {
+export function ListTable({ tasks, columns, assigneeNames, onOpenTask, sort, onSortChange, selection }: ListTableProps) {
   useI18n(); // 语言切换时重渲染
-  const headers: [string, string][] = [
-    ["", ""],
-    ["colTitle", "标题"],
-    ["colStatus", "状态"],
-    ["colAssignee", "负责人"],
-    ["colDueDate", "截止日期"],
-    ["colPriority", "优先级"],
-    ["colUpdatedAt", "更新时间"],
-  ];
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
     count: tasks.length,
@@ -102,9 +131,33 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask, selection
     overscan: 10,
   });
 
+  function headerClick(field: SortField) {
+    if (!onSortChange || !sort) return;
+    if (sort.field === field) {
+      onSortChange({ field, direction: sort.direction === "asc" ? "desc" : "asc" });
+    } else {
+      onSortChange({ field, direction: "asc" });
+    }
+  }
+
+  // 可排序列头（状态列不支持排序——SortField 无 status，用纯文本列头）
+  const sortableHeader = (field: SortField, key: string, fallback: string) => (
+    <div role="columnheader" className="db-grid__header">
+      <button
+        type="button"
+        className="db-grid__header--sortable"
+        onClick={() => headerClick(field)}
+        aria-label={`按${fallback}排序`}
+      >
+        {t(key as never, undefined) || fallback}
+        {sort?.field === field ? (sort.direction === "asc" ? " ↑" : " ↓") : ""}
+      </button>
+    </div>
+  );
+
   const header = (
-    <div className="data-grid" role="row" style={{ gridTemplateColumns: GRID_COLS }}>
-      <div role="columnheader" className="data-grid__header">
+    <div className="db-grid" role="row">
+      <div role="columnheader" className="db-grid__header">
         {selection ? (
           <input
             type="checkbox"
@@ -114,15 +167,12 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask, selection
           />
         ) : null}
       </div>
-      {headers.slice(1).map(([key, fallback]) => (
-        <div
-          key={key}
-          role="columnheader"
-          className="data-grid__header"
-        >
-          {t(key as never, undefined) || fallback}
-        </div>
-      ))}
+      {sortableHeader("title", "colTitle", "标题")}
+      <div role="columnheader" className="db-grid__header">{t("colStatus" as never, undefined) || "状态"}</div>
+      {sortableHeader("assignee", "colAssignee", "负责人")}
+      {sortableHeader("dueDate", "colDueDate", "截止日期")}
+      {sortableHeader("priority", "colPriority", "优先级")}
+      {sortableHeader("updatedAt", "colUpdatedAt", "更新时间")}
     </div>
   );
 
@@ -140,14 +190,11 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask, selection
             selection={selection}
           />
         ))}
-        {tasks.length === 0 && (
-          <p className="empty">{t("noMatch")}</p>
-        )}
+        {tasks.length === 0 && <p className="empty">{t("noMatch")}</p>}
       </div>
     );
   }
 
-  // 超过阈值启用虚拟滚动：只渲染可视区域行
   return (
     <div>
       {header}
