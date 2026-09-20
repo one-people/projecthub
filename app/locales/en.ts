@@ -173,4 +173,8 @@ export const en: Dict = {
   selectTaskAria: "Select task {title}",
   selectAllTasks: "Select all tasks",
   sortBy: "Sort by {field}",
+  sort: "Sort",
+  sortDirectionAria: "Sort direction: {direction}, click to toggle",
+  sortAsc: "Ascending",
+  sortDesc: "Descending",
 };

@@ -171,6 +171,10 @@ export const zhCN = {
   selectTaskAria: "选择任务 {title}",
   selectAllTasks: "全选任务",
   sortBy: "按{field}排序",
+  sort: "排序",
+  sortDirectionAria: "排序方向：{direction}，点击切换",
+  sortAsc: "升序",
+  sortDesc: "降序",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;

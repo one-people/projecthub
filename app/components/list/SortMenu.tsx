@@ -1,3 +1,6 @@
+import { t, useI18n } from "~/lib/i18n";
+import type { Dict } from "~/locales/zh-CN";
+
 export type SortField = "title" | "assignee" | "dueDate" | "priority" | "updatedAt";
 export type SortDirection = "asc" | "desc";
 
@@ -11,19 +14,20 @@ export interface SortMenuProps {
   onChange: (rule: SortRule) => void;
 }
 
-const FIELDS: { value: SortField; label: string }[] = [
-  { value: "title", label: "标题" },
-  { value: "assignee", label: "负责人" },
-  { value: "dueDate", label: "截止日期" },
-  { value: "priority", label: "优先级" },
-  { value: "updatedAt", label: "更新时间" },
+const FIELDS: { value: SortField; labelKey: keyof Dict }[] = [
+  { value: "title", labelKey: "colTitle" },
+  { value: "assignee", labelKey: "colAssignee" },
+  { value: "dueDate", labelKey: "colDueDate" },
+  { value: "priority", labelKey: "colPriority" },
+  { value: "updatedAt", labelKey: "colUpdatedAt" },
 ];
 
 export function SortMenu({ rule, onChange }: SortMenuProps) {
+  useI18n(); // 语言切换时重渲染
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
       <label className="field-label">
-        排序
+        {t("sort")}
         <select
           className="input"
           value={rule.field}
@@ -31,7 +35,7 @@ export function SortMenu({ rule, onChange }: SortMenuProps) {
         >
           {FIELDS.map((f) => (
             <option key={f.value} value={f.value}>
-              {f.label}
+              {t(f.labelKey)}
             </option>
           ))}
         </select>
@@ -41,9 +45,11 @@ export function SortMenu({ rule, onChange }: SortMenuProps) {
         onClick={() =>
           onChange({ ...rule, direction: rule.direction === "asc" ? "desc" : "asc" })
         }
-        aria-label={`排序方向：${rule.direction === "asc" ? "升序" : "降序"}，点击切换`}
+        aria-label={t("sortDirectionAria", {
+          direction: rule.direction === "asc" ? t("sortAsc") : t("sortDesc"),
+        })}
       >
-        {rule.direction === "asc" ? "↑ 升序" : "↓ 降序"}
+        {rule.direction === "asc" ? `↑ ${t("sortAsc")}` : `↓ ${t("sortDesc")}`}
       </button>
     </div>
   );
