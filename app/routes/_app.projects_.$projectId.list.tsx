@@ -89,6 +89,8 @@ export default function ListRoute() {
 
   if (!project) return <main className="page"><p className="empty">加载中…</p></main>;
 
+  const canCreate = me ? can(me.role, "task:create") : false;
+
   const searched = search.trim()
     ? tasks.filter((tk) => tk.title.toLowerCase().includes(search.trim().toLowerCase()))
     : tasks;
@@ -144,13 +146,17 @@ export default function ListRoute() {
             if (!title || !project || !me) return;
             const firstColumn = project.statusColumns.find((c) => c.order === 0);
             if (!firstColumn) return;
-            await taskService.create(me.id, me.role, {
-              id: uuid(),
-              projectId: project.id,
-              title,
-              status: firstColumn.id,
-            });
-            setNewTitle("");
+            try {
+              await taskService.create(me.id, me.role, {
+                id: uuid(),
+                projectId: project.id,
+                title,
+                status: firstColumn.id,
+              });
+              setNewTitle("");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "创建失败");
+            }
           }}
           style={{ display: "flex", gap: 8 }}
         >
@@ -161,8 +167,10 @@ export default function ListRoute() {
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="新任务标题，回车创建"
             aria-label="新任务标题"
+            disabled={!canCreate}
+            title={canCreate ? undefined : "当前角色无创建任务权限"}
           />
-          <button className="btn btn--primary" type="submit">+ 新建</button>
+          <button className="btn btn--primary" type="submit" disabled={!canCreate}>+ 新建</button>
         </form>
       </div>
       <div className="card" style={{ padding: "0 8px 8px", margin: "0 16px 16px" }} aria-label="任务列表">
