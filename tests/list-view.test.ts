@@ -3,16 +3,22 @@ import {
   statusColor,
   avatarColor,
   activeFilterChips,
+  PALETTE,
 } from "~/lib/list-view";
 import { EMPTY_FILTERS } from "~/components/list/FilterBar";
 
 describe("statusColor", () => {
-  it("同一列 id 返回同一颜色", () => {
-    expect(statusColor("col-1")).toBe(statusColor("col-1"));
+  it("返回固定的确切颜色", () => {
+    expect(statusColor("col-1")).toBe("#BE185D");
+    expect(statusColor("col-2")).toBe("#1D4ED8");
+    expect(statusColor("col-3")).toBe("#4D7C0F");
   });
-  it("不同列 id 大概率返回不同颜色", () => {
-    const set = new Set(["a", "b", "c", "d", "e", "f", "g", "h"].map(statusColor));
-    expect(set.size).toBeGreaterThan(1);
+  it("输入 a..h 的结果都在调色板内，且包含确切值", () => {
+    const results = ["a", "b", "c", "d", "e", "f", "g", "h"].map(statusColor);
+    for (const c of results) expect(PALETTE).toContain(c);
+    expect(statusColor("a")).toBe("#0F766E");
+    expect(statusColor("b")).toBe("#B45309");
+    expect(statusColor("c")).toBe("#7C3AED");
   });
 });
 
@@ -35,6 +41,24 @@ describe("activeFilterChips", () => {
     expect(chips).toEqual([
       { key: "assigneeId", label: "负责人", value: "张三" },
       { key: "status", label: "状态", value: "已完成" },
+    ]);
+  });
+  it("未知负责人 id 回退为「未知」", () => {
+    const chips = activeFilterChips(
+      { ...EMPTY_FILTERS, assigneeId: "nope" },
+      opts,
+    );
+    expect(chips).toEqual([
+      { key: "assigneeId", label: "负责人", value: "未知" },
+    ]);
+  });
+  it("未知 due 值回退为原始字符串", () => {
+    const chips = activeFilterChips(
+      { ...EMPTY_FILTERS, due: "custom" as never },
+      opts,
+    );
+    expect(chips).toEqual([
+      { key: "due", label: "截止日期", value: "custom" },
     ]);
   });
 });

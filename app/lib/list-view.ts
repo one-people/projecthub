@@ -1,6 +1,6 @@
 import type { Filters } from "~/components/list/FilterBar";
 
-const PALETTE = [
+export const PALETTE = [
   "#1E293B", "#0F766E", "#B45309", "#7C3AED",
   "#BE185D", "#1D4ED8", "#4D7C0F", "#9A3412",
 ];
