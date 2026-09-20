@@ -511,6 +511,12 @@ select.input {
   flex-wrap: wrap;
 }
 
+/* 通用次要文本（TaskCard / TaskDialog / 通知页共用） */
+.data-muted {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- 列表（数据库视图） ---------- */
 .db-toolbar {
   display: flex;
