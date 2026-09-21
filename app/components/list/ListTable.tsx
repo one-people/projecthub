@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type CSSProperties } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
@@ -42,7 +42,7 @@ const PRIORITY_LABEL_KEY: Record<Task["priority"], keyof Dict> = {
 function StatusBadge({ task, columns }: { task: Task; columns: StatusColumn[] }) {
   const col = columns.find((c) => c.id === task.status);
   return (
-    <span className="db-badge" style={{ background: statusColor(task.status) }}>
+    <span className="db-badge" style={{ "--db-c": statusColor(task.status) } as CSSProperties}>
       {col?.name ?? task.status}
     </span>
   );
@@ -60,7 +60,7 @@ function AssigneeCell({ task, assigneeNames }: { task: Task; assigneeNames: Reco
   const name = assigneeNames[task.assigneeId] ?? t("unknownUser");
   return (
     <span className="db-assignee">
-      <span className="db-avatar" style={{ background: avatarColor(name) }}>
+      <span className="db-avatar" style={{ "--db-c": avatarColor(name) } as CSSProperties}>
         {name.charAt(0)}
       </span>
       <span className="db-assignee__name">{name}</span>
@@ -83,7 +83,7 @@ function DueCell({ task }: { task: Task }) {
 function PriorityPill({ task }: { task: Task }) {
   const prio = PRIORITY_META[task.priority];
   return (
-    <span className="db-prio" style={{ background: `${prio.color}1A`, color: prio.color }}>
+    <span className="db-prio" style={{ "--db-c": prio.color } as CSSProperties}>
       <span className="prio__dot" style={{ background: prio.color }} />
       {t(PRIORITY_LABEL_KEY[task.priority])}
     </span>
