@@ -4,7 +4,7 @@ import { liveQuery } from "dexie";
 import { Icon } from "~/components/ui/Icon";
 import { FilterChips } from "~/components/list/FilterChips";
 import { EMPTY_FILTERS, type Filters } from "~/lib/list-view";
-import { SortMenu, type SortRule } from "~/components/list/SortMenu";
+import type { SortRule } from "~/components/list/SortMenu";
 import { ListTable } from "~/components/list/ListTable";
 import { TaskDialog } from "~/components/task/TaskDialog";
 import { taskService } from "~/services/task.service";
@@ -50,6 +50,7 @@ export default function ListRoute() {
   const [me, setMe] = useState<{ id: string; role: RoleId } | null>(null);
   const [search, setSearch] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const projectId = window.location.pathname.split("/")[2] ?? "";
 
@@ -137,41 +138,16 @@ export default function ListRoute() {
           onChange={(f) => updatePrefs({ filters: f })}
           assigneeOptions={Object.entries(assigneeNames).map(([id, name]) => ({ id, name }))}
         />
-        <SortMenu rule={sort} onChange={(s) => updatePrefs({ sort: s })} />
         <span className="db-toolbar__spacer" />
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const title = newTitle.trim();
-            if (!title || !project || !me) return;
-            const firstColumn = project.statusColumns.find((c) => c.order === 0);
-            if (!firstColumn) return;
-            try {
-              await taskService.create(me.id, me.role, {
-                id: uuid(),
-                projectId: project.id,
-                title,
-                status: firstColumn.id,
-              });
-              setNewTitle("");
-            } catch (e) {
-              toast.error(e instanceof Error ? e.message : t("createFailed"));
-            }
-          }}
-          style={{ display: "flex", gap: 8 }}
+        <button
+          className="btn btn--primary"
+          disabled={!canCreate}
+          title={canCreate ? undefined : t("noCreatePermission")}
+          onClick={() => { setCreating(true); setNewTitle(""); }}
         >
-          <input
-            className="input"
-            style={{ width: 200 }}
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder={t("newTaskTitle")}
-            aria-label={t("newTaskTitle")}
-            disabled={!canCreate}
-            title={canCreate ? undefined : t("noCreatePermission")}
-          />
-          <button className="btn btn--primary" type="submit" disabled={!canCreate}>{t("createNew")}</button>
-        </form>
+          <Icon name="plus" size={14} />
+          {t("createNew")}
+        </button>
       </div>
       <div className="card" style={{ padding: "0 8px 8px", margin: "0 16px 16px" }} aria-label={t("taskList")}>
         <ListTable
@@ -196,6 +172,45 @@ export default function ListRoute() {
               ),
           }}
         />
+        {creating ? (
+          <form
+            className="db-newrow"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const title = newTitle.trim();
+              if (!title || !project || !me) return;
+              const firstColumn = project.statusColumns.find((c) => c.order === 0);
+              if (!firstColumn) return;
+              try {
+                await taskService.create(me.id, me.role, {
+                  id: uuid(),
+                  projectId: project.id,
+                  title,
+                  status: firstColumn.id,
+                });
+                setNewTitle("");
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : t("createFailed"));
+              }
+            }}
+          >
+            <input
+              autoFocus
+              className="db-newrow__input"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder={t("newTaskTitle")}
+              aria-label={t("newTaskTitle")}
+              onKeyDown={(e) => { if (e.key === "Escape") setCreating(false); }}
+            />
+            <span className="db-newrow__hint">{t("enterToCreate")}</span>
+          </form>
+        ) : canCreate ? (
+          <button className="db-newrow__trigger" onClick={() => setCreating(true)}>
+            <Icon name="plus" size={14} />
+            {t("newTaskTitle")}
+          </button>
+        ) : null}
       </div>
       {selected.size > 0 && (
         <div className="db-actionbar" role="toolbar" aria-label={t("batchActions")}>

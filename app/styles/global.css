@@ -603,7 +603,7 @@ select.input {
 
 .db-grid {
   display: grid;
-  grid-template-columns: 40px minmax(220px, 2fr) 130px 130px 110px 96px 110px;
+  grid-template-columns: 36px minmax(240px, 1fr) 110px 120px 96px 92px 96px;
   align-items: center;
   font-size: 13px;
   padding: 0 12px;
@@ -743,9 +743,55 @@ select.input {
   color: color-mix(in srgb, var(--db-c) 80%, var(--color-text));
 }
 .db-muted {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
-  text-align: right;
+}
+.db-grid > :last-child { text-align: right; }
+
+/* 表格底部内联新建行（Notion/Linear 风格） */
+.db-newrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 12px 10px;
+}
+.db-newrow__input {
+  flex: 1;
+  max-width: 480px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  font: inherit;
+  font-size: 13px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+}
+.db-newrow__hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.db-newrow__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  margin: 0 0 4px 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.db-newrow__trigger:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
 }
 
 .db-actionbar {

@@ -11,6 +11,7 @@ export const en: Dict = {
   board: "Board",
   list: "List",
   newTaskTitle: "New task title, press Enter",
+  enterToCreate: "Enter to create · Esc to cancel",
   createTask: "+ New task",
   loading: "Loading…",
   forbidden: "403: you don't have access to this project",

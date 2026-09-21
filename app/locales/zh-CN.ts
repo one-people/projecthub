@@ -9,6 +9,7 @@ export const zhCN = {
   board: "看板",
   list: "列表",
   newTaskTitle: "新任务标题，回车创建",
+  enterToCreate: "回车创建 · Esc 取消",
   createTask: "+ 新建任务",
   loading: "加载中…",
   forbidden: "403：当前身份无权访问该项目",
