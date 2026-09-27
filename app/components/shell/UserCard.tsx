@@ -6,6 +6,7 @@ import { useI18n } from "~/lib/i18n";
 import { Icon } from "~/components/ui/Icon";
 import type { User } from "~/models/user";
 
+/** Rail 底部头像：点击弹出身份切换菜单（向右展开） */
 export function UserCard() {
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -33,14 +34,18 @@ export function UserCard() {
 
   return (
     <div className="user-card" ref={ref}>
-      <button className="user-card__trigger" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+      <button
+        className={`user-card__trigger${open ? " is-open" : ""}`}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={`${t("currentUser")}：${me.name}`}
+        title={me.name}
+      >
         <span className="avatar" style={{ background: me.avatarColor }}>{me.name.slice(0, 1)}</span>
-        {!open && <span className="user-card__name">{me.name}</span>}
-        <Icon name="chevronRight" size={14} />
       </button>
       {open && (
-        <div className="user-card__menu" role="menu">
-          <p className="field-label">{t("currentUser")}</p>
+        <div className="user-card__menu" role="menu" aria-label={t("currentUser")}>
+          <p className="field-label" style={{ padding: "4px 8px" }}>{t("currentUser")}</p>
           {users.map((u) => (
             <button
               key={u.id}
@@ -60,7 +65,10 @@ export function UserCard() {
           <button
             className="user-card__item"
             role="menuitem"
-            onClick={() => navigate("/settings")}
+            onClick={() => {
+              setOpen(false);
+              navigate("/settings");
+            }}
           >
             <Icon name="settings" size={14} />
             {t("settings")}

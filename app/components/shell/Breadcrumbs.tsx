@@ -1,5 +1,6 @@
 import { Link, useMatches } from "@remix-run/react";
 import { Icon } from "~/components/ui/Icon";
+import { t } from "~/lib/i18n";
 
 interface Crumb {
   label: string;
@@ -15,7 +16,7 @@ export function Breadcrumbs() {
     .filter((c): c is Crumb => Boolean(c));
   if (crumbs.length === 0) return null;
   return (
-    <nav className="breadcrumbs" aria-label="面包屑">
+    <nav className="breadcrumbs" aria-label={t("breadcrumbs")}>
       {crumbs.map((c, i) => (
         <span key={i} className="breadcrumbs__item">
           {i > 0 && <Icon name="chevronRight" size={13} />}

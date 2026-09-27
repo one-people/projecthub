@@ -18,6 +18,10 @@ export type IconName =
   | "trash"
   | "search"
   | "chevronRight"
+  | "chevronDown"
+  | "more"
+  | "flag"
+  | "filter"
   | "panel";
 
 const PATHS: Record<IconName, React.ReactNode> = {
@@ -133,6 +137,21 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   chevronRight: <path d="m9 6 6 6-6 6" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  more: (
+    <>
+      <circle cx="5" cy="12" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+    </>
+  ),
+  flag: (
+    <>
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+      <path d="M4 22v-7" />
+    </>
+  ),
+  filter: <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />,
   panel: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
