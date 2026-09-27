@@ -1,8 +1,11 @@
 # ProjectHub — 基于 Remix 3 的纯前端项目管理应用
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF.svg)](./.github/workflows/ci.yml)
+[![CI](https://github.com/one-people/projecthub/actions/workflows/ci.yml/badge.svg)](https://github.com/one-people/projecthub/actions/workflows/ci.yml)
+[![Deploy](https://github.com/one-people/projecthub/actions/workflows/deploy.yml/badge.svg)](https://github.com/one-people/projecthub/actions/workflows/deploy.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
+
+> **在线体验：<https://one-people.github.io/projecthub/>** —— 纯前端应用，数据仅存于你当前浏览器的 IndexedDB。
 
 <!-- TODO: 应用截图占位（看板视图 / 列表视图 / 任务详情弹窗），项目初始化后补充 -->
 <!-- <p align="center"><img src="./docs/screenshots/board.png" width="800" alt="看板视图"></p> -->
@@ -562,6 +565,13 @@ npm run build
 - 完成需求梳理、架构设计与项目文档（本文档）。
 - 规划目录结构与 `app/index.ts` 入口骨架。
 - 实现全部路线图功能：看板（拖拽/状态流转/详情弹窗）、列表（筛选/排序/虚拟滚动）、评论系统（TipTap 富文本 + @提及 + 通知）、RBAC 权限、liveQuery 多标签页同步、数据导出/导入、a11y、i18n（zh-CN/en）、PWA。
+- 企业化外壳：AppShell（可折叠侧边栏 + 面包屑 + 用户卡片 + 全局搜索 `/` 快捷键）、工作台首页（分组我的任务 + 项目捷径）、独立项目列表页。
+- 软删除与回收站：全模型软删除字段、级联软删/恢复、乐观锁、保留期自动清理、回收站页（恢复/彻底删除）。
+- 审计日志：任务/评论服务埋点、审计查询服务、审计日志页（筛选 + 分页）、工作台活动流。
+- 管理端：用户服务 RBAC + 审计扩展、用户管理页（校验 + 停用）、通知中心页。
+- 视觉重设计：现代 SaaS 风格 → 黑白极简（monochrome）单色系、轻量侧边栏、分组导航。
+- 列表视图重构为 Notion 式数据库视图：筛选 chips（浮出编辑器）、富单元格（状态徽章/负责人头像/逾期日期/优先级 pill）、表头排序、浮出批量操作条、行内新建、i18n 全量覆盖。
+- 工程化：CI（typecheck + test + build）与 GitHub Pages 自动部署（含 SPA 深链接 404 兜底与子路径 BASE_URL 构建）。
 
 ---
 
@@ -585,4 +595,10 @@ MIT License。详见 [LICENSE](./LICENSE)（待项目初始化时创建）。
 - [x] 虚拟滚动（列表 >100 条自动启用 @tanstack/react-virtual）
 - [x] 无障碍（焦点环 / reduced-motion / 拖拽 aria-live 播报）
 - [x] 国际化（zh-CN / en，设置页热切换）
-- [ ] 单元测试补全
+- [x] AppShell 外壳与工作台首页（分组任务 / 项目捷径 / 全局搜索）
+- [x] 软删除 + 回收站 + 保留期自动清理
+- [x] 审计日志（服务埋点 / 查询页 / 活动流）
+- [x] 管理端用户管理（RBAC / 停用 / 校验）
+- [x] Notion 式数据库列表视图（chips 筛选 / 富单元格 / 表头排序 / 批量操作）
+- [x] CI 与 GitHub Pages 自动部署
+- [ ] 单元测试补全（当前 10 个测试文件 / 48 用例，持续补充中）
