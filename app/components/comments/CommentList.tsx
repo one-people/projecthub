@@ -4,6 +4,8 @@ import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
 import type { RoleId } from "~/auth/rbac";
 import { formatRelative } from "~/lib/date";
+import { t, useI18n } from "~/lib/i18n";
+import { ROLE_LABEL_KEY } from "~/lib/role-labels";
 
 export interface CommentListProps {
   comments: Comment[];
@@ -11,13 +13,16 @@ export interface CommentListProps {
   actorId: string;
   actorRole: RoleId;
   onAdd: (json: unknown) => Promise<void>;
+  /** 抽屉内嵌时去掉外层卡片间距 */
+  compact?: boolean;
 }
 
-export function CommentList({ comments, users, actorId, actorRole, onAdd }: CommentListProps) {
+export function CommentList({ comments, users, actorId, actorRole, onAdd, compact }: CommentListProps) {
+  useI18n(); // 语言切换时重渲染
   const [draft, setDraft] = useState<unknown>(null);
   const [submitting, setSubmitting] = useState(false);
   const user = (id: string) => users.find((u) => u.id === id);
-  const name = (id: string) => user(id)?.name ?? "未知用户";
+  const name = (id: string) => user(id)?.name ?? t("unknownUser");
 
   async function submit() {
     if (draft == null) return;
@@ -31,8 +36,8 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd }: Comm
   }
 
   return (
-    <section aria-label="评论区" style={{ marginTop: 24 }}>
-      <h3 className="section-title">评论（{comments.length}）</h3>
+    <section aria-label={t("tabComments")} style={compact ? undefined : { marginTop: 24 }}>
+      {!compact && <h3 className="section-title">{t("comments", { count: comments.length })}</h3>}
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {comments.map((c) => {
           const author = user(c.authorId);
@@ -58,21 +63,21 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd }: Comm
             </li>
           );
         })}
-        {comments.length === 0 && <li className="hint">暂无评论</li>}
+        {comments.length === 0 && <li className="hint">{t("noComments")}</li>}
       </ul>
 
       <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 16, marginTop: 12 }}>
-        <p className="hint" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          以 {name(actorId)}（{actorRole}）身份评论
+        <p className="hint" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          {t("commentAs", { name: name(actorId), role: t(ROLE_LABEL_KEY[actorRole]) })}
         </p>
         <RichTextEditor users={users.map(({ id, name }) => ({ id, name }))} content={null} onChange={setDraft} />
         <button
           className="btn btn--primary"
-          onClick={submit}
+          onClick={() => void submit()}
           disabled={submitting || draft == null}
           style={{ marginTop: 8 }}
         >
-          发表评论
+          {t("postComment")}
         </button>
       </div>
     </section>

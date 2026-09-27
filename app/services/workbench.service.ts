@@ -12,6 +12,7 @@ export interface WorkbenchData {
   today: Task[]; // 今日到期、未完成
   overdue: Task[]; // 已逾期、未完成
   recent: Task[]; // 最近更新（最多 20 条）
+  weekDone: number; // 最近 7 天我完成的任务数
   projects: WorkbenchProjectCard[];
 }
 
@@ -43,6 +44,12 @@ export const workbenchService = {
         .slice()
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .slice(0, 20),
+      weekDone: live.filter(
+        (t) =>
+          t.assigneeId === userId &&
+          t.completedAt !== null &&
+          new Date(t.completedAt).getTime() > Date.now() - 7 * 86400000,
+      ).length,
       projects: projects
         .filter((p) => p.deletedAt === null)
         .map((p) => ({

@@ -2,6 +2,7 @@ import { useEditor, EditorContent, generateHTML } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Mention from "@tiptap/extension-mention";
 import type { JSONContent } from "@tiptap/react";
+import { useI18n } from "~/lib/i18n";
 
 export interface RichTextEditorProps {
   users: { id: string; name: string }[];
@@ -14,6 +15,7 @@ export function editorExtensions() {
 }
 
 export function RichTextEditor({ users, content, onChange }: RichTextEditorProps) {
+  const { t } = useI18n();
   const editor = useEditor({
     extensions: editorExtensions(),
     content: content ?? undefined,
@@ -38,7 +40,7 @@ export function RichTextEditor({ users, content, onChange }: RichTextEditorProps
         <EditorContent editor={editor} />
       </div>
       <div className="mention-picker">
-        <span className="hint" style={{ margin: 0 }}>提及：</span>
+        <span className="hint" style={{ margin: 0 }}>{t("mentionHint")}</span>
         {users.map((u) => (
           <button
             key={u.id}

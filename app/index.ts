@@ -27,7 +27,7 @@ export { Board } from "./components/board/Board";
 export type { MoveIntent } from "./components/board/Board";
 export { Column } from "./components/board/Column";
 export { TaskCard } from "./components/board/TaskCard";
-export { TaskDialog } from "./components/task/TaskDialog";
+export { TaskDrawer } from "./components/task/TaskDrawer";
 export { FilterChips } from "./components/list/FilterChips";
 export { EMPTY_FILTERS } from "./lib/list-view";
 export type { Filters, DueFilter, StatusFilter } from "./lib/list-view";
