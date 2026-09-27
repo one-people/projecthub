@@ -53,18 +53,18 @@ export default function AuditRoute() {
   const current = Math.min(page, pageCount);
   const rows = logs.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
   const actorName = (id: string) =>
-    id === "system" ? "系统" : users.find((u) => u.id === id)?.name ?? id;
+    id === "system" ? t("systemActor") : users.find((u) => u.id === id)?.name ?? id;
   const actorColor = (id: string) =>
     users.find((u) => u.id === id)?.avatarColor ?? "#94A3B8";
 
   return (
-    <div>
+    <div className="page-pad">
       <div className="page-toolbar">
         <h1 style={{ fontSize: 18, margin: 0 }}>{t("auditTitle")}</h1>
         <span className="page-toolbar__spacer" />
         <select className="input" value={actorId} onChange={(e) => { setActorId(e.target.value); setPage(1); }} aria-label={t("filterActor")}>
           <option value="">{t("filterActor")}：{t("all")}</option>
-          <option value="system">系统</option>
+          <option value="system">{t("systemActor")}</option>
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
         <select className="input" value={action} onChange={(e) => { setAction(e.target.value as "" | AuditAction); setPage(1); }} aria-label={t("filterAction")}>
@@ -77,7 +77,7 @@ export default function AuditRoute() {
         </select>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card">
         <ul className="audit-list">
           {rows.map((log) => (
             <li key={log.id} className="audit-item">

@@ -64,7 +64,7 @@ export default function TrashRoute() {
         blocked: tk.deletedByProjectId !== null,
       }));
     }
-    return comments.map((c) => ({ id: c.id, label: `评论（${c.id.slice(0, 8)}）`, deletedAt: c.deletedAt!, blocked: false }));
+    return comments.map((c) => ({ id: c.id, label: t("commentLabel", { id: c.id.slice(0, 8) }), deletedAt: c.deletedAt!, blocked: false }));
   }, [tab, projects, tasks, comments]);
 
   async function restore(kind: Tab, id: string) {
@@ -80,18 +80,19 @@ export default function TrashRoute() {
   }
 
   return (
-    <div>
+    <div className="page-pad">
       <div className="page-toolbar">
         <h1 style={{ fontSize: 18, margin: 0 }}>{t("trash")}</h1>
         <span className="page-toolbar__spacer" />
         <span className="hint">{t("trashHint")}</span>
       </div>
-      <div className="card" style={{ marginTop: 16 }}>
-        <nav className="segmented" aria-label={t("trash")}>
+      <div className="card">
+        <nav className="tabs" aria-label={t("trash")}>
           {(["projects", "tasks", "comments"] as Tab[]).map((k) => (
             <button
               key={k}
-              className={`segmented__item${tab === k ? " segmented__item--active" : ""}`}
+              type="button"
+              className={`tabs__item${tab === k ? " is-active" : ""}`}
               onClick={() => setTab(k)}
             >
               {t(k === "projects" ? "tabProjects" : k === "tasks" ? "tabTasks" : "tabComments")}

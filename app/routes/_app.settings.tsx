@@ -71,16 +71,16 @@ export default function SettingsRoute() {
       };
     });
     await db.tasks.bulkAdd(rows);
-    setMessage("已生成 200 条压测任务，可到列表视图体验虚拟滚动");
+    setMessage(t("stressDone", { count: rows.length }));
   }
 
   return (
-    <div>
+    <div className="page-pad">
       <div className="page-toolbar">
         <h1 style={{ fontSize: 18, margin: 0 }}>{t("settings")}</h1>
       </div>
 
-      <div className="stack" style={{ marginTop: 16 }}>
+      <div className="stack">
         <section className="card">
           <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <Icon name="settings" size={16} />
@@ -115,7 +115,7 @@ export default function SettingsRoute() {
               accept="application/json"
               onChange={onImport}
               style={{ display: "none" }}
-              aria-label="选择备份文件"
+              aria-label={t("backupFileAria")}
             />
           </div>
           {message && (

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { useI18n } from "~/lib/i18n";
 import { Icon } from "./Icon";
 
 export interface ToastOptions {
@@ -26,6 +27,7 @@ const UNDO_MS = 10000;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
+  const { t } = useI18n();
 
   const remove = useCallback((id: number) => {
     setItems((prev) => prev.filter((t) => t.id !== id));
@@ -51,33 +53,33 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
       <div className="toast-stack" role="status" aria-live="polite">
-        {items.map((t) => (
-          <div key={t.id} className={`toast toast--${t.kind}`}>
-            <Icon name={t.kind === "success" ? "check" : "close"} size={15} />
-            <span className="toast__msg">{t.message}</span>
-            {t.options.undo && (
+        {items.map((item) => (
+          <div key={item.id} className={`toast toast--${item.kind}`}>
+            <Icon name={item.kind === "success" ? "check" : "close"} size={15} />
+            <span className="toast__msg">{item.message}</span>
+            {item.options.undo && (
               <button
                 className="toast__action"
                 onClick={() => {
-                  void t.options.undo?.();
-                  remove(t.id);
+                  void item.options.undo?.();
+                  remove(item.id);
                 }}
               >
-                撤销
+                {t("undo")}
               </button>
             )}
-            {t.options.retry && (
+            {item.options.retry && (
               <button
                 className="toast__action"
                 onClick={() => {
-                  void t.options.retry?.();
-                  remove(t.id);
+                  void item.options.retry?.();
+                  remove(item.id);
                 }}
               >
-                重试
+                {t("retry")}
               </button>
             )}
-            <button className="toast__close" onClick={() => remove(t.id)} aria-label="关闭提示">
+            <button className="toast__close" onClick={() => remove(item.id)} aria-label={t("closeHint")}>
               <Icon name="close" size={13} />
             </button>
           </div>

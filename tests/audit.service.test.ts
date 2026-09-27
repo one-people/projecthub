@@ -10,6 +10,8 @@ describe("auditService", () => {
 
   it("记录并按时间倒序列出", async () => {
     await auditService.log("u1", "create", "task", "t1", "创建了任务 A");
+    // createdAt 为毫秒精度：间隔 2ms 确保两条记录时间戳严格递增
+    await new Promise((r) => setTimeout(r, 2));
     await auditService.log("u1", "delete", "project", "p1", "删除了项目 B");
     const rows = await auditService.list({ limit: 10 });
     expect(rows).toHaveLength(2);

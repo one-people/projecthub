@@ -99,7 +99,7 @@ export default function UsersRoute() {
   }
 
   return (
-    <div>
+    <div className="page-pad">
       <div className="page-toolbar">
         <h1 style={{ fontSize: 18, margin: 0 }}>{t("userManage")}</h1>
         <span className="page-toolbar__spacer" />
@@ -183,7 +183,7 @@ export default function UsersRoute() {
                       type="button"
                       className={`color-dot${form.avatarColor === c ? " is-selected" : ""}`}
                       style={{ background: c }}
-                      aria-label={`选择颜色 ${c}`}
+                      aria-label={t("pickColorAria", { color: c })}
                       aria-pressed={form.avatarColor === c}
                       onClick={() => setForm((f) => ({ ...f, avatarColor: c }))}
                     />

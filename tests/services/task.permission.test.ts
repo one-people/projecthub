@@ -20,7 +20,12 @@ beforeEach(async () => {
   project = await projectRepository.createDemo();
   const fresh = await projectRepository.get(project.id);
   columns = fresh!.statusColumns;
-  task = (await db.tasks.where("projectId").equals(project.id).toArray())[0]!;
+  // 按 fractional order 取第一个任务（待办列），避免 uuid 主键序随机取到其他列的任务
+  task = (await db.tasks
+    .where("projectId")
+    .equals(project.id)
+    .toArray()
+  ).sort((a, b) => (a.order < b.order ? -1 : 1))[0]!;
 });
 
 describe("taskService RBAC", () => {

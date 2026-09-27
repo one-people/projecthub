@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "~/lib/i18n";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -13,8 +14,9 @@ export interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
-  open, title, message, danger, confirmText = "确认", requireText, onConfirm, onCancel,
+  open, title, message, danger, confirmText, requireText, onConfirm, onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   const [typed, setTyped] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,19 +43,19 @@ export function ConfirmDialog({
             className="input"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
-            placeholder={`输入「${requireText}」以确认`}
-            aria-label={`输入 ${requireText} 确认`}
+            placeholder={t("typeToConfirmHint", { text: requireText })}
+            aria-label={`${requireText}`}
             onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
           />
         )}
         <div className="confirm-actions">
-          <button className="btn" onClick={onCancel}>取消</button>
+          <button className="btn" onClick={onCancel}>{t("cancel")}</button>
           <button
             className={`btn ${danger ? "btn--danger" : "btn--primary"}`}
             disabled={!canConfirm}
             onClick={onConfirm}
           >
-            {confirmText}
+            {confirmText ?? t("confirmOk")}
           </button>
         </div>
       </div>
