@@ -1,27 +1,31 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
-/* ===== 设计 Token（Modern SaaS · Monochrome） ===== */
+/* ===== 设计 Token（Graphite + Indigo） =====
+   深色由 <html data-theme="dark"> 驱动（theme.ts 解析用户偏好）；
+   :not([data-theme]) 的媒体查询为无 JS 环境保留「跟随系统」回退 */
 :root {
-  --color-primary: #171717;
-  --color-primary-strong: #000000;
-  --color-primary-soft: #f5f5f5;
+  --color-primary: #4f46e5;
+  --color-primary-strong: #4338ca;
+  --color-primary-soft: #e0e7ff;
   --color-primary-contrast: #ffffff;
-  --color-accent: #ea580c;
-  --color-accent-soft: #ffedd5;
+  --color-accent: #4f46e5;
+  --color-accent-soft: #e0e7ff;
   --color-danger: #dc2626;
   --color-danger-soft: #fee2e2;
   --color-success: #059669;
+  --color-success-soft: #d1fae5;
   --color-warning: #d97706;
-  --color-info: #0284c7;
+  --color-warning-soft: #fef3c7;
+  --color-info: #4f46e5;
 
-  --color-bg: #f8fafc;
+  --color-bg: #fafafa;
   --color-surface: #ffffff;
-  --color-surface-muted: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
-  --color-text: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94a3b8;
+  --color-surface-muted: #f4f4f5;
+  --color-border: #e4e4e7;
+  --color-border-strong: #d4d4d8;
+  --color-text: #18181b;
+  --color-text-secondary: #52525b;
+  --color-text-muted: #a1a1aa;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -35,9 +39,9 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
-  --shadow-md: 0 4px 12px -2px rgb(15 23 42 / 0.1);
-  --shadow-lg: 0 16px 40px -8px rgb(15 23 42 / 0.25);
+  --shadow-sm: 0 1px 2px rgb(24 24 27 / 0.05);
+  --shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.1);
+  --shadow-lg: 0 16px 40px -8px rgb(24 24 27 / 0.22);
 
   --font-sans: "Inter", -apple-system, "PingFang SC", "Segoe UI",
     Roboto, sans-serif;
@@ -46,24 +50,65 @@
   color-scheme: light dark;
 }
 
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+/* 深色令牌（石墨底 + 靛蓝点缀） */
+:root[data-theme="dark"] {
+  --color-primary: #818cf8;
+  --color-primary-strong: #a5b4fc;
+  --color-primary-soft: rgb(129 140 248 / 0.16);
+  --color-primary-contrast: #1e1b4b;
+  --color-accent: #818cf8;
+  --color-accent-soft: rgb(129 140 248 / 0.16);
+  --color-danger: #f87171;
+  --color-danger-soft: rgb(248 113 113 / 0.15);
+  --color-success: #34d399;
+  --color-success-soft: rgb(52 211 153 / 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-soft: rgb(251 191 36 / 0.15);
+  --color-info: #818cf8;
+
+  --color-bg: #111113;
+  --color-surface: #1a1a1d;
+  --color-surface-muted: #242428;
+  --color-border: #2a2a30;
+  --color-border-strong: #3f3f46;
+  --color-text: #f4f4f5;
+  --color-text-secondary: #b4b4bc;
+  --color-text-muted: #8e8e96;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.7);
+}
+
+/* 无 JS 时的「跟随系统」回退 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-primary: #fafafa;
-    --color-primary-strong: #ffffff;
-    --color-primary-soft: #262626;
-    --color-primary-contrast: #0a0a0a;
-    --color-accent: #f97316;
-    --color-accent-soft: #431407;
+  :root:not([data-theme]) {
+    --color-primary: #818cf8;
+    --color-primary-strong: #a5b4fc;
+    --color-primary-soft: rgb(129 140 248 / 0.16);
+    --color-primary-contrast: #1e1b4b;
+    --color-accent: #818cf8;
+    --color-accent-soft: rgb(129 140 248 / 0.16);
     --color-danger: #f87171;
-    --color-danger-soft: #450a0a;
-    --color-bg: #0b1120;
-    --color-surface: #111a2e;
-    --color-surface-muted: #1c2942;
-    --color-border: #24324d;
-    --color-border-strong: #334563;
-    --color-text: #f1f5f9;
-    --color-text-secondary: #cbd5e1;
-    --color-text-muted: #7c8db0;
+    --color-danger-soft: rgb(248 113 113 / 0.15);
+    --color-success: #34d399;
+    --color-success-soft: rgb(52 211 153 / 0.15);
+    --color-warning: #fbbf24;
+    --color-warning-soft: rgb(251 191 36 / 0.15);
+    --color-info: #818cf8;
+
+    --color-bg: #111113;
+    --color-surface: #1a1a1d;
+    --color-surface-muted: #242428;
+    --color-border: #2a2a30;
+    --color-border-strong: #3f3f46;
+    --color-text: #f4f4f5;
+    --color-text-secondary: #b4b4bc;
+    --color-text-muted: #8e8e96;
+
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
     --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.7);
@@ -1559,7 +1604,7 @@ select.input {
   position: absolute; top: 5px; right: 5px;
   min-width: 16px; height: 16px; padding: 0 4px;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: var(--radius-full); background: var(--color-accent); color: #fff;
+  border-radius: var(--radius-full); background: var(--color-accent); color: var(--color-primary-contrast);
   font-size: 10px; font-weight: 700; line-height: 1;
 }
 .rail__divider { width: 24px; height: 1px; background: #3f3f46; margin: 8px 0; }
@@ -1797,10 +1842,7 @@ select.input {
 .color-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
 .color-dot.is-selected { border-color: var(--color-text); }
 .badge--success { background: var(--color-primary-soft); color: var(--color-primary-strong); }
-.badge--info { background: #e0f2fe; color: var(--color-info); }
-@media (prefers-color-scheme: dark) {
-  .badge--info { background: #0c2a3f; color: #7dd3fc; }
-}
+.badge--info { background: var(--color-primary-soft); color: var(--color-info); }
 
 /* ===== Audit ===== */
 .audit-list { list-style: none; padding: 0; margin: 0; }

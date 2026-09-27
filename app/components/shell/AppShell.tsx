@@ -6,6 +6,13 @@ import { Breadcrumbs } from "./Breadcrumbs";
 import { GlobalSearch } from "./GlobalSearch";
 import { Icon } from "~/components/ui/Icon";
 import { useI18n } from "~/lib/i18n";
+import {
+  getThemeMode,
+  resolveTheme,
+  setThemeMode,
+  watchSystemTheme,
+  type ResolvedTheme,
+} from "~/lib/theme";
 
 const PANEL_KEY = "panelOpen";
 
@@ -21,10 +28,20 @@ export function AppShell() {
   const { t } = useI18n();
   const [panelOpen, setPanelOpen] = useState(initialPanel);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [theme, setTheme] = useState<ResolvedTheme>(() =>
+    resolveTheme(getThemeMode()),
+  );
 
   useEffect(() => {
     window.localStorage.setItem(PANEL_KEY, panelOpen ? "1" : "0");
   }, [panelOpen]);
+
+  // 跟随系统时，系统切换深浅色要同步图标与令牌
+  useEffect(() => watchSystemTheme(setTheme), []);
+
+  function toggleTheme() {
+    setTheme(setThemeMode(theme === "dark" ? "light" : "dark"));
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -62,6 +79,14 @@ export function AppShell() {
             <Icon name="search" size={14} />
             <span>{t("searchPlaceholder")}</span>
             <kbd aria-hidden>/</kbd>
+          </button>
+          <button
+            className="icon-btn"
+            onClick={toggleTheme}
+            aria-label={t("themeToggle")}
+            title={t("themeToggle")}
+          >
+            <Icon name={theme === "dark" ? "moon" : "sun"} size={16} />
           </button>
         </header>
         <div className="shell__content">

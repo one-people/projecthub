@@ -4,6 +4,7 @@ import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
 import { generateKeyBetween } from "~/lib/fractional-index";
 import { useI18n, t as translate } from "~/lib/i18n";
+import { setThemeMode, type ThemeMode } from "~/lib/theme";
 
 export const handle = { crumb: () => ({ label: translate("settings") }) };
 import { Icon } from "~/components/ui/Icon";
@@ -14,6 +15,19 @@ export default function SettingsRoute() {
   const [message, setMessage] = useState("");
   const [usage, setUsage] = useState<string>("");
   const [hasProject, setHasProject] = useState(false);
+  const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("themeMode");
+    setThemeModeState(
+      saved === "light" || saved === "dark" ? saved : "system",
+    );
+  }, []);
+
+  function changeTheme(mode: ThemeMode) {
+    setThemeModeState(mode);
+    setThemeMode(mode);
+  }
 
   useEffect(() => {
     void (async () => {
@@ -81,6 +95,37 @@ export default function SettingsRoute() {
       </div>
 
       <div className="stack">
+        <section className="card">
+          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Icon name="sun" size={16} />
+            {t("appearance")}
+          </h2>
+          <div className="segmented" role="group" aria-label={t("appearance")}>
+            {(
+              [
+                { value: "system", label: t("themeSystem"), icon: "panel" },
+                { value: "light", label: t("themeLight"), icon: "sun" },
+                { value: "dark", label: t("themeDark"), icon: "moon" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={
+                  themeMode === opt.value
+                    ? "segmented__item segmented__item--active"
+                    : "segmented__item"
+                }
+                aria-pressed={themeMode === opt.value}
+                onClick={() => changeTheme(opt.value)}
+              >
+                <Icon name={opt.icon} size={14} />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
         <section className="card">
           <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <Icon name="settings" size={16} />

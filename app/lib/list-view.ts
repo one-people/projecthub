@@ -19,8 +19,8 @@ export const EMPTY_FILTERS: Filters = {
 };
 
 export const PALETTE = [
-  "#1E293B", "#0F766E", "#B45309", "#7C3AED",
-  "#BE185D", "#1D4ED8", "#4D7C0F", "#9A3412",
+  "#3F3F46", "#0F766E", "#B45309", "#7C3AED",
+  "#BE185D", "#4F46E5", "#4D7C0F", "#9A3412",
 ];
 
 function hash(s: string): number {

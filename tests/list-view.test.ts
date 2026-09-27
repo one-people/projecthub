@@ -10,7 +10,7 @@ import { EMPTY_FILTERS } from "~/lib/list-view";
 describe("statusColor", () => {
   it("返回固定的确切颜色", () => {
     expect(statusColor("col-1")).toBe("#BE185D");
-    expect(statusColor("col-2")).toBe("#1D4ED8");
+    expect(statusColor("col-2")).toBe("#4F46E5");
     expect(statusColor("col-3")).toBe("#4D7C0F");
   });
   it("输入 a..h 的结果都在调色板内，且包含确切值", () => {
