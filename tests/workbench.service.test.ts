@@ -46,4 +46,10 @@ describe("workbenchService.load", () => {
     const card = data.projects.find((p) => p.id === "p1")!;
     expect(card.openTaskCount).toBe(3);
   });
+
+  it("weekDone 统计最近 7 天我完成的任务", async () => {
+    const uid = await seed();
+    const data = await workbenchService.load(uid);
+    expect(data.weekDone).toBe(1);
+  });
 });
