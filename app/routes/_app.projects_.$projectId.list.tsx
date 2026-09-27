@@ -1,128 +1,80 @@
-import { useNavigate } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useOutletContext, useParams } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { Icon } from "~/components/ui/Icon";
 import { FilterChips } from "~/components/list/FilterChips";
 import { EMPTY_FILTERS, type Filters } from "~/lib/list-view";
 import type { SortRule } from "~/components/list/SortMenu";
 import { ListTable } from "~/components/list/ListTable";
-import { TaskDialog } from "~/components/task/TaskDialog";
+import { TaskDrawer } from "~/components/task/TaskDrawer";
 import { taskService } from "~/services/task.service";
-import { projectRepository } from "~/repositories/project.repository";
 import { db } from "~/repositories/db";
 import { applyFilters, applySort } from "~/lib/list-query";
 import { uuid } from "~/lib/id";
-import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
 import { t as translate, useI18n } from "~/lib/i18n";
-import { session } from "~/auth/session";
-import { can, type RoleId } from "~/auth/rbac";
+import { can } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
 import { useToast } from "~/components/ui/Toast";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
+import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: translate("list") }) };
 
 const PREF_KEY = "listView";
 
-async function loadPrefs(projectId: string): Promise<{ filters: Filters; sort: SortRule }> {
-  const row = await db.preferences.get(`${PREF_KEY}:${projectId}`);
-  if (row) return row.value as { filters: Filters; sort: SortRule };
-  return { filters: EMPTY_FILTERS, sort: { field: "updatedAt", direction: "desc" } };
-}
-
-async function savePrefs(projectId: string, prefs: { filters: Filters; sort: SortRule }) {
-  await db.preferences.put({ key: `${PREF_KEY}:${projectId}`, value: prefs });
-}
-
 export default function ListRoute() {
-  const navigate = useNavigate();
+  const { projectId } = useParams();
+  const { project, role, actorId, users } = useOutletContext<ProjectOutletContext>();
   const toast = useToast();
   const { t } = useI18n();
-  const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [assigneeNames, setAssigneeNames] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortRule>({ field: "updatedAt", direction: "desc" });
-  const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBatch, setConfirmBatch] = useState(false);
-  const [me, setMe] = useState<{ id: string; role: RoleId } | null>(null);
   const [search, setSearch] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const projectId = window.location.pathname.split("/")[2] ?? "";
-
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    void (async () => {
-      const p = await projectRepository.get(projectId);
-      if (!p) {
-        navigate("/projects");
-        return;
-      }
-      const [users, prefs] = await Promise.all([
-        db.users.toArray(),
-        loadPrefs(p.id),
-      ]);
-      setProject(p);
-      setAssigneeNames(Object.fromEntries(users.map((u) => [u.id, u.name])));
-      const current = await session.currentUser();
-      setMe({ id: current.id, role: (p.memberRoles[current.id] as RoleId | undefined) ?? "member" });
+    if (!projectId) return;
+    void loadPrefs(projectId).then((prefs) => {
       setFilters(prefs.filters);
       setSort(prefs.sort);
-      // liveQuery：本页与其他标签页对任务表的任何变更都会实时刷新
-      const sub = liveQuery(() =>
-        db.tasks.where("projectId").equals(p.id).toArray(),
-      ).subscribe((rows) => setTasks(rows));
-      unsubscribe = () => sub.unsubscribe();
-    })();
-    return () => unsubscribe?.();
-  }, [projectId, navigate]);
+    });
+  }, [projectId]);
+
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.tasks.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => setTasks(rows));
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
+  const assigneeNames = useMemo(
+    () => Object.fromEntries(users.map((u) => [u.id, u.name])),
+    [users],
+  );
 
   function updatePrefs(next: { filters?: Filters; sort?: SortRule }) {
     const merged = { filters: next.filters ?? filters, sort: next.sort ?? sort };
     setFilters(merged.filters);
     setSort(merged.sort);
-    void savePrefs(projectId, merged);
+    void savePrefs(project.id, merged);
   }
 
-  if (!project) return <main className="page"><p className="empty">{t("loading")}</p></main>;
-
-  const canCreate = me ? can(me.role, "task:create") : false;
+  const canCreate = can(role, "task:create");
 
   const searched = search.trim()
     ? tasks.filter((tk) => tk.title.toLowerCase().includes(search.trim().toLowerCase()))
     : tasks;
   const visible = applySort(applyFilters(searched, filters), sort);
+  const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) ?? null : null;
 
   return (
-    <main>
-      <div className="page-toolbar">
-        <h1 style={{ fontSize: 18, margin: 0 }}>{project.name}</h1>
-        <span className="page-toolbar__spacer" />
-        <nav className="segmented" aria-label={t("viewSwitch")}>
-          <button
-            className="segmented__item"
-            onClick={() => navigate(`/projects/${project.id}/board`)}
-          >
-            <Icon name="kanban" size={15} />
-            {t("board")}
-          </button>
-          <span className="segmented__item segmented__item--active">
-            <Icon name="list" size={15} />
-            {t("list")}
-          </span>
-          <button
-            className="segmented__item"
-            onClick={() => navigate(`/projects/${project.id}/settings`)}
-          >
-            <Icon name="settings" size={15} />
-            {t("settings")}
-          </button>
-        </nav>
-      </div>
+    <div className="list-page">
       <div className="db-toolbar">
         <label className="db-toolbar__search">
           <Icon name="search" size={14} />
@@ -139,22 +91,14 @@ export default function ListRoute() {
           assigneeOptions={Object.entries(assigneeNames).map(([id, name]) => ({ id, name }))}
         />
         <span className="db-toolbar__spacer" />
-        <button
-          className="btn btn--primary"
-          disabled={!canCreate}
-          title={canCreate ? undefined : t("noCreatePermission")}
-          onClick={() => { setCreating(true); setNewTitle(""); }}
-        >
-          <Icon name="plus" size={14} />
-          {t("createNew")}
-        </button>
+        <span className="db-toolbar__count">{t("taskCountLabel", { count: visible.length })}</span>
       </div>
-      <div className="card" style={{ padding: "0 8px 8px", margin: "0 16px 16px" }} aria-label={t("taskList")}>
+      <div className="list-page__body card" aria-label={t("taskList")}>
         <ListTable
           tasks={visible}
           columns={project.statusColumns}
           assigneeNames={assigneeNames}
-          onOpenTask={setOpenTask}
+          onOpenTask={(task) => setOpenTaskId(task.id)}
           sort={sort}
           onSortChange={(s) => updatePrefs({ sort: s })}
           selection={{
@@ -178,11 +122,11 @@ export default function ListRoute() {
             onSubmit={async (e) => {
               e.preventDefault();
               const title = newTitle.trim();
-              if (!title || !project || !me) return;
+              if (!title) return;
               const firstColumn = project.statusColumns.find((c) => c.order === 0);
               if (!firstColumn) return;
               try {
-                await taskService.create(me.id, me.role, {
+                await taskService.create(actorId, role, {
                   id: uuid(),
                   projectId: project.id,
                   title,
@@ -215,7 +159,7 @@ export default function ListRoute() {
       {selected.size > 0 && (
         <div className="db-actionbar" role="toolbar" aria-label={t("batchActions")}>
           <span className="db-actionbar__count">{t("selectedCount", { count: selected.size })}</span>
-          {me && can(me.role, "task:delete") && (
+          {can(role, "task:delete") && (
             <button className="db-actionbar__btn db-actionbar__btn--danger" onClick={() => setConfirmBatch(true)}>
               {t("batchDelete")}
             </button>
@@ -225,34 +169,39 @@ export default function ListRoute() {
           </button>
         </div>
       )}
-      <TaskDialog
-        task={openTask ? tasks.find((t) => t.id === openTask.id) ?? openTask : null}
-        statusName={project.statusColumns.find((c) => c.id === openTask?.status)?.name}
-        onClose={() => setOpenTask(null)}
-      />
+      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} />
       <ConfirmDialog
         open={confirmBatch}
         title={t("batchDelete")}
         message={t("confirmBatchDelete")}
         danger
         onConfirm={async () => {
-          if (!me) return;
           const ids = [...selected];
           for (const id of ids) {
-            await trashService.deleteTask(me.id, me.role, id);
+            await trashService.deleteTask(actorId, role, id);
           }
           setSelected(new Set());
           setConfirmBatch(false);
           toast.success(`${t("deleted")}（${ids.length}）`, {
             undo: async () => {
               for (const id of ids) {
-                await trashService.restoreTask(me.id, me.role, id);
+                await trashService.restoreTask(actorId, role, id);
               }
             },
           });
         }}
         onCancel={() => setConfirmBatch(false)}
       />
-    </main>
+    </div>
   );
+}
+
+async function loadPrefs(projectId: string): Promise<{ filters: Filters; sort: SortRule }> {
+  const row = await db.preferences.get(`${PREF_KEY}:${projectId}`);
+  if (row) return row.value as { filters: Filters; sort: SortRule };
+  return { filters: EMPTY_FILTERS, sort: { field: "updatedAt", direction: "desc" } };
+}
+
+async function savePrefs(projectId: string, prefs: { filters: Filters; sort: SortRule }) {
+  await db.preferences.put({ key: `${PREF_KEY}:${projectId}`, value: prefs });
 }

@@ -1,40 +1,35 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "@remix-run/react";
-import { liveQuery } from "dexie";
+import { useNavigate, useOutletContext } from "@remix-run/react";
 import { db } from "~/repositories/db";
-import { session } from "~/auth/session";
 import { can, type RoleId } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
 import { auditService } from "~/services/audit.service";
 import { uuid } from "~/lib/id";
 import { useI18n, t as translate } from "~/lib/i18n";
+import type { Dict } from "~/locales/zh-CN";
+import { ROLE_LABEL_KEY } from "~/lib/role-labels";
 import { Icon } from "~/components/ui/Icon";
 import { useToast } from "~/components/ui/Toast";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
-import type { Project } from "~/models/project";
-import type { User } from "~/models/user";
+import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: translate("projectSettings") }) };
 
 type Tab = "basic" | "members" | "columns" | "danger";
 const ROLE_OPTIONS: RoleId[] = ["admin", "projectAdmin", "member", "guest"];
 
-const ROLE_LABELS: Record<RoleId, string> = {
-  admin: "管理员",
-  projectAdmin: "项目管理员",
-  member: "成员",
-  guest: "只读访客",
+const TAB_KEY: Record<Tab, keyof Dict> = {
+  basic: "tabBasic",
+  members: "tabMembers",
+  columns: "tabColumns",
+  danger: "tabDanger",
 };
 
 export default function ProjectSettingsRoute() {
   const navigate = useNavigate();
   const toast = useToast();
   const { t } = useI18n();
-  const projectId = window.location.pathname.split("/")[2] ?? "";
-  const [project, setProject] = useState<Project | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [role, setRole] = useState<RoleId>("member");
-  const [actorId, setActorId] = useState("");
+  const { project, role, actorId, users } = useOutletContext<ProjectOutletContext>();
   const [tab, setTab] = useState<Tab>("basic");
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState("");
@@ -44,31 +39,9 @@ export default function ProjectSettingsRoute() {
   const [newColumnName, setNewColumnName] = useState("");
 
   useEffect(() => {
-    const sub = liveQuery(async () => {
-      const p = await db.projects.get(projectId);
-      const [us, me] = await Promise.all([db.users.toArray(), session.currentUser()]);
-      return { p, us, me, role: (p?.memberRoles[me.id] as RoleId | undefined) ?? "member" };
-    }).subscribe(({ p, us, me, role }) => {
-      setProject(p ?? null);
-      setUsers(us);
-      setRole(role);
-      setActorId(me.id);
-      if (p) {
-        setName((prev) => (prev ? prev : p.name));
-        setDesc((prev) => (prev ? prev : p.description));
-      }
-    });
-    return () => sub.unsubscribe();
-  }, [projectId]);
-
-  if (!project) {
-    return (
-      <div className="empty">
-        <Icon name="settings" size={32} />
-        <p style={{ margin: 0 }}>{t("loading")}</p>
-      </div>
-    );
-  }
+    setName((prev) => (prev ? prev : project.name));
+    setDesc((prev) => (prev ? prev : project.description));
+  }, [project.id, project.name, project.description]);
 
   const canManage = can(role, "project:update");
   const current = project;
@@ -88,7 +61,7 @@ export default function ProjectSettingsRoute() {
   async function changeMemberRole(userId: string, nextRole: RoleId) {
     const memberRoles = { ...current.memberRoles, [userId]: nextRole };
     await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
-    await auditService.log(actorId, "update", "project", current.id, `调整了成员角色（${ROLE_LABELS[nextRole]}）`);
+    await auditService.log(actorId, "update", "project", current.id, `调整了成员角色（${translate(ROLE_LABEL_KEY[nextRole])}）`);
     toast.success(t("saved"));
   }
 
@@ -155,35 +128,22 @@ export default function ProjectSettingsRoute() {
   const members = users.filter((u) => project.memberRoles[u.id]);
 
   return (
-    <div>
-      <div className="page-toolbar">
-        <h1 style={{ fontSize: 18, margin: 0 }}>{project.name}</h1>
-        <span className="badge badge--role">{ROLE_LABELS[role]}</span>
-        <span className="page-toolbar__spacer" />
-        <nav className="segmented" aria-label={t("projectSettings")}>
-          <button className="segmented__item" onClick={() => navigate(`/projects/${project.id}/board`)}>
-            <Icon name="kanban" size={15} />{t("board")}
-          </button>
-          <span className="segmented__item segmented__item--active">
-            <Icon name="settings" size={15} />{t("settings")}
-          </span>
-        </nav>
-      </div>
-
-      <nav className="segmented" aria-label={t("projectSettings")} style={{ marginTop: 16 }}>
+    <div className="page-pad">
+      <nav className="tabs settings-tabs" aria-label={t("projectSettings")}>
         {(["basic", "members", "columns", "danger"] as Tab[]).map((k) => (
           <button
             key={k}
-            className={`segmented__item${tab === k ? " segmented__item--active" : ""}`}
+            type="button"
+            className={`tabs__item${tab === k ? " is-active" : ""}`}
             onClick={() => setTab(k)}
           >
-            {t(k === "basic" ? "tabBasic" : k === "members" ? "tabMembers" : k === "columns" ? "tabColumns" : "tabDanger")}
+            {t(TAB_KEY[k])}
           </button>
         ))}
       </nav>
 
       {tab === "basic" && (
-        <section className="card" style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        <section className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label className="field-label">
             {t("projectNameLabel")}
             <input
@@ -209,7 +169,7 @@ export default function ProjectSettingsRoute() {
       )}
 
       {tab === "members" && (
-        <section className="card" style={{ marginTop: 16 }}>
+        <section className="card">
           <ul className="user-list">
             {members.map((u) => (
               <li key={u.id} className="user-row">
@@ -222,7 +182,7 @@ export default function ProjectSettingsRoute() {
                   onChange={(e) => void changeMemberRole(u.id, e.target.value as RoleId)}
                   aria-label={`${u.name} ${t("myRole")}`}
                 >
-                  {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                  {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{t(ROLE_LABEL_KEY[r])}</option>)}
                 </select>
                 <button className="btn btn--danger" disabled={!canManage} onClick={() => setPendingRemove(u.id)}>
                   <Icon name="close" size={14} />{t("removeMember")}
@@ -243,7 +203,7 @@ export default function ProjectSettingsRoute() {
       )}
 
       {tab === "columns" && (
-        <section className="card" style={{ marginTop: 16 }}>
+        <section className="card">
           <ul className="user-list">
             {sortedColumns.map((c, i) => (
               <li key={c.id} className="user-row">
@@ -296,7 +256,7 @@ export default function ProjectSettingsRoute() {
       )}
 
       {tab === "danger" && (
-        <section className="danger-zone card" style={{ marginTop: 16 }}>
+        <section className="danger-zone card">
           <h2 className="section-title" style={{ color: "var(--color-danger)" }}>{t("dangerZone")}</h2>
           <p className="hint">{t("deleteProjectHint")}</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 360 }}>

@@ -2,19 +2,41 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Task } from "~/models/task";
 import { Icon } from "~/components/ui/Icon";
-import { PRIORITY_META } from "~/lib/priority";
+import { PRIORITY_META, PRIORITY_LABEL_KEY } from "~/lib/priority";
+import { avatarColor } from "~/lib/list-view";
+import { t, useI18n } from "~/lib/i18n";
+import { isOverdue } from "~/lib/date";
 
 export interface TaskCardProps {
   task: Task;
-  isDone: boolean;
+  assigneeName: string | null;
+  canToggle: boolean;
   onOpen: (task: Task) => void;
+  onToggleDone: (task: Task, done: boolean) => void;
 }
 
-export function TaskCard({ task, isDone, onOpen }: TaskCardProps) {
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
+
+export function TaskCard({ task, assigneeName, canToggle, onOpen, onToggleDone }: TaskCardProps) {
+  const { locale } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id, data: { type: "task", status: task.status } });
 
   const prio = PRIORITY_META[task.priority];
+  const done = Boolean(task.completedAt);
+  const overdue = task.dueDate ? isOverdue(task.dueDate) && !done : false;
+  const dueToday = task.dueDate ? isSameDay(new Date(task.dueDate), new Date()) : false;
+  const doneSubtasks = task.subtasks.filter((s) => s.done).length;
+
+  const dueText = task.dueDate
+    ? dueToday
+      ? t("dueToday")
+      : new Intl.DateTimeFormat(locale, { month: "numeric", day: "numeric" }).format(new Date(task.dueDate))
+    : null;
 
   return (
     <div
@@ -26,31 +48,60 @@ export function TaskCard({ task, isDone, onOpen }: TaskCardProps) {
       }}
       {...attributes}
       {...listeners}
-      onDoubleClick={() => onOpen(task)}
-      aria-label={`任务：${task.title}，优先级${prio.label}，双击查看详情`}
+      onClick={() => onOpen(task)}
+      aria-label={t("cardAria", {
+        title: task.title,
+        priority: t(PRIORITY_LABEL_KEY[task.priority]),
+      })}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        {isDone && <Icon name="check" size={14} className="data-muted" />}
-        <span className={`task-card__title${isDone ? " task-card__title--done" : ""}`}>
+      <button
+        type="button"
+        className={`check${done ? " is-done" : ""}`}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleDone(task, !done);
+        }}
+        disabled={!canToggle}
+        aria-label={done ? t("markUndone") : t("markDone")}
+        aria-pressed={done}
+      >
+        <Icon name="check" size={11} />
+      </button>
+      <div className="task-card__main">
+        <p className={`task-card__title${done ? " task-card__title--done" : ""}`}>
           {task.title}
-        </span>
-      </div>
-      <div className="task-card__meta">
-        <span className="prio">
-          <span className="prio__dot" style={{ background: prio.color }} />
-          {prio.label}
-        </span>
-        {task.dueDate && (
-          <span className="data-muted" style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-            <Icon name="calendar" size={13} />
-            {task.dueDate.slice(0, 10)}
-          </span>
-        )}
-        {task.subtasks.length > 0 && (
-          <span className="data-muted">
-            {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length}
-          </span>
-        )}
+        </p>
+        <div className="task-card__foot">
+          <span
+            className="prio__dot"
+            style={{ background: prio.color }}
+            title={t(PRIORITY_LABEL_KEY[task.priority])}
+          />
+          {dueText && (
+            <span
+              className={`task-card__due${overdue ? " task-card__due--overdue" : dueToday ? " task-card__due--today" : ""}`}
+            >
+              <Icon name="calendar" size={12} />
+              {dueText}
+            </span>
+          )}
+          {task.subtasks.length > 0 && (
+            <span className="task-card__subt">
+              <Icon name="check" size={11} />
+              {doneSubtasks}/{task.subtasks.length}
+            </span>
+          )}
+          {assigneeName && (
+            <span
+              className="task-card__assignee"
+              style={{ background: avatarColor(assigneeName) }}
+              title={assigneeName}
+            >
+              {assigneeName.charAt(0)}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
