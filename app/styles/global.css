@@ -1876,6 +1876,7 @@ select.input {
 
 .project-card {
   --tile: var(--color-primary);
+  position: relative;
   display: grid;
   grid-template-columns: 42px 1fr;
   grid-template-areas:
@@ -1904,6 +1905,35 @@ select.input {
 .project-card:focus-visible {
   outline: 2px solid var(--tile);
   outline-offset: 2px;
+}
+/* 悬浮操作：编辑（owner/admin）/ 删除（owner），权限外不渲染 */
+.project-card__actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.project-card:hover .project-card__actions,
+.project-card:focus-within .project-card__actions {
+  opacity: 1;
+}
+.project-card__actions .icon-btn {
+  width: 26px;
+  height: 26px;
+  color: var(--color-text-muted);
+}
+.project-card__actions .icon-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
 }
 .project-card__tile {
   grid-area: tile;

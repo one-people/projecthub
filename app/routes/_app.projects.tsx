@@ -5,7 +5,9 @@ import { db } from "~/repositories/db";
 import { projectRepository } from "~/repositories/project.repository";
 import { projectTemplateService } from "~/services/projectTemplate.service";
 import { session } from "~/auth/session";
-import { isProjectVisible, resolveRole } from "~/auth/rbac";
+import { can, isProjectVisible, resolveRole } from "~/auth/rbac";
+import { projectService } from "~/services/project.service";
+import { trashService } from "~/services/trash.service";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { ROLE_LABEL_KEY } from "~/lib/role-labels";
 import { Icon } from "~/components/ui/Icon";
@@ -52,6 +54,10 @@ export default function ProjectsRoute() {
   const [newName, setNewName] = useState("");
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
   const [pendingDeleteTpl, setPendingDeleteTpl] = useState<ProjectTemplate | null>(null);
+  const [editing, setEditing] = useState<Project | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
 
   useEffect(() => {
     const sub = liveQuery(async () => {
@@ -118,6 +124,46 @@ export default function ProjectsRoute() {
     setPendingDeleteTpl(null);
   }
 
+  function openEdit(p: Project) {
+    setEditing(p);
+    setEditName(p.name);
+    setEditDesc(p.description ?? "");
+  }
+
+  async function saveEdit() {
+    if (!editing || !me) return;
+    try {
+      await projectService.updateBasic(editing.id, me.id, {
+        name: editName,
+        description: editDesc,
+      });
+      toast.success(t("saved"));
+      setEditing(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function deleteProject() {
+    const target = pendingDelete;
+    if (!target || !me) return;
+    setPendingDelete(null);
+    try {
+      await trashService.deleteProject(me.id, target.id);
+      toast.success(t("deleted"), {
+        undo: async () => {
+          try {
+            await trashService.restoreProject(me.id, target.id);
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : String(e));
+          }
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   return (
     <div className="page-pad">
       <div className="page-toolbar">
@@ -138,6 +184,8 @@ export default function ProjectsRoute() {
       <ul className="project-list">
         {projects.map((p) => {
           const role = me ? resolveRole(p, me.id) : null;
+          const canEdit = role ? can(role, "project:update") : false;
+          const canDelete = role ? can(role, "project:delete") : false;
           const stat = stats[p.id] ?? { total: 0, done: 0 };
           // 成员含所有者；头像最多 5 个，超出显示 +N
           const memberUsers = [...new Set([p.ownerId, ...Object.keys(p.memberRoles)])]
@@ -156,9 +204,43 @@ export default function ProjectsRoute() {
                 aria-label={t("openProjectAria", { name: p.name })}
                 onClick={() => navigate(`/projects/${p.id}/board`)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") navigate(`/projects/${p.id}/board`);
+                  if (e.key === "Enter" && !(e.target instanceof HTMLButtonElement)) {
+                    navigate(`/projects/${p.id}/board`);
+                  }
                 }}
               >
+                {(canEdit || canDelete) && (
+                  <span className="project-card__actions">
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        aria-label={t("editProjectAria", { name: p.name })}
+                        title={t("editProject")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(p);
+                        }}
+                      >
+                        <Icon name="pencil" size={14} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        aria-label={t("deleteProjectAria", { name: p.name })}
+                        title={t("deleteProject")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPendingDelete(p);
+                        }}
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    )}
+                  </span>
+                )}
                 <span className="project-card__tile" aria-hidden>
                   {p.name.slice(0, 1)}
                 </span>
@@ -272,6 +354,64 @@ export default function ProjectsRoute() {
         danger
         onConfirm={() => void deleteTemplate()}
         onCancel={() => setPendingDeleteTpl(null)}
+      />
+
+      {editing && (
+        <div
+          className="modal-overlay"
+          role="presentation"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(null); }}
+        >
+          <div className="modal" role="dialog" aria-modal="true" aria-label={t("editProject")}>
+            <div className="modal__header">
+              <h2 style={{ fontSize: 16, margin: 0 }}>{t("editProject")}</h2>
+              <button className="icon-btn" aria-label={t("close")} onClick={() => setEditing(null)}>
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+            <label className="field-label" style={{ display: "block", marginTop: 14 }}>
+              {t("projectNameLabel")}
+              <input
+                className="input"
+                style={{ width: "100%", marginTop: 4 }}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder={t("projectNameLabel")}
+                autoFocus
+                onKeyDown={(e) => { if (e.key === "Escape") setEditing(null); }}
+              />
+            </label>
+            <label className="field-label" style={{ display: "block", marginTop: 10 }}>
+              {t("projectDescLabel")}
+              <textarea
+                className="input"
+                style={{ width: "100%", marginTop: 4, resize: "vertical" }}
+                rows={3}
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+              />
+            </label>
+            <div className="confirm-actions">
+              <button className="btn" onClick={() => setEditing(null)}>{t("cancel")}</button>
+              <button
+                className="btn btn--primary"
+                disabled={!editName.trim()}
+                onClick={() => void saveEdit()}
+              >
+                {t("save")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={t("deleteProject")}
+        message={t("confirmDeleteProjectCard", { name: pendingDelete?.name ?? "" })}
+        danger
+        onConfirm={() => void deleteProject()}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   );
