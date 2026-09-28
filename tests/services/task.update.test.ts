@@ -93,4 +93,28 @@ describe("taskService.updateTask", () => {
     });
     expect(updated.version).toBe(task.version);
   });
+
+  it("设置开始日期", async () => {
+    const iso = new Date("2026-10-01T00:00:00").toISOString();
+    const updated = await taskService.updateTask("actor", "member", task.id, {
+      startDate: iso,
+    });
+    expect(updated.startDate).toBe(iso);
+    const cleared = await taskService.updateTask("actor", "member", task.id, {
+      startDate: null,
+    });
+    expect(cleared.startDate).toBeNull();
+  });
+
+  it("自定义字段值整包替换", async () => {
+    const first = await taskService.updateTask("actor", "member", task.id, {
+      customValues: { f1: "v1", f2: 2 },
+    });
+    expect(first.customValues).toEqual({ f1: "v1", f2: 2 });
+    const second = await taskService.updateTask("actor", "member", task.id, {
+      customValues: { f1: "v1b" },
+    });
+    expect(second.customValues).toEqual({ f1: "v1b" });
+    expect(second.version).toBeGreaterThan(first.version);
+  });
 });

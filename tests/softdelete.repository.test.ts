@@ -9,7 +9,7 @@ const now = new Date().toISOString();
 async function seedTask(id: string, deletedAt: string | null) {
   await db.tasks.add({
     id, projectId: "p1", title: `任务${id}`, descriptionRich: null, status: "c1",
-    assigneeId: null, dueDate: null, priority: "none", labels: [], subtasks: [],
+    assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [],
     order: `a${id}`, archived: false, completedAt: null,
     deletedAt, deletedByProjectId: null,
     createdAt: now, updatedAt: now, version: 0,
@@ -39,8 +39,8 @@ describe("soft delete filtering", () => {
 
   it("projectRepository.list 排除软删项目", async () => {
     await db.projects.bulkAdd([
-      { id: "p1", name: "活", description: "", statusColumns: [], memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0 },
-      { id: "p2", name: "死", description: "", statusColumns: [], memberRoles: {}, deletedAt: now, createdAt: now, updatedAt: now, version: 0 },
+      { id: "p1", name: "活", description: "", statusColumns: [], customFields: [], memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0 },
+      { id: "p2", name: "死", description: "", statusColumns: [], customFields: [], memberRoles: {}, deletedAt: now, createdAt: now, updatedAt: now, version: 0 },
     ]);
     const list = await projectRepository.list();
     expect(list.map((p) => p.id)).toEqual(["p1"]);

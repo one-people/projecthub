@@ -8,11 +8,21 @@ export const statusColumnSchema = z.object({
 });
 export type StatusColumn = z.infer<typeof statusColumnSchema>;
 
+/** 表格视图自定义字段：文本/数字/日期/单选 */
+export const customFieldSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(50),
+  type: z.enum(["text", "number", "date", "select"]),
+  options: z.array(z.string()).default([]), // select 选项
+});
+export type CustomField = z.infer<typeof customFieldSchema>;
+
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(100),
   description: z.string().default(""),
   statusColumns: z.array(statusColumnSchema),
+  customFields: z.array(customFieldSchema).default([]),
   memberRoles: z.record(z.string()), // userId -> roleId
   deletedAt: z.string().nullable().default(null),
   createdAt: z.string(),

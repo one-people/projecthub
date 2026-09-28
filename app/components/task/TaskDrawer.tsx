@@ -55,6 +55,7 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState<JSONContent | null>(null);
   const [dueEditing, setDueEditing] = useState(false);
+  const [startEditing, setStartEditing] = useState(false);
   const [subtaskDraft, setSubtaskDraft] = useState("");
 
   const taskId = task?.id ?? null;
@@ -106,6 +107,7 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
     setTitleDraft(task?.title ?? "");
     setEditingDesc(false);
     setDueEditing(false);
+    setStartEditing(false);
   }, [taskId, task, refreshComments]);
 
   // 仅在切换任务时收起弹层/清空草稿——标签多选弹层在勾选后需保持展开
@@ -316,6 +318,32 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
                 ))}
               </Popover>
             </div>
+          ))}
+
+          {fieldRow("calendar", t("colStart"), (
+            startEditing && canEdit ? (
+              <input
+                type="date"
+                className="input"
+                autoFocus
+                value={task.startDate ? task.startDate.slice(0, 10) : ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  void apply({ startDate: v ? new Date(`${v}T00:00:00`).toISOString() : null });
+                }}
+                onBlur={() => setStartEditing(false)}
+                onKeyDown={(e) => { if (e.key === "Escape") setStartEditing(false); }}
+                aria-label={t("colStart")}
+              />
+            ) : (
+              <button
+                type="button"
+                className={`field-row__value${canEdit ? " field-row__value--editable" : ""}${!task.startDate ? " field-row__value--empty" : ""}`}
+                onClick={() => canEdit && setStartEditing(true)}
+              >
+                {formatDate(task.startDate, locale) ?? t("dueNone")}
+              </button>
+            )
           ))}
 
           {fieldRow("calendar", t("colDueDate"), (

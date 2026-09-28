@@ -216,6 +216,22 @@ export const zhCN = {
   confirmDeleteLabel: "删除标签后会从所有任务上移除该标签，确定继续？",
   labelColorAria: "标签颜色 {color}",
   errLabelExists: "同名标签已存在",
+
+  /* ===== 表格视图 ===== */
+  tableView: "表格",
+  colStart: "开始日期",
+  columnVisibility: "列显隐",
+  manageFields: "自定义字段",
+  fieldName: "字段名称",
+  fieldType: "字段类型",
+  fieldTypeText: "文本",
+  fieldTypeNumber: "数字",
+  fieldTypeDate: "日期",
+  fieldTypeSelect: "单选",
+  selectOptions: "选项列表",
+  selectOptionsHint: "选项用逗号或换行分隔",
+  deleteFieldAria: "删除字段 {name}",
+  confirmDeleteField: "删除字段会清空所有任务上该字段的值，确定继续？",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;

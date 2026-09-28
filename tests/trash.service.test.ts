@@ -10,11 +10,11 @@ async function seed() {
   await db.projects.add({
     id: "p1", name: "项目", description: "", statusColumns: [
       { id: "c1", name: "待办", isDone: false, order: 0 },
-    ], memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
+    ], customFields: [], memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
   });
   await db.tasks.add({
     id: "t1", projectId: "p1", title: "任务", descriptionRich: null, status: "c1",
-    assigneeId: null, dueDate: null, priority: "none", labels: [], subtasks: [],
+    assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [],
     order: "a0", archived: false, completedAt: null,
     deletedAt: null, deletedByProjectId: null,
     createdAt: now, updatedAt: now, version: 0,
@@ -91,7 +91,7 @@ describe("optimistic locking", () => {
   it("version 不匹配抛 VersionConflictError", async () => {
     await db.tasks.add({
       id: "t9", projectId: "p1", title: "x", descriptionRich: null, status: "c1",
-      assigneeId: null, dueDate: null, priority: "none", labels: [], subtasks: [],
+      assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [],
       order: "a0", archived: false, completedAt: null,
       deletedAt: null, deletedByProjectId: null,
       createdAt: now, updatedAt: now, version: 3,

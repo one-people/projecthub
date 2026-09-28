@@ -79,6 +79,7 @@ export default function ProjectLayout() {
   const tabs: { to: string; icon: IconName; label: string }[] = [
     { to: `/projects/${project.id}/board`, icon: "kanban", label: t("board") },
     { to: `/projects/${project.id}/list`, icon: "list", label: t("list") },
+    { to: `/projects/${project.id}/table`, icon: "table", label: t("tableView") },
     { to: `/projects/${project.id}/settings`, icon: "settings", label: t("settings") },
   ];
 

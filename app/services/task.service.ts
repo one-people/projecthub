@@ -9,12 +9,15 @@ export class PermissionError extends Error {}
 export interface TaskUpdatePatch {
   title?: string;
   assigneeId?: string | null;
+  startDate?: string | null;
   dueDate?: string | null;
   priority?: Task["priority"];
   descriptionRich?: unknown;
   subtasks?: Task["subtasks"];
   labels?: string[];
   status?: string;
+  /** 自定义字段值（fieldId -> 值），整包替换 */
+  customValues?: Task["customValues"];
   /** true=完成（若有完成列则同时流转状态）；false=取消完成 */
   completed?: boolean;
 }
@@ -134,6 +137,10 @@ export const taskService = {
       rest.assigneeId = patch.assigneeId;
       changed.push("负责人");
     }
+    if (patch.startDate !== undefined && patch.startDate !== current.startDate) {
+      rest.startDate = patch.startDate;
+      changed.push("开始日期");
+    }
     if (patch.dueDate !== undefined && patch.dueDate !== current.dueDate) {
       rest.dueDate = patch.dueDate;
       changed.push("截止日期");
@@ -153,6 +160,13 @@ export const taskService = {
     if (patch.labels !== undefined && patch.labels.join("\u0000") !== current.labels.join("\u0000")) {
       rest.labels = patch.labels;
       changed.push("标签");
+    }
+    if (
+      patch.customValues !== undefined &&
+      JSON.stringify(patch.customValues) !== JSON.stringify(current.customValues)
+    ) {
+      rest.customValues = patch.customValues;
+      changed.push("自定义字段");
     }
     if (Object.keys(rest).length > 0) {
       current = await taskRepository.update(taskId, rest, current.version);

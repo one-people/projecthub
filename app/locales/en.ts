@@ -218,4 +218,20 @@ export const en: Dict = {
   confirmDeleteLabel: "Deleting a label removes it from all tasks. Continue?",
   labelColorAria: "Label color {color}",
   errLabelExists: "A label with this name already exists",
+
+  /* ===== Table view ===== */
+  tableView: "Table",
+  colStart: "Start",
+  columnVisibility: "Columns",
+  manageFields: "Custom fields",
+  fieldName: "Field name",
+  fieldType: "Field type",
+  fieldTypeText: "Text",
+  fieldTypeNumber: "Number",
+  fieldTypeDate: "Date",
+  fieldTypeSelect: "Select",
+  selectOptions: "Options",
+  selectOptionsHint: "Separate options with commas or newlines",
+  deleteFieldAria: "Delete field {name}",
+  confirmDeleteField: "Deleting a field clears its values on all tasks. Continue?",
 };
