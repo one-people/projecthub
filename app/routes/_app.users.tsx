@@ -20,6 +20,8 @@ export default function UsersRoute() {
   const [meId, setMeId] = useState<string>("");
   const [newUserName, setNewUserName] = useState("");
   const [pendingDeleteUser, setPendingDeleteUser] = useState<User | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBatch, setConfirmBatch] = useState(false);
 
   useEffect(() => {
     const sub = liveQuery(async () => {
@@ -53,12 +55,43 @@ export default function UsersRoute() {
     if (!pendingDeleteUser) return;
     try {
       await userService.remove(pendingDeleteUser.id);
-      setPendingDeleteUser(null);
       toast.success(t("deleted"));
     } catch (e) {
-      setPendingDeleteUser(null);
       toast.error(e instanceof Error ? e.message : t("updateFailed"));
     }
+    setPendingDeleteUser(null);
+  }
+
+  async function batchDelete() {
+    let done = 0;
+    let failed = 0;
+    for (const id of selected) {
+      try {
+        await userService.remove(id);
+        done += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setSelected(new Set());
+    setConfirmBatch(false);
+    if (failed > 0) toast.success(t("batchDeleteResult", { done, failed }));
+    else toast.success(t("batchDeleteAllDone", { count: done }));
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const allSelected = users.length > 0 && selected.size === users.length;
+
+  function toggleSelectAll() {
+    setSelected(allSelected ? new Set() : new Set(users.map((u) => u.id)));
   }
 
   return (
@@ -69,6 +102,14 @@ export default function UsersRoute() {
           {t("usersCount", { count: users.length })}
         </span>
         <span className="page-toolbar__spacer" />
+        <button
+          className="btn btn--danger"
+          disabled={selected.size === 0}
+          onClick={() => setConfirmBatch(true)}
+        >
+          <Icon name="trash" size={15} />{t("batchDeleteUsers")}
+          {selected.size > 0 && ` (${selected.size})`}
+        </button>
         <form
           style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
           onSubmit={(e) => {
@@ -81,6 +122,12 @@ export default function UsersRoute() {
             style={{ width: 220 }}
             value={newUserName}
             onChange={(e) => setNewUserName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void addUser();
+              }
+            }}
             placeholder={t("newUserNamePlaceholder")}
             aria-label={t("newUserNamePlaceholder")}
           />
@@ -92,6 +139,28 @@ export default function UsersRoute() {
       <p className="hint" style={{ marginTop: 0 }}>{t("userManagementHint")}</p>
 
       <section className="card">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 8,
+            borderBottom: "1px solid var(--color-border)",
+            paddingBottom: 8,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            aria-label={t("selectAllUsers")}
+          />
+          <span className="hint">
+            {selected.size > 0
+              ? t("selectedCount", { count: selected.size })
+              : t("usersCount", { count: users.length })}
+          </span>
+        </div>
         <ul className="user-list">
           {users.map((u) => {
             const owned = projects.filter((p) => p.ownerId === u.id).length;
@@ -101,6 +170,12 @@ export default function UsersRoute() {
             const isMe = u.id === meId;
             return (
               <li key={u.id} className="user-row">
+                <input
+                  type="checkbox"
+                  checked={selected.has(u.id)}
+                  onChange={() => toggleSelect(u.id)}
+                  aria-label={t("selectUserAria", { name: u.name })}
+                />
                 <span className="avatar" style={{ background: u.avatarColor }}>{u.name.slice(0, 1)}</span>
                 <span style={{ fontWeight: 600, fontSize: 13, minWidth: 80 }}>
                   {u.name}
@@ -129,6 +204,14 @@ export default function UsersRoute() {
         danger
         onConfirm={() => void deleteUser()}
         onCancel={() => setPendingDeleteUser(null)}
+      />
+      <ConfirmDialog
+        open={confirmBatch}
+        title={t("batchDeleteUsers")}
+        message={t("confirmBatchDeleteUsers", { count: selected.size })}
+        danger
+        onConfirm={() => void batchDelete()}
+        onCancel={() => setConfirmBatch(false)}
       />
     </div>
   );
