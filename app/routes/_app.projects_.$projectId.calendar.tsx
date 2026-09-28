@@ -132,7 +132,7 @@ export default function CalendarRoute() {
         onPatch={patchTask}
         onCreate={(title, dayKey) => void createOnDay(title, dayKey)}
       />
-      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} />
+      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
     </div>
   );
 }

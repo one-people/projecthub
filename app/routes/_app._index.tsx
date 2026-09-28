@@ -163,7 +163,7 @@ export default function WorkbenchRoute() {
         </aside>
       </div>
 
-      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} />
+      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
     </div>
   );
 }

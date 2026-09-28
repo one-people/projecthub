@@ -202,7 +202,7 @@ export default function TableRoute() {
           </button>
         ) : null}
       </div>
-      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} />
+      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
       <ConfirmDialog
         open={Boolean(pendingDeleteField)}
         title={t("deleteFieldAria", { name: pendingDeleteField?.name ?? "" })}

@@ -247,6 +247,30 @@ export const zhCN = {
   calFri: "五",
   calSat: "六",
   calSun: "日",
+
+  /* ===== 任务关联/依赖 ===== */
+  fieldLinks: "关联",
+  noLinks: "暂无关联",
+  linkPredecessor: "前置任务",
+  linkSuccessor: "后续任务",
+  linkRelated: "相关任务",
+  linkModePre: "前置",
+  linkModeSucc: "后续",
+  linkModeRel: "相关",
+  linkSelfError: "不能与自身建立关联",
+  linkExistsError: "两个任务已存在关联",
+  linkCycleError: "添加后会形成循环依赖",
+  confirmBlockedComplete: "该任务还有 {count} 个前置任务未完成，仍要标记为完成？",
+  removeLinkAria: "移除与 {title} 的关联",
+  blockedCountAria: "{count} 个前置任务",
+
+  /* ===== 甘特/时间线 ===== */
+  timelineView: "时间线",
+  zoomDay: "日",
+  zoomWeek: "周",
+  zoomMonth: "月",
+  tlToday: "今天",
+  tlNoDates: "未设置日期",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;

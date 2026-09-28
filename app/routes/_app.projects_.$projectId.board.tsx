@@ -109,7 +109,7 @@ export default function BoardRoute() {
         onToggleDone={handleToggleDone}
         onCreate={handleCreate}
       />
-      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} />
+      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
     </>
   );
 }

@@ -249,4 +249,28 @@ export const en: Dict = {
   calFri: "Fri",
   calSat: "Sat",
   calSun: "Sun",
+
+  /* ===== Task links / dependencies ===== */
+  fieldLinks: "Links",
+  noLinks: "No links",
+  linkPredecessor: "Predecessors",
+  linkSuccessor: "Successors",
+  linkRelated: "Related",
+  linkModePre: "Precede",
+  linkModeSucc: "Succeed",
+  linkModeRel: "Relate",
+  linkSelfError: "Cannot link a task to itself",
+  linkExistsError: "These two tasks are already linked",
+  linkCycleError: "Adding this would create a dependency cycle",
+  confirmBlockedComplete: "This task still has {count} incomplete predecessors. Mark complete anyway?",
+  removeLinkAria: "Remove link to {title}",
+  blockedCountAria: "{count} predecessors",
+
+  /* ===== Gantt / timeline ===== */
+  timelineView: "Timeline",
+  zoomDay: "Day",
+  zoomWeek: "Week",
+  zoomMonth: "Month",
+  tlToday: "Today",
+  tlNoDates: "No dates",
 };

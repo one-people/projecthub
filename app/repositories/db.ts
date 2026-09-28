@@ -69,6 +69,10 @@ class ProjectHubDB extends Dexie {
       projectTemplates: "id",
       taskTemplates: "id, projectId",
     });
+    // v5：任务关联表增加 projectId 索引（按项目列出关联）
+    this.version(5).stores({
+      taskLinks: "id, projectId, fromTaskId, toTaskId",
+    });
   }
 }
 

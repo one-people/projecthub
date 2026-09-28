@@ -6,12 +6,14 @@ import type { Task, Priority, Subtask } from "~/models/task";
 import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
 import type { Label } from "~/models/label";
+import type { TaskLink } from "~/models/taskLink";
 import type { RoleId } from "~/auth/rbac";
 import { can } from "~/auth/rbac";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
 import { taskService, PermissionError, type TaskUpdatePatch } from "~/services/task.service";
 import { labelService } from "~/services/label.service";
+import { taskLinkService, LinkError } from "~/services/taskLink.service";
 import { commentService } from "~/services/comment.service";
 import { trashService } from "~/services/trash.service";
 import { RichTextEditor, renderRichText } from "~/components/editor/RichTextEditor";
@@ -29,14 +31,23 @@ import { uuid } from "~/lib/id";
 export interface TaskDrawerProps {
   task: Task | null;
   onClose: () => void;
+  /** 点击关联任务跳转打开（由路由提供） */
+  onOpenTask?: (taskId: string) => void;
 }
 
-type Picker = "assignee" | "priority" | "status" | "labels" | null;
+type Picker = "assignee" | "priority" | "status" | "labels" | "links" | null;
+type LinkMode = "predecessor" | "successor" | "related";
+
+const LINK_MODE_KEY: Record<LinkMode, "linkModePre" | "linkModeSucc" | "linkModeRel"> = {
+  predecessor: "linkModePre",
+  successor: "linkModeSucc",
+  related: "linkModeRel",
+};
 
 const PRIORITIES: Priority[] = ["urgent", "high", "medium", "low", "none"];
 
 /** 任务详情右侧抽屉（Worktile 式）：行内编辑字段 + 子任务 + 评论/动态 */
-export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
+export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   const { t, locale } = useI18n();
   const toast = useToast();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -45,11 +56,16 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
   const [project, setProject] = useState<Project | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
+  const [links, setLinks] = useState<TaskLink[]>([]);
+  const [projectTasks, setProjectTasks] = useState<Task[]>([]);
+  const [linkMode, setLinkMode] = useState<LinkMode>("predecessor");
+  const [linkQuery, setLinkQuery] = useState("");
   const [newLabelName, setNewLabelName] = useState("");
   const [actor, setActor] = useState<{ id: string; role: RoleId } | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [picker, setPicker] = useState<Picker>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pendingComplete, setPendingComplete] = useState(false);
 
   const [titleDraft, setTitleDraft] = useState("");
   const [editingDesc, setEditingDesc] = useState(false);
@@ -89,6 +105,23 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
     const sub = liveQuery(() =>
       db.labels.where("projectId").equals(task!.projectId).toArray(),
     ).subscribe((rows) => setLabels(rows));
+    return () => sub.unsubscribe();
+  }, [taskId, task?.projectId]);
+
+  // 任务关联 + 同项目任务（关联选择器候选）
+  useEffect(() => {
+    if (!taskId) return;
+    const sub = liveQuery(() =>
+      db.taskLinks.where("projectId").equals(task!.projectId).toArray(),
+    ).subscribe((rows) => setLinks(rows));
+    return () => sub.unsubscribe();
+  }, [taskId, task?.projectId]);
+
+  useEffect(() => {
+    if (!taskId) return;
+    const sub = liveQuery(() =>
+      db.tasks.where("projectId").equals(task!.projectId).toArray(),
+    ).subscribe((rows) => setProjectTasks(rows.filter((r) => r.deletedAt === null)));
     return () => sub.unsubscribe();
   }, [taskId, task?.projectId]);
 
@@ -137,6 +170,48 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
   const assignee = task.assigneeId ? users.find((u) => u.id === task.assigneeId) : undefined;
   const prio = PRIORITY_META[task.priority];
   const statusColumn = columns.find((c) => c.id === task.status);
+
+  // 关联分组：前置（阻塞本任务）/ 后续（被本任务阻塞）/ 相关
+  const taskById = new Map(projectTasks.map((tk) => [tk.id, tk]));
+  const predecessorLinks = links.filter((l) => l.type === "blocks" && l.toTaskId === task.id);
+  const successorLinks = links.filter((l) => l.type === "blocks" && l.fromTaskId === task.id);
+  const relatedLinks = links.filter(
+    (l) => l.type === "relates" && (l.fromTaskId === task.id || l.toTaskId === task.id),
+  );
+  const openBlockers = predecessorLinks
+    .map((l) => taskById.get(l.fromTaskId))
+    .filter((tk): tk is Task => Boolean(tk) && !tk!.completedAt);
+  const linkResults = projectTasks
+    .filter((tk) => tk.id !== task.id && !links.some(
+      (l) =>
+        (l.fromTaskId === task.id && l.toTaskId === tk.id) ||
+        (l.toTaskId === task.id && l.fromTaskId === tk.id),
+    ))
+    .filter((tk) => tk.title.toLowerCase().includes(linkQuery.trim().toLowerCase()));
+
+  function requestComplete() {
+    if (!done && openBlockers.length > 0) setPendingComplete(true);
+    else void apply({ completed: !done });
+  }
+
+  async function addLink(target: Task) {
+    if (!task || !actor) return;
+    const input =
+      linkMode === "predecessor"
+        ? { fromTaskId: target.id, toTaskId: task.id, type: "blocks" as const }
+        : linkMode === "successor"
+          ? { fromTaskId: task.id, toTaskId: target.id, type: "blocks" as const }
+          : { fromTaskId: task.id, toTaskId: target.id, type: "relates" as const };
+    try {
+      await taskLinkService.add({ projectId: task.projectId, ...input });
+    } catch (e) {
+      if (e instanceof LinkError) {
+        toast.error(t(e.code === "self" ? "linkSelfError" : e.code === "exists" ? "linkExistsError" : "linkCycleError"));
+      } else {
+        toast.error(t("updateFailed"));
+      }
+    }
+  }
 
   async function apply(patch: TaskUpdatePatch) {
     if (!actor || !task) return;
@@ -231,7 +306,7 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
           <button
             type="button"
             className={`check${done ? " is-done" : ""}`}
-            onClick={() => void apply({ completed: !done })}
+            onClick={requestComplete}
             disabled={!canEdit}
             aria-label={done ? t("markUndone") : t("markDone")}
             aria-pressed={done}
@@ -494,6 +569,117 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
             </div>
           ))}
 
+          {fieldRow("link", t("fieldLinks"), (
+            <div className="field-row__value field-row__value--block" style={{ position: "relative" }}>
+              {predecessorLinks.length + successorLinks.length + relatedLinks.length === 0 ? (
+                canEdit ? (
+                  <button
+                    type="button"
+                    className="field-row__value field-row__value--editable field-row__value--empty"
+                    onClick={() => setPicker(picker === "links" ? null : "links")}
+                    aria-haspopup="dialog"
+                    aria-expanded={picker === "links"}
+                  >
+                    {t("noLinks")}
+                    <Icon name="chevronDown" size={13} />
+                  </button>
+                ) : (
+                  <span className="field-row__value field-row__value--empty">{t("noLinks")}</span>
+                )
+              ) : (
+                <span className="drawer__link-groups">
+                  {([
+                    [t("linkPredecessor"), predecessorLinks.map((l) => ({ link: l, other: taskById.get(l.fromTaskId) }))],
+                    [t("linkSuccessor"), successorLinks.map((l) => ({ link: l, other: taskById.get(l.toTaskId) }))],
+                    [t("linkRelated"), relatedLinks.map((l) => ({ link: l, other: taskById.get(l.fromTaskId === task.id ? l.toTaskId : l.fromTaskId) }))],
+                  ] as const).map(([label, items]) =>
+                    items.length === 0 ? null : (
+                      <span className="drawer__link-group" key={label}>
+                        <span className="drawer__link-group-label">{label}</span>
+                        {items.map(({ link, other }) =>
+                          other ? (
+                            <span key={link.id} className={`drawer__link-chip${other.completedAt ? " is-done" : ""}`}>
+                              <button
+                                type="button"
+                                className="drawer__link-jump"
+                                onClick={() => onOpenTask?.(other.id)}
+                                disabled={!onOpenTask}
+                                title={other.title}
+                              >
+                                {other.title}
+                              </button>
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  className="drawer__link-remove"
+                                  onClick={() => void taskLinkService.remove(link.id)}
+                                  aria-label={t("removeLinkAria", { title: other.title })}
+                                >
+                                  <Icon name="close" size={11} />
+                                </button>
+                              )}
+                            </span>
+                          ) : null,
+                        )}
+                      </span>
+                    ),
+                  )}
+                </span>
+              )}
+              {canEdit && (predecessorLinks.length + successorLinks.length + relatedLinks.length) > 0 && (
+                <button
+                  type="button"
+                  className="drawer__link-add"
+                  onClick={() => setPicker(picker === "links" ? null : "links")}
+                  aria-haspopup="dialog"
+                  aria-expanded={picker === "links"}
+                  aria-label={t("fieldLinks")}
+                >
+                  <Icon name="plus" size={12} />
+                </button>
+              )}
+              <Popover open={picker === "links"} onClose={() => setPicker(null)} label={t("fieldLinks")}>
+                <div className="popover__seg" role="group" aria-label={t("fieldLinks")}>
+                  {(Object.keys(LINK_MODE_KEY) as LinkMode[]).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`popover__seg-btn${linkMode === m ? " is-active" : ""}`}
+                      onClick={() => setLinkMode(m)}
+                    >
+                      {t(LINK_MODE_KEY[m])}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  className="input"
+                  value={linkQuery}
+                  onChange={(e) => setLinkQuery(e.target.value)}
+                  placeholder={t("searchTasks")}
+                  aria-label={t("searchTasks")}
+                  style={{ width: "100%", marginBottom: 6 }}
+                />
+                <div className="popover__list">
+                  {linkResults.length === 0 ? (
+                    <span className="popover__item popover__item--static">{t("noResults")}</span>
+                  ) : (
+                    linkResults.map((tk) => (
+                      <button
+                        key={tk.id}
+                        type="button"
+                        className="popover__item"
+                        onClick={() => void addLink(tk)}
+                      >
+                        {tk.title}
+                        {tk.completedAt && <Icon name="check" size={13} />}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </Popover>
+            </div>
+          ))}
+
           <section className="drawer__section" aria-label={t("fieldDescription")}>
             <h3 className="drawer__section-title">{t("fieldDescription")}</h3>
             {editingDesc && canEdit ? (
@@ -632,6 +818,16 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
             }
           }}
           onCancel={() => setConfirmDelete(false)}
+        />
+        <ConfirmDialog
+          open={pendingComplete}
+          title={t("markDone")}
+          message={t("confirmBlockedComplete", { count: openBlockers.length })}
+          onConfirm={() => {
+            setPendingComplete(false);
+            void apply({ completed: true });
+          }}
+          onCancel={() => setPendingComplete(false)}
         />
       </aside>
     </>

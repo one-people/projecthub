@@ -79,9 +79,11 @@ export const taskRepository = {
   },
 
   async purge(id: string): Promise<void> {
-    await db.transaction("rw", db.tasks, db.comments, async () => {
+    await db.transaction("rw", db.tasks, db.comments, db.taskLinks, async () => {
       await db.tasks.delete(id);
       await db.comments.where("taskId").equals(id).delete();
+      await db.taskLinks.where("fromTaskId").equals(id).delete();
+      await db.taskLinks.where("toTaskId").equals(id).delete();
     });
   },
 };

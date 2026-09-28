@@ -81,6 +81,7 @@ export default function ProjectLayout() {
     { to: `/projects/${project.id}/list`, icon: "list", label: t("list") },
     { to: `/projects/${project.id}/table`, icon: "table", label: t("tableView") },
     { to: `/projects/${project.id}/calendar`, icon: "calendar", label: t("calendarView") },
+    { to: `/projects/${project.id}/timeline`, icon: "timeline", label: t("timelineView") },
     { to: `/projects/${project.id}/settings`, icon: "settings", label: t("settings") },
   ];
 

@@ -183,7 +183,7 @@ export default function ListRoute() {
           </button>
         </div>
       )}
-      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} />
+      <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
       <ConfirmDialog
         open={confirmBatch}
         title={t("batchDelete")}
