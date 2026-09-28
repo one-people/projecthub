@@ -11,7 +11,7 @@ import type { Project } from "~/models/project";
 
 export const handle = { crumb: () => ({ label: translate("usersMenu") }) };
 
-/** 用户管理：本机本地用户的新建 / 删除（身份切换入口在左下角头像） */
+/** 用户管理：左列用户清单（筛选/批量删除），右列新建用户（身份切换入口在左下角头像） */
 export default function UsersRoute() {
   const { t } = useI18n();
   const toast = useToast();
@@ -22,6 +22,7 @@ export default function UsersRoute() {
   const [pendingDeleteUser, setPendingDeleteUser] = useState<User | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBatch, setConfirmBatch] = useState(false);
+  const [filter, setFilter] = useState("");
 
   useEffect(() => {
     const sub = liveQuery(async () => {
@@ -88,10 +89,14 @@ export default function UsersRoute() {
     });
   }
 
-  const allSelected = users.length > 0 && selected.size === users.length;
+  const keyword = filter.trim().toLowerCase();
+  const visible = keyword
+    ? users.filter((u) => u.name.toLowerCase().includes(keyword))
+    : users;
+  const allSelected = visible.length > 0 && visible.every((u) => selected.has(u.id));
 
   function toggleSelectAll() {
-    setSelected(allSelected ? new Set() : new Set(users.map((u) => u.id)));
+    setSelected(allSelected ? new Set() : new Set(visible.map((u) => u.id)));
   }
 
   return (
@@ -102,100 +107,110 @@ export default function UsersRoute() {
           {t("usersCount", { count: users.length })}
         </span>
         <span className="page-toolbar__spacer" />
-        <button
-          className="btn btn--danger"
-          disabled={selected.size === 0}
-          onClick={() => setConfirmBatch(true)}
-        >
-          <Icon name="trash" size={15} />{t("batchDeleteUsers")}
-          {selected.size > 0 && ` (${selected.size})`}
-        </button>
-        <form
-          style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            void addUser();
-          }}
-        >
-          <input
-            className="input"
-            style={{ width: 220 }}
-            value={newUserName}
-            onChange={(e) => setNewUserName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void addUser();
-              }
-            }}
-            placeholder={t("newUserNamePlaceholder")}
-            aria-label={t("newUserNamePlaceholder")}
-          />
-          <button type="submit" className="btn btn--primary" disabled={!newUserName.trim()}>
-            <Icon name="plus" size={15} />{t("addUser")}
+        {selected.size > 0 && (
+          <button className="btn btn--danger" onClick={() => setConfirmBatch(true)}>
+            <Icon name="trash" size={15} />{t("batchDeleteUsers")} ({selected.size})
           </button>
-        </form>
+        )}
       </div>
-      <p className="hint" style={{ marginTop: 0 }}>{t("userManagementHint")}</p>
 
-      <section className="card">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 8,
-            borderBottom: "1px solid var(--color-border)",
-            paddingBottom: 8,
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={allSelected}
-            onChange={toggleSelectAll}
-            aria-label={t("selectAllUsers")}
-          />
-          <span className="hint">
-            {selected.size > 0
-              ? t("selectedCount", { count: selected.size })
-              : t("usersCount", { count: users.length })}
-          </span>
-        </div>
-        <ul className="user-list">
-          {users.map((u) => {
-            const owned = projects.filter((p) => p.ownerId === u.id).length;
-            const memberOf = projects.filter(
-              (p) => p.ownerId !== u.id && p.memberRoles[u.id],
-            ).length;
-            const isMe = u.id === meId;
-            return (
-              <li key={u.id} className="user-row">
-                <input
-                  type="checkbox"
-                  checked={selected.has(u.id)}
-                  onChange={() => toggleSelect(u.id)}
-                  aria-label={t("selectUserAria", { name: u.name })}
-                />
-                <span className="avatar" style={{ background: u.avatarColor }}>{u.name.slice(0, 1)}</span>
-                <span style={{ fontWeight: 600, fontSize: 13, minWidth: 80 }}>
-                  {u.name}
-                  {isMe && <span className="hint">{t("itsYou")}</span>}
-                </span>
-                {owned > 0 && <span className="badge badge--role">{t("ownsProjectsCount", { count: owned })}</span>}
-                {memberOf > 0 && <span className="badge">{t("memberProjectsCount", { count: memberOf })}</span>}
-                <span style={{ flex: 1 }} />
-                <button
-                  className="btn btn--danger"
-                  onClick={() => setPendingDeleteUser(u)}
-                  aria-label={t("deleteUserAria", { name: u.name })}
-                >
-                  <Icon name="trash" size={14} />{t("actionDelete")}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+      <div className="users-layout">
+        <section className="card">
+          <div className="users-list-head">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              aria-label={t("selectAllUsers")}
+            />
+            <span className="hint">
+              {selected.size > 0
+                ? t("selectedCount", { count: selected.size })
+                : t("allUsers", { count: visible.length })}
+            </span>
+            <span style={{ flex: 1 }} />
+            <div style={{ position: "relative" }}>
+              <Icon name="search" size={14} className="users-filter__icon" />
+              <input
+                className="input users-filter"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder={t("searchUsers")}
+                aria-label={t("searchUsers")}
+              />
+            </div>
+          </div>
+          <ul className="user-list">
+            {visible.map((u) => {
+              const owned = projects.filter((p) => p.ownerId === u.id).length;
+              const memberOf = projects.filter(
+                (p) => p.ownerId !== u.id && p.memberRoles[u.id],
+              ).length;
+              const isMe = u.id === meId;
+              return (
+                <li key={u.id} className="user-row">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(u.id)}
+                    onChange={() => toggleSelect(u.id)}
+                    aria-label={t("selectUserAria", { name: u.name })}
+                  />
+                  <span className="avatar" style={{ background: u.avatarColor }}>{u.name.slice(0, 1)}</span>
+                  <span style={{ fontWeight: 600, fontSize: 13, minWidth: 72 }}>
+                    {u.name}
+                    {isMe && <span className="hint">{t("itsYou")}</span>}
+                  </span>
+                  {owned > 0 && <span className="badge badge--role">{t("ownsProjectsCount", { count: owned })}</span>}
+                  {memberOf > 0 && <span className="badge">{t("memberProjectsCount", { count: memberOf })}</span>}
+                  <span style={{ flex: 1 }} />
+                  <button
+                    className="btn btn--danger"
+                    onClick={() => setPendingDeleteUser(u)}
+                    aria-label={t("deleteUserAria", { name: u.name })}
+                  >
+                    <Icon name="trash" size={14} />{t("actionDelete")}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {visible.length === 0 && (
+            <p className="empty" style={{ marginBottom: 0 }}>{t("noMatchUsers")}</p>
+          )}
+        </section>
+
+        <section className="card">
+          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Icon name="user" size={16} />
+            {t("addUser")}
+          </h2>
+          <form
+            style={{ display: "flex", flexDirection: "column", gap: 8 }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void addUser();
+            }}
+          >
+            <input
+              className="input"
+              value={newUserName}
+              onChange={(e) => setNewUserName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void addUser();
+                }
+              }}
+              placeholder={t("newUserNamePlaceholder")}
+              aria-label={t("newUserNamePlaceholder")}
+            />
+            <button type="submit" className="btn btn--primary" disabled={!newUserName.trim()}>
+              <Icon name="plus" size={15} />{t("addUser")}
+            </button>
+          </form>
+          <p className="hint">{t("userManagementHint")}</p>
+        </section>
+      </div>
 
       <ConfirmDialog
         open={Boolean(pendingDeleteUser)}
