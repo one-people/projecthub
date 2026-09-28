@@ -273,4 +273,16 @@ export const en: Dict = {
   zoomMonth: "Month",
   tlToday: "Today",
   tlNoDates: "No dates",
+
+  /* ===== Milestones ===== */
+  tabMilestones: "Milestones",
+  milestoneTitle: "Milestone title",
+  milestoneDate: "Milestone date",
+  addMilestone: "Add milestone",
+  noMilestones: "No milestones yet — add one to mark a key checkpoint",
+  msProgress: "{done}/{total} completed",
+  deleteMilestoneAria: "Delete milestone {name}",
+  confirmDeleteMilestone: "This cannot be undone. Delete this milestone?",
+  toggleMilestoneAria: "Toggle milestone {name}",
+  colProgressAria: "{done} of {total} completed in this column",
 };

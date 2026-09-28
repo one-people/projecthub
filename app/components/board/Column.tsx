@@ -31,6 +31,7 @@ export function Column({
   });
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
+  const doneCount = tasks.filter((t) => t.completedAt).length;
 
   function submit() {
     const title = draft.trim();
@@ -48,6 +49,13 @@ export function Column({
         <span className="board-column__dot" />
         <span className="board-column__name">{column.name}</span>
         <span className="board-column__count">{tasks.length}</span>
+        <span
+          className="board-column__progress"
+          aria-hidden
+          title={t("colProgressAria", { done: doneCount, total: tasks.length })}
+        >
+          <span style={{ width: tasks.length ? `${(doneCount / tasks.length) * 100}%` : "0%" }} />
+        </span>
         {canCreate && (
           <button
             type="button"

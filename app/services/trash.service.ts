@@ -73,7 +73,7 @@ export const trashService = {
   },
 
   async purgeProject(projectId: string): Promise<void> {
-    await db.transaction("rw", db.projects, db.tasks, db.comments, db.taskLinks, async () => {
+    await db.transaction("rw", db.projects, db.tasks, db.comments, db.taskLinks, db.milestones, async () => {
       const tasks = await db.tasks.where("projectId").equals(projectId).toArray();
       for (const t of tasks) {
         await db.comments.where("taskId").equals(t.id).delete();
@@ -82,6 +82,7 @@ export const trashService = {
         await db.tasks.delete(t.id);
       }
       await db.taskLinks.where("projectId").equals(projectId).delete();
+      await db.milestones.where("projectId").equals(projectId).delete();
       await db.projects.delete(projectId);
     });
   },

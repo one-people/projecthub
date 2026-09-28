@@ -2419,3 +2419,72 @@ select.input {
   color: var(--color-surface);
   font-size: 10px;
 }
+
+/* ===== 时间线里程碑泳道 ===== */
+.tl__ms {
+  position: relative;
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-primary) 2%, var(--color-surface));
+}
+.tl__ms-name {
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.tl__ms-lane { position: relative; flex-shrink: 0; }
+.tl__ms-item {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+.tl__ms-diamond {
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  border: 2px solid var(--color-primary);
+  border-radius: 2px;
+  background: var(--color-surface);
+  transform: rotate(45deg);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.tl__ms-diamond:disabled { cursor: default; }
+.tl__ms-diamond:hover:not(:disabled) { filter: brightness(1.15); }
+.tl__ms-item.is-done .tl__ms-diamond { background: var(--color-primary); }
+.tl__ms-item.is-overdue .tl__ms-diamond { border-color: #dc2626; }
+.tl__ms-item.is-overdue.is-done .tl__ms-diamond { background: #dc2626; border-color: #dc2626; }
+.tl__ms-title {
+  margin-left: 10px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  transform: translateX(4px);
+}
+.tl__ms-item.is-done .tl__ms-title { text-decoration: line-through; }
+
+/* ===== 看板列头完成进度条 ===== */
+.board-column__header { position: relative; }
+.board-column__progress {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border-strong) 45%, transparent);
+  overflow: hidden;
+}
+.board-column__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--col-c, var(--color-primary)) 75%, transparent);
+  transition: width 0.25s ease;
+}

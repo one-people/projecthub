@@ -271,6 +271,18 @@ export const zhCN = {
   zoomMonth: "月",
   tlToday: "今天",
   tlNoDates: "未设置日期",
+
+  /* ===== 里程碑 ===== */
+  tabMilestones: "里程碑",
+  milestoneTitle: "里程碑标题",
+  milestoneDate: "里程碑日期",
+  addMilestone: "添加里程碑",
+  noMilestones: "暂无里程碑，添加一个标记关键节点",
+  msProgress: "已完成 {done}/{total}",
+  deleteMilestoneAria: "删除里程碑 {name}",
+  confirmDeleteMilestone: "删除后不可恢复，确定删除该里程碑？",
+  toggleMilestoneAria: "切换里程碑完成状态 {name}",
+  colProgressAria: "本列已完成 {done}/{total}",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;

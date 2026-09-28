@@ -5,7 +5,9 @@ import { db } from "~/repositories/db";
 import { can, type RoleId } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
 import { labelService } from "~/services/label.service";
+import { milestoneService } from "~/services/milestone.service";
 import { LABEL_COLORS, type Label } from "~/models/label";
+import type { Milestone } from "~/models/milestone";
 import { uuid } from "~/lib/id";
 import { useI18n, t as translate } from "~/lib/i18n";
 import type { Dict } from "~/locales/zh-CN";
@@ -17,7 +19,7 @@ import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: translate("projectSettings") }) };
 
-type Tab = "basic" | "members" | "columns" | "labels" | "danger";
+type Tab = "basic" | "members" | "columns" | "labels" | "milestones" | "danger";
 const ROLE_OPTIONS: RoleId[] = ["admin", "projectAdmin", "member", "guest"];
 
 const TAB_KEY: Record<Tab, keyof Dict> = {
@@ -25,6 +27,7 @@ const TAB_KEY: Record<Tab, keyof Dict> = {
   members: "tabMembers",
   columns: "tabColumns",
   labels: "tabLabels",
+  milestones: "tabMilestones",
   danger: "tabDanger",
 };
 
@@ -43,6 +46,10 @@ export default function ProjectSettingsRoute() {
   const [labels, setLabels] = useState<Label[]>([]);
   const [newLabelName, setNewLabelName] = useState("");
   const [pendingDeleteLabel, setPendingDeleteLabel] = useState<Label | null>(null);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [msTitle, setMsTitle] = useState("");
+  const [msDate, setMsDate] = useState("");
+  const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<Milestone | null>(null);
 
   useEffect(() => {
     setName((prev) => (prev ? prev : project.name));
@@ -53,6 +60,16 @@ export default function ProjectSettingsRoute() {
     const sub = liveQuery(() =>
       db.labels.where("projectId").equals(project.id).toArray(),
     ).subscribe((rows) => setLabels(rows));
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.milestones.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => {
+      rows.sort((a, b) => (a.date === b.date ? a.createdAt.localeCompare(b.createdAt) : a.date < b.date ? -1 : 1));
+      setMilestones(rows);
+    });
     return () => sub.unsubscribe();
   }, [project.id]);
 
@@ -147,6 +164,43 @@ export default function ProjectSettingsRoute() {
     toast.success(t("deleted"));
   }
 
+  async function addMilestone() {
+    if (!msTitle.trim() || !msDate) return;
+    try {
+      await milestoneService.create(project.id, msTitle, `${msDate}T00:00:00`);
+      setMsTitle("");
+      setMsDate("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function renameMilestone(ms: Milestone, title: string) {
+    const trimmed = title.trim();
+    if (!trimmed || trimmed === ms.title) return;
+    try {
+      await milestoneService.update(ms.id, { title: trimmed });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function rescheduleMilestone(ms: Milestone, date: string) {
+    if (!date || `${date}T00:00:00` === ms.date) return;
+    await milestoneService.update(ms.id, { date: `${date}T00:00:00` });
+  }
+
+  async function toggleMilestone(ms: Milestone, done: boolean) {
+    await milestoneService.update(ms.id, { doneAt: done ? new Date().toISOString() : null });
+  }
+
+  async function deleteMilestone() {
+    if (!pendingDeleteMilestone) return;
+    await milestoneService.remove(pendingDeleteMilestone.id);
+    setPendingDeleteMilestone(null);
+    toast.success(t("deleted"));
+  }
+
   async function deleteProject() {
     if (confirmText !== current.name) return;
     await trashService.deleteProject(actorId, role, current.id);
@@ -165,7 +219,7 @@ export default function ProjectSettingsRoute() {
   return (
     <div className="page-pad">
       <nav className="tabs settings-tabs" aria-label={t("projectSettings")}>
-        {(["basic", "members", "columns", "labels", "danger"] as Tab[]).map((k) => (
+        {(["basic", "members", "columns", "labels", "milestones", "danger"] as Tab[]).map((k) => (
           <button
             key={k}
             type="button"
@@ -348,6 +402,80 @@ export default function ProjectSettingsRoute() {
         </section>
       )}
 
+      {tab === "milestones" && (
+        <section className="card">
+          {milestones.length > 0 && (
+            <p className="hint" style={{ marginTop: 0 }}>
+              {t("msProgress", { done: milestones.filter((m) => m.doneAt).length, total: milestones.length })}
+            </p>
+          )}
+          <ul className="user-list">
+            {milestones.map((ms) => (
+              <li key={ms.id} className="user-row">
+                <input
+                  type="checkbox"
+                  checked={Boolean(ms.doneAt)}
+                  disabled={!canManage}
+                  onChange={(e) => void toggleMilestone(ms, e.target.checked)}
+                  aria-label={t("toggleMilestoneAria", { name: ms.title })}
+                />
+                <input
+                  className="input"
+                  style={{ maxWidth: 240 }}
+                  defaultValue={ms.title}
+                  disabled={!canManage}
+                  onBlur={(e) => void renameMilestone(ms, e.target.value)}
+                  aria-label={t("milestoneTitle")}
+                />
+                <input
+                  type="date"
+                  className="input"
+                  style={{ maxWidth: 170 }}
+                  defaultValue={ms.date.slice(0, 10)}
+                  disabled={!canManage}
+                  onBlur={(e) => void rescheduleMilestone(ms, e.target.value)}
+                  aria-label={t("milestoneDate")}
+                />
+                <span style={{ flex: 1 }} />
+                <button
+                  className="btn btn--danger"
+                  disabled={!canManage}
+                  onClick={() => setPendingDeleteMilestone(ms)}
+                  aria-label={t("deleteMilestoneAria", { name: ms.title })}
+                >
+                  <Icon name="trash" size={14} />{t("actionDelete")}
+                </button>
+              </li>
+            ))}
+            {milestones.length === 0 && <p className="empty">{t("noMilestones")}</p>}
+          </ul>
+          {canManage && (
+            <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+              <input
+                className="input"
+                style={{ maxWidth: 240 }}
+                value={msTitle}
+                onChange={(e) => setMsTitle(e.target.value)}
+                placeholder={t("milestoneTitle")}
+                aria-label={t("milestoneTitle")}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addMilestone(); } }}
+              />
+              <input
+                type="date"
+                className="input"
+                style={{ maxWidth: 170 }}
+                value={msDate}
+                onChange={(e) => setMsDate(e.target.value)}
+                aria-label={t("milestoneDate")}
+              />
+              <button className="btn" disabled={!msTitle.trim() || !msDate} onClick={() => void addMilestone()}>
+                <Icon name="plus" size={15} />{t("addMilestone")}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
       {tab === "danger" && (
         <section className="danger-zone card">
           <h2 className="section-title" style={{ color: "var(--color-danger)" }}>{t("dangerZone")}</h2>
@@ -389,6 +517,14 @@ export default function ProjectSettingsRoute() {
         danger
         onConfirm={() => pendingDeleteLabel && void deleteLabel(pendingDeleteLabel)}
         onCancel={() => setPendingDeleteLabel(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(pendingDeleteMilestone)}
+        title={t("deleteMilestoneAria", { name: pendingDeleteMilestone?.title ?? "" })}
+        message={t("confirmDeleteMilestone")}
+        danger
+        onConfirm={() => void deleteMilestone()}
+        onCancel={() => setPendingDeleteMilestone(null)}
       />
     </div>
   );

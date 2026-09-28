@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { useOutletContext, useParams } from "@remix-run/react";
+import { useOutletContext } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { TimelineView, type TimelineZoom } from "~/components/timeline/TimelineView";
 import { TaskDrawer } from "~/components/task/TaskDrawer";
 import { db } from "~/repositories/db";
+import { milestoneService } from "~/services/milestone.service";
+import { can } from "~/auth/rbac";
 import type { Task } from "~/models/task";
 import type { TaskLink } from "~/models/taskLink";
+import type { Milestone } from "~/models/milestone";
 import { t as translate, useI18n } from "~/lib/i18n";
 import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
@@ -15,10 +18,11 @@ const ZOOMS: TimelineZoom[] = ["day", "week", "month"];
 const ZOOM_KEY = { day: "zoomDay", week: "zoomWeek", month: "zoomMonth" } as const;
 
 export default function TimelineRoute() {
-  const { project } = useOutletContext<ProjectOutletContext>();
+  const { project, role } = useOutletContext<ProjectOutletContext>();
   const { t } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [links, setLinks] = useState<TaskLink[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [zoom, setZoom] = useState<TimelineZoom>("week");
 
@@ -44,11 +48,26 @@ export default function TimelineRoute() {
     return () => sub.unsubscribe();
   }, [project.id]);
 
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.milestones.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => {
+      rows.sort((a, b) => (a.date === b.date ? a.createdAt.localeCompare(b.createdAt) : a.date < b.date ? -1 : 1));
+      setMilestones(rows);
+    });
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
   const openTask = openTaskId ? tasks.find((tk) => tk.id === openTaskId) ?? null : null;
+  const canManageMilestones = can(role, "project:update");
 
   function changeZoom(z: TimelineZoom) {
     setZoom(z);
     void db.preferences.put({ key: `timelineZoom:${project.id}`, value: z });
+  }
+
+  async function toggleMilestone(ms: Milestone) {
+    await milestoneService.update(ms.id, { doneAt: ms.doneAt ? null : new Date().toISOString() });
   }
 
   return (
@@ -70,7 +89,15 @@ export default function TimelineRoute() {
         <span className="tl-toolbar__spacer" />
         <span className="tl-toolbar__count">{t("taskCountLabel", { count: tasks.length })}</span>
       </div>
-      <TimelineView tasks={tasks} links={links} zoom={zoom} onOpenTask={(tk) => setOpenTaskId(tk.id)} />
+      <TimelineView
+        tasks={tasks}
+        links={links}
+        milestones={milestones}
+        zoom={zoom}
+        canManageMilestones={canManageMilestones}
+        onOpenTask={(tk) => setOpenTaskId(tk.id)}
+        onToggleMilestone={(ms) => void toggleMilestone(ms)}
+      />
       <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
     </div>
   );

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { CSSProperties } from "react";
 import type { Task } from "~/models/task";
 import type { TaskLink } from "~/models/taskLink";
+import type { Milestone } from "~/models/milestone";
 import { dateKey, isoToDateKey } from "~/lib/calendar";
 import { statusColor } from "~/lib/list-view";
 import { useI18n } from "~/lib/i18n";
@@ -11,14 +12,18 @@ export type TimelineZoom = "day" | "week" | "month";
 export interface TimelineViewProps {
   tasks: Task[];
   links: TaskLink[];
+  milestones: Milestone[];
   zoom: TimelineZoom;
+  canManageMilestones?: boolean;
   onOpenTask: (task: Task) => void;
+  onToggleMilestone?: (ms: Milestone) => void;
 }
 
 const NAME_W = 232;
 const ROW_H = 36;
 const BAR_H = 18;
 const HEADER_H = 56;
+const MS_H = 30;
 const PX_PER_DAY: Record<TimelineZoom, number> = { day: 30, week: 120 / 7, month: 160 / 30.44 };
 
 function addDays(d: Date, n: number): Date {
@@ -39,8 +44,10 @@ interface Span {
   weekend?: boolean;
 }
 
-/** 甘特/时间线：startDate→dueDate 条带 + 依赖箭头（纯 CSS/SVG，零依赖） */
-export function TimelineView({ tasks, links, zoom, onOpenTask }: TimelineViewProps) {
+/** 甘特/时间线：startDate→dueDate 条带 + 依赖箭头 + 里程碑菱形（纯 CSS/SVG，零依赖） */
+export function TimelineView({
+  tasks, links, milestones, zoom, canManageMilestones, onOpenTask, onToggleMilestone,
+}: TimelineViewProps) {
   const { t, locale } = useI18n();
   const todayKeyStr = dateKey(new Date());
 
@@ -51,6 +58,8 @@ export function TimelineView({ tasks, links, zoom, onOpenTask }: TimelineViewPro
       tk.startDate ? isoToDateKey(tk.startDate) : null,
       tk.dueDate ? isoToDateKey(tk.dueDate) : null,
     ].filter(Boolean) as string[]);
+    // 里程碑日期纳入范围，保证菱形不落在画布外
+    keys.push(...milestones.map((ms) => isoToDateKey(ms.date)));
     const minKey = keys.length
       ? keys.reduce((a, b) => (a < b ? a : b))
       : dateKey(addDays(today, -7));
@@ -123,7 +132,7 @@ export function TimelineView({ tasks, links, zoom, onOpenTask }: TimelineViewPro
     }
 
     return { start, totalDays, px, totalWidth, xOf, top, bottom };
-  }, [tasks, zoom, locale, todayKeyStr]);
+  }, [tasks, milestones, zoom, locale, todayKeyStr]);
 
   const sorted = useMemo(() => {
     return [...tasks].sort((a, b) => {
@@ -143,6 +152,9 @@ export function TimelineView({ tasks, links, zoom, onOpenTask }: TimelineViewPro
   }
 
   const todayX = layout.xOf(todayKeyStr);
+  const msLaneH = milestones.length > 0 ? MS_H : 0;
+  const bodyH = sorted.length * ROW_H;
+  const frameTop = HEADER_H + msLaneH;
   const deps = links
     .filter((l) => l.type === "blocks")
     .map((l) => {
@@ -190,7 +202,37 @@ export function TimelineView({ tasks, links, zoom, onOpenTask }: TimelineViewPro
             </div>
           </div>
 
-          <div className="tl__body" style={{ height: sorted.length * ROW_H }}>
+          {milestones.length > 0 && (
+            <div className="tl__ms" style={{ height: MS_H }} aria-label={t("tabMilestones")}>
+              <div className="tl__corner tl__sticky tl__ms-name">{t("tabMilestones")}</div>
+              <div className="tl__ms-lane" style={{ width: layout.totalWidth }}>
+                {milestones.map((ms) => {
+                  const key = isoToDateKey(ms.date);
+                  const done = Boolean(ms.doneAt);
+                  const overdue = !done && key < todayKeyStr;
+                  return (
+                    <span
+                      key={ms.id}
+                      className={`tl__ms-item${done ? " is-done" : ""}${overdue ? " is-overdue" : ""}`}
+                      style={{ left: layout.xOf(key) + layout.px / 2 }}
+                    >
+                      <button
+                        type="button"
+                        className="tl__ms-diamond"
+                        disabled={!canManageMilestones || !onToggleMilestone}
+                        onClick={() => onToggleMilestone?.(ms)}
+                        aria-label={t("toggleMilestoneAria", { name: ms.title })}
+                        title={`${ms.title} · ${key}${done ? " ✓" : ""}`}
+                      />
+                      <span className="tl__ms-title">{ms.title}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="tl__body" style={{ height: bodyH }}>
             {/* 网格竖线 + 周末底纹 */}
             <div className="tl__grid" style={{ left: NAME_W, width: layout.totalWidth }}>
               {layout.bottom.map((s) => (
@@ -267,13 +309,16 @@ export function TimelineView({ tasks, links, zoom, onOpenTask }: TimelineViewPro
                 );
               })}
             </svg>
-
-            {todayX >= 0 && todayX <= layout.totalWidth && (
-              <div className="tl__today" style={{ left: NAME_W + todayX, height: Math.max(sorted.length * ROW_H, 1) }}>
-                <span className="tl__today-label">{t("tlToday")}</span>
-              </div>
-            )}
           </div>
+
+          {todayX >= 0 && todayX <= layout.totalWidth && (
+            <div
+              className="tl__today"
+              style={{ top: frameTop, left: NAME_W + todayX, height: Math.max(bodyH, 1) }}
+            >
+              <span className="tl__today-label">{t("tlToday")}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
