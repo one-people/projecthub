@@ -9,7 +9,8 @@ export interface ConfirmDialogProps {
   confirmText?: string;
   /** 需要用户输入该文本才能确认（用于高危操作） */
   requireText?: string;
-  onConfirm: () => void;
+  /** 确认回调允许异步（删除等操作直调 service） */
+  onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -53,7 +54,7 @@ export function ConfirmDialog({
           <button
             className={`btn ${danger ? "btn--danger" : "btn--primary"}`}
             disabled={!canConfirm}
-            onClick={onConfirm}
+            onClick={() => void onConfirm()}
           >
             {confirmText ?? t("confirmOk")}
           </button>

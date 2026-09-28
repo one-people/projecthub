@@ -106,13 +106,14 @@ function TaskCells({
       aria-label={t("openTaskAria", { title: task.title })}
       onKeyDown={(e) => { if (e.key === "Enter") onOpenTask(task); }}
     >
-      <span onClick={(e) => e.stopPropagation()}>
+      <span>
         {selection ? (
           <input
             type="checkbox"
             className="db-row__check"
             checked={selection.selected.has(task.id)}
             onChange={() => selection.onToggle(task.id)}
+            onClick={(e) => e.stopPropagation()}
             aria-label={t("selectTaskAria", { title: task.title })}
           />
         ) : null}

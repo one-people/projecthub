@@ -36,9 +36,6 @@ export function FilterChips({ filters, onChange, assigneeOptions, labelOptions =
     <div
       ref={wrapRef}
       style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") setPopover(null);
-      }}
     >
       {chips.map((chip) => (
         <span key={chip.key} className="db-popover__wrap">
@@ -57,7 +54,7 @@ export function FilterChips({ filters, onChange, assigneeOptions, labelOptions =
             className="db-chip__x"
             aria-label={t("removeFilter", { label: t(chip.labelKey) })}
             onClick={() => {
-              set({ [chip.key]: "all" } as Partial<Filters>);
+              set({ [chip.key]: "all" });
               setPopover((p) => (p === chip.key ? null : p));
             }}
           >

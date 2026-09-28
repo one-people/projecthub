@@ -9,7 +9,7 @@ export interface PopoverProps {
   label?: string;
 }
 
-/** 通用锚定弹层：外部点击 / Escape 关闭，内部点击不冒泡 */
+/** 通用锚定弹层：外部点击（mousedown）/ Escape 关闭，内部点击不关闭 */
 export function Popover({ open, onClose, children, align = "left", label }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -36,7 +36,6 @@ export function Popover({ open, onClose, children, align = "left", label }: Popo
       className={`popover${align === "right" ? " popover--right" : ""}`}
       role="dialog"
       aria-label={label}
-      onClick={(e) => e.stopPropagation()}
     >
       {children}
     </div>

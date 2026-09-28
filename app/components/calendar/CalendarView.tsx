@@ -59,7 +59,7 @@ export function CalendarView({
   const chip = (task: Task) => {
     const done = Boolean(task.completedAt);
     const overdue = isOverdue(task, todayKey);
-    const color = overdue ? "#DC2626" : PRIORITY_META[task.priority].color;
+    const color = overdue ? "var(--color-danger)" : PRIORITY_META[task.priority].color;
     return (
       <button
         key={task.id}

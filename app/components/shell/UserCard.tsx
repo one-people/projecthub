@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
-import { session } from "~/auth/session";
+import { SESSION_KEY, session } from "~/auth/session";
 import { useI18n } from "~/lib/i18n";
 import { Icon } from "~/components/ui/Icon";
 import type { User } from "~/models/user";
@@ -20,9 +20,19 @@ export function UserCard() {
     void (async () => {
       setMe(await session.currentUser());
     })();
+    // liveQuery：切换身份（会话键写入）后头像即时刷新
+    const subMe = liveQuery(async () => {
+      const pref = await db.preferences.get(SESSION_KEY);
+      return pref ? await db.users.get(pref.value as string) : undefined;
+    }).subscribe((u) => {
+      if (u) setMe(u);
+    });
     // liveQuery：设置页新建/删除用户后，身份菜单即时刷新
-    const sub = liveQuery(() => db.users.toArray()).subscribe(setUsers);
-    return () => sub.unsubscribe();
+    const subUsers = liveQuery(() => db.users.toArray()).subscribe(setUsers);
+    return () => {
+      subMe.unsubscribe();
+      subUsers.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -34,6 +44,13 @@ export function UserCard() {
   }, []);
 
   if (!me) return null;
+
+  /** 切换当前身份（会话写入 + 收起菜单 + 回到工作台） */
+  async function switchTo(id: string) {
+    await session.switchUser(id);
+    setOpen(false);
+    navigate(".");
+  }
 
   return (
     <div className="user-card" ref={ref}>
@@ -54,11 +71,7 @@ export function UserCard() {
               key={u.id}
               className="user-card__item"
               role="menuitem"
-              onClick={async () => {
-                await session.switchUser(u.id);
-                setOpen(false);
-                navigate(".");
-              }}
+              onClick={() => void switchTo(u.id)}
             >
               <span className="avatar" style={{ background: u.avatarColor }}>{u.name.slice(0, 1)}</span>
               {u.name}

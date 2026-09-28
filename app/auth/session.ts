@@ -3,7 +3,7 @@ import { uuid } from "~/lib/id";
 import { resolveRole, type RoleId } from "./rbac";
 import type { User } from "~/models/user";
 
-const SESSION_KEY = "currentUserId";
+export const SESSION_KEY = "currentUserId";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
@@ -15,7 +15,7 @@ export const session = {
       if (user) return user;
     }
     // 无会话：取第一个用户，库为空则创建默认本地用户
-    let user = (await db.users.toCollection().first()) as User | undefined;
+    let user = (await db.users.toCollection().first());
     if (!user) {
       user = {
         id: uuid(),

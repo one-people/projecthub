@@ -135,11 +135,11 @@ export default function BoardRoute() {
         templates={templates}
         canCreate={canCreate}
         canToggle={canToggle}
-        onMove={handleMove}
+        onMove={(intent) => void handleMove(intent)}
         onOpenTask={(task) => setOpenTaskId(task.id)}
-        onToggleDone={handleToggleDone}
-        onCreate={handleCreate}
-        onCreateFromTemplate={handleCreateFromTemplate}
+        onToggleDone={(task, done) => void handleToggleDone(task, done)}
+        onCreate={(status, title) => void handleCreate(status, title)}
+        onCreateFromTemplate={(tpl, status) => void handleCreateFromTemplate(tpl, status)}
       />
       <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
     </>

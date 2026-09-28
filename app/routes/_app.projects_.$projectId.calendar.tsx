@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useOutletContext, useParams } from "@remix-run/react";
+import { useOutletContext } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { Icon } from "~/components/ui/Icon";
 import { CalendarView } from "~/components/calendar/CalendarView";
@@ -19,7 +19,6 @@ export const handle = { crumb: () => ({ label: translate("calendarView") }) };
 const WEEKDAY_KEYS = ["calMon", "calTue", "calWed", "calThu", "calFri", "calSat", "calSun"] as const;
 
 export default function CalendarRoute() {
-  const { projectId } = useParams();
   const { project, role, actorId } = useOutletContext<ProjectOutletContext>();
   const toast = useToast();
   const { t, locale } = useI18n();
@@ -129,7 +128,7 @@ export default function CalendarRoute() {
         canEdit={canEdit}
         canCreate={canCreate}
         onOpenTask={(task) => setOpenTaskId(task.id)}
-        onPatch={patchTask}
+        onPatch={(id, patch) => void patchTask(id, patch)}
         onCreate={(title, dayKey) => void createOnDay(title, dayKey)}
       />
       <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />

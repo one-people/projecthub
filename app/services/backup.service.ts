@@ -26,7 +26,7 @@ export type Backup = z.infer<typeof backupSchema>;
 /** 旧版备份项目行归一化：projectAdmin → admin，缺失 ownerId 时回填（首位 admin，无则首个成员） */
 function normalizeProjectRows(rows: unknown): unknown {
   if (!Array.isArray(rows)) return rows;
-  return rows.map((row) => {
+  return rows.map((row: unknown) => {
     if (!row || typeof row !== "object") return row;
     const r = row as Record<string, unknown>;
     const roles = (r.memberRoles && typeof r.memberRoles === "object" ? r.memberRoles : {}) as Record<string, string>;

@@ -145,7 +145,7 @@ export default function TableRoute() {
           canEdit={canEdit}
           canManageFields={canManageFields}
           onOpenTask={(task) => setOpenTaskId(task.id)}
-          onPatch={patchTask}
+          onPatch={(id, patch) => void patchTask(id, patch)}
           onToggleColumn={toggleColumn}
           onAddField={(field) => void updateProjectFields((fields) => [...fields, field])}
           onUpdateField={(fieldId, patch) =>
@@ -158,23 +158,25 @@ export default function TableRoute() {
         {creating ? (
           <form
             className="db-newrow"
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
               const title = newTitle.trim();
               if (!title) return;
               const firstColumn = project.statusColumns.find((c) => c.order === 0);
               if (!firstColumn) return;
-              try {
-                await taskService.create(actorId, {
-                  id: uuid(),
-                  projectId: project.id,
-                  title,
-                  status: firstColumn.id,
-                });
-                setNewTitle("");
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : t("createFailed"));
-              }
+              void (async () => {
+                try {
+                  await taskService.create(actorId, {
+                    id: uuid(),
+                    projectId: project.id,
+                    title,
+                    status: firstColumn.id,
+                  });
+                  setNewTitle("");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : t("createFailed"));
+                }
+              })();
             }}
           >
             <input
@@ -204,7 +206,7 @@ export default function TableRoute() {
         title={t("deleteFieldAria", { name: pendingDeleteField?.name ?? "" })}
         message={t("confirmDeleteField")}
         danger
-        onConfirm={() => pendingDeleteField && void deleteField(pendingDeleteField)}
+        onConfirm={() => { if (pendingDeleteField) void deleteField(pendingDeleteField); }}
         onCancel={() => setPendingDeleteField(null)}
       />
     </div>

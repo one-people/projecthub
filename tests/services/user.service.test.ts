@@ -5,7 +5,6 @@ import { userService } from "~/services/user.service";
 import { session } from "~/auth/session";
 import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
-import type { Comment } from "~/models/comment";
 import type { Automation } from "~/models/automation";
 import type { User } from "~/models/user";
 
@@ -128,7 +127,7 @@ describe("userService.remove", () => {
       createdAt: now,
       updatedAt: now,
       version: 0,
-    } as Comment);
+    });
 
     await userService.remove(VICTIM);
 

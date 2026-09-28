@@ -130,23 +130,25 @@ export default function ListRoute() {
         {creating ? (
           <form
             className="db-newrow"
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
               const title = newTitle.trim();
               if (!title) return;
               const firstColumn = project.statusColumns.find((c) => c.order === 0);
               if (!firstColumn) return;
-              try {
-                await taskService.create(actorId, {
-                  id: uuid(),
-                  projectId: project.id,
-                  title,
-                  status: firstColumn.id,
-                });
-                setNewTitle("");
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : t("createFailed"));
-              }
+              void (async () => {
+                try {
+                  await taskService.create(actorId, {
+                    id: uuid(),
+                    projectId: project.id,
+                    title,
+                    status: firstColumn.id,
+                  });
+                  setNewTitle("");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : t("createFailed"));
+                }
+              })();
             }}
           >
             <input

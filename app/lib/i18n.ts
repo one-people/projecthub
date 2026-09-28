@@ -55,6 +55,8 @@ export function useI18n() {
   }, []);
   const translate = useCallback(
     (key: keyof Dict, params?: Record<string, string | number>) => t(key, params),
+    // 依赖 locale 以便语言切换时重建 translate，触发消费组件重渲染
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [locale],
   );
   return { t: translate, locale, setLocale };

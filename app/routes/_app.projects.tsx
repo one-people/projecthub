@@ -10,6 +10,7 @@ import { projectService } from "~/services/project.service";
 import { trashService } from "~/services/trash.service";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { ROLE_LABEL_KEY } from "~/lib/role-labels";
+import { tileColor } from "~/lib/palette";
 import { Icon } from "~/components/ui/Icon";
 import { useToast } from "~/components/ui/Toast";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
@@ -22,24 +23,6 @@ export const handle = { crumb: () => ({ label: translate("projects"), to: "/" })
 interface CardStat {
   total: number;
   done: number;
-}
-
-/** 卡片角块配色：按项目 id 稳定取色（靛蓝为主的 8 色） */
-const TILE_COLORS = [
-  "#4f46e5",
-  "#0284c7",
-  "#059669",
-  "#d97706",
-  "#e11d48",
-  "#7c3aed",
-  "#0d9488",
-  "#db2777",
-] as const;
-
-function tileColor(id: string): string {
-  let hash = 0;
-  for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  return TILE_COLORS[hash % TILE_COLORS.length]!;
 }
 
 export default function ProjectsRoute() {

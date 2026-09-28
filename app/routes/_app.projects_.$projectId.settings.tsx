@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
-import { can, type MemberRole, type RoleId } from "~/auth/rbac";
+import { can, type MemberRole } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
 import { projectService } from "~/services/project.service";
 import { labelService } from "~/services/label.service";
@@ -457,7 +457,7 @@ export default function ProjectSettingsRoute() {
             {members.map((u) => {
               const isOwnerRow = project.ownerId === u.id;
               const isSelf = u.id === actorId;
-              const memberRole = project.memberRoles[u.id] as MemberRole | undefined;
+              const memberRole = project.memberRoles[u.id];
               // admin 级成员的增删改仅 owner；自己的角色与所有者不可在此变更
               const adminLocked = role !== "owner" && memberRole === "admin";
               const canEditRole = canManage && !isOwnerRow && !isSelf && !adminLocked;
@@ -960,7 +960,7 @@ export default function ProjectSettingsRoute() {
         title={t("removeMember")}
         message={t("confirmRemoveMember")}
         danger
-        onConfirm={() => pendingRemove && void removeMember(pendingRemove)}
+        onConfirm={() => { if (pendingRemove) void removeMember(pendingRemove); }}
         onCancel={() => setPendingRemove(null)}
       />
       <ConfirmDialog
@@ -976,7 +976,7 @@ export default function ProjectSettingsRoute() {
         title={t("deleteLabelAria", { name: pendingDeleteLabel?.name ?? "" })}
         message={t("confirmDeleteLabel")}
         danger
-        onConfirm={() => pendingDeleteLabel && void deleteLabel(pendingDeleteLabel)}
+        onConfirm={() => { if (pendingDeleteLabel) void deleteLabel(pendingDeleteLabel); }}
         onCancel={() => setPendingDeleteLabel(null)}
       />
       <ConfirmDialog

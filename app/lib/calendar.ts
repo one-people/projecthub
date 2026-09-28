@@ -21,7 +21,7 @@ export function isoToDateKey(iso: string): string {
 /** 本地日期 key → 当地零点的 ISO 时间（写回任务 dueDate 用） */
 export function localMidnightIso(key: string): string {
   const [y, m, d] = key.split("-").map(Number);
-  return new Date(y!, m! - 1, d!).toISOString();
+  return new Date(y!, m! - 1, d).toISOString();
 }
 
 /** 以周一为一周起点，返回覆盖指定月份的 6×7 网格 */

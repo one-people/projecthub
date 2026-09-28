@@ -52,6 +52,17 @@ export function TaskCard({ task, assigneeName, labels, canToggle, onOpen, onTogg
       }}
       {...attributes}
       {...listeners}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        // Enter 打开任务；其余按键（Space 等）交还 dnd-kit 键盘传感器（拖拽）
+        if (e.key === "Enter" && !isDragging) {
+          e.preventDefault();
+          onOpen(task);
+          return;
+        }
+        listeners?.onKeyDown?.(e);
+      }}
       onClick={() => onOpen(task)}
       aria-label={t("cardAria", {
         title: task.title,

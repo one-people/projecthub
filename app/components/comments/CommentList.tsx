@@ -47,7 +47,7 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd, compac
             <li key={c.id} className="comment-item">
               <span
                 className="avatar"
-                style={{ background: author?.avatarColor ?? "#94A3B8" }}
+                style={{ background: author?.avatarColor ?? "var(--color-text-muted)" }}
                 aria-hidden
               >
                 {name(c.authorId).slice(0, 1)}

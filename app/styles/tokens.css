@@ -1,0 +1,152 @@
+/* ============================================================
+   ProjectHub 项目级样式配置（Design Tokens · 单一事实来源）
+   ============================================================
+   - 本文件是全项目唯一定义「全局设计 Token」的地方，任何组件、
+     路由、页面样式一律通过 var(--*) 引用，禁止新增硬编码色值。
+   - 主题由 <html data-theme="dark|light"> 驱动（app/lib/theme.ts）；
+     :not([data-theme]) 的媒体查询为无 JS 环境保留「跟随系统」回退。
+   - 命名空间：
+       --color-*   语义色（背景 / 文本 / 边框 / 状态）
+       --space-*   间距刻度（4 的倍数）
+       --radius-*  圆角刻度
+       --shadow-*  阴影层级
+       --font-*    字体族 / 字号
+       --motion-*  动效时长与缓动
+   - 组件局部变量（如 .rail 内的 --rail-*）允许在组件作用域内
+     定义，但取值必须来自本文件的全局 Token。 */
+
+:root {
+  /* ----- 品牌与状态色 ----- */
+  --color-primary: #4f46e5;
+  --color-primary-strong: #4338ca;
+  --color-primary-soft: #e0e7ff;
+  --color-primary-contrast: #fff;
+  --color-accent: #4f46e5;
+  --color-accent-soft: #e0e7ff;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-success: #059669;
+  --color-success-soft: #d1fae5;
+  --color-warning: #d97706;
+  --color-warning-soft: #fef3c7;
+  --color-info: #4f46e5;
+
+  /* ----- 中性色（Graphite） ----- */
+  --color-bg: #fafafa;
+  --color-surface: #fff;
+  --color-surface-muted: #f4f4f5;
+  --color-border: #e4e4e7;
+  --color-border-strong: #d4d4d8;
+  --color-text: #18181b;
+  --color-text-secondary: #52525b;
+  --color-text-muted: #a1a1aa;
+  --color-text-faint: #9aa0a6;
+
+  /* ----- 反色与填充前景（跨主题保持一致的表面） ----- */
+  --color-on-fill: #fff;        /* 饱和色填充上的前景文字 */
+  --color-on-danger: #fff;      /* danger 填充上的前景文字 */
+  --color-inverse-surface: #111827; /* 反色表面（Toast 等深色浮层） */
+  --color-inverse-text: #f9fafb;   /* 反色表面上的文字 */
+
+  /* ----- 左侧图标栏（Rail，双主题下恒为深色） ----- */
+  --color-rail-bg: #1c1c1e;
+  --color-rail-hover: #2c2c2e;
+  --color-rail-fg: #a1a1aa;
+  --color-rail-fg-strong: #fafafa;
+  --color-rail-on-strong: #171717;
+
+  /* ----- 圆角 ----- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
+
+  /* ----- 间距刻度（4px 基准） ----- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* ----- 阴影层级 ----- */
+  --shadow-sm: 0 1px 2px rgb(24 24 27 / 5%);
+  --shadow-md: 0 4px 12px -2px rgb(24 24 27 / 10%);
+  --shadow-lg: 0 16px 40px -8px rgb(24 24 27 / 22%);
+
+  /* ----- 字体 ----- */
+  --font-sans: "Inter", -apple-system, "PingFang SC", "Segoe UI",
+    roboto, sans-serif;
+
+  /* ----- 动效（新代码优先使用具名档位） ----- */
+  --motion-fast: 100ms ease;
+  --transition: 150ms ease;
+
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] { color-scheme: light; }
+
+/* ----- 深色令牌（石墨底 + 靛蓝点缀） ----- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-primary: #818cf8;
+  --color-primary-strong: #a5b4fc;
+  --color-primary-soft: rgb(129 140 248 / 16%);
+  --color-primary-contrast: #1e1b4b;
+  --color-accent: #818cf8;
+  --color-accent-soft: rgb(129 140 248 / 16%);
+  --color-danger: #f87171;
+  --color-danger-soft: rgb(248 113 113 / 15%);
+  --color-success: #34d399;
+  --color-success-soft: rgb(52 211 153 / 15%);
+  --color-warning: #fbbf24;
+  --color-warning-soft: rgb(251 191 36 / 15%);
+  --color-info: #818cf8;
+  --color-bg: #111113;
+  --color-surface: #1a1a1d;
+  --color-surface-muted: #242428;
+  --color-border: #2a2a30;
+  --color-border-strong: #3f3f46;
+  --color-text: #f4f4f5;
+  --color-text-secondary: #b4b4bc;
+  --color-text-muted: #8e8e96;
+  --color-text-faint: #83838c;
+  --color-on-danger: #7f1d1d;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 50%);
+  --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 70%);
+}
+
+/* ----- 无 JS 时的「跟随系统」回退 ----- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-primary: #818cf8;
+    --color-primary-strong: #a5b4fc;
+    --color-primary-soft: rgb(129 140 248 / 16%);
+    --color-primary-contrast: #1e1b4b;
+    --color-accent: #818cf8;
+    --color-accent-soft: rgb(129 140 248 / 16%);
+    --color-danger: #f87171;
+    --color-danger-soft: rgb(248 113 113 / 15%);
+    --color-success: #34d399;
+    --color-success-soft: rgb(52 211 153 / 15%);
+    --color-warning: #fbbf24;
+    --color-warning-soft: rgb(251 191 36 / 15%);
+    --color-info: #818cf8;
+    --color-bg: #111113;
+    --color-surface: #1a1a1d;
+    --color-surface-muted: #242428;
+    --color-border: #2a2a30;
+    --color-border-strong: #3f3f46;
+    --color-text: #f4f4f5;
+    --color-text-secondary: #b4b4bc;
+    --color-text-muted: #8e8e96;
+    --color-text-faint: #83838c;
+    --color-on-danger: #7f1d1d;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 50%);
+    --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 70%);
+  }
+}

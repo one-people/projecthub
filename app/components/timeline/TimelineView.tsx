@@ -288,7 +288,7 @@ export function TimelineView({
             >
               <defs>
                 <marker id="tl-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
-                  <path d="M0 0 L8 4 L0 8 z" fill="var(--color-text-faint, #9aa0a6)" />
+                  <path d="M0 0 L8 4 L0 8 z" fill="var(--color-text-faint)" />
                 </marker>
               </defs>
               {deps.map((d) => {

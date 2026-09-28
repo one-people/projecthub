@@ -39,6 +39,13 @@ const FIELD_TYPE_LABEL: Record<CustomField["type"], keyof Dict> = {
   select: "fieldTypeSelect",
 };
 
+/** 自定义字段值为 unknown：仅基础类型直接展示，对象/数组序列化为 JSON，避免 "[object Object]" */
+function displayValue(v: unknown): string {
+  if (v === undefined || v === null) return "";
+  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+  return JSON.stringify(v) ?? "";
+}
+
 /** 内置列定义：key 唯一，width 参与 grid 模板 */
 const BUILTIN_COLS: { key: string; labelKey: "colStatus" | "colAssignee" | "colStart" | "colDueDate" | "colPriority" | "fieldLabels"; width: number }[] = [
   { key: "status", labelKey: "colStatus", width: 120 },
@@ -250,7 +257,7 @@ export function TableView({
                 value={
                   field.type === "date"
                     ? typeof value === "string" ? value.slice(0, 10) : ""
-                    : value === undefined ? "" : String(value)
+                    : displayValue(value)
                 }
                 onChange={(e) => saveCustom(task, field, e.target.value)}
                 onBlur={() => setEdit(null)}
@@ -277,7 +284,7 @@ export function TableView({
             ? "—"
             : field.type === "date" && typeof value === "string"
               ? formatDate(value)
-              : String(value);
+              : displayValue(value);
           return (
             <button
               key={field.id}
@@ -334,7 +341,7 @@ export function TableView({
   );
 
   return (
-    <div ref={wrapRef} onKeyDown={(e) => { if (e.key === "Escape") setColPopover(null); }}>
+    <div ref={wrapRef}>
       {rows}
       <div className="tv-toolbar">
         <span className="db-popover__wrap">

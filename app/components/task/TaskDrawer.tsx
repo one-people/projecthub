@@ -83,6 +83,8 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   const [subtaskDraft, setSubtaskDraft] = useState("");
 
   const taskId = task?.id ?? null;
+  // 订阅依赖用稳定 projectId（而非 task 对象），避免任务每次补丁触发订阅重建
+  const projectId = task?.projectId;
 
   // 打开时记录焦点并聚焦关闭按钮
   useEffect(() => {
@@ -94,10 +96,11 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
 
   // 项目 / 用户 / 身份随任务加载
   useEffect(() => {
-    if (!task) return;
+    if (!taskId || !projectId) return;
+    const pid = projectId;
     void (async () => {
       const [p, us, me] = await Promise.all([
-        db.projects.get(task.projectId),
+        db.projects.get(pid),
         db.users.toArray(),
         session.currentUser(),
       ]);
@@ -105,33 +108,36 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
       setUsers(us);
       setActor({ id: me.id, role: p ? resolveRole(p, me.id) : null });
     })();
-  }, [task?.projectId, taskId]);
+  }, [taskId, projectId]);
 
   // 项目标签随任务加载（liveQuery：设置里增删标签时抽屉同步）
   useEffect(() => {
-    if (!taskId) return;
+    if (!taskId || !projectId) return;
+    const pid = projectId;
     const sub = liveQuery(() =>
-      db.labels.where("projectId").equals(task!.projectId).toArray(),
+      db.labels.where("projectId").equals(pid).toArray(),
     ).subscribe((rows) => setLabels(rows));
     return () => sub.unsubscribe();
-  }, [taskId, task?.projectId]);
+  }, [taskId, projectId]);
 
   // 任务关联 + 同项目任务（关联选择器候选）
   useEffect(() => {
-    if (!taskId) return;
+    if (!taskId || !projectId) return;
+    const pid = projectId;
     const sub = liveQuery(() =>
-      db.taskLinks.where("projectId").equals(task!.projectId).toArray(),
+      db.taskLinks.where("projectId").equals(pid).toArray(),
     ).subscribe((rows) => setLinks(rows));
     return () => sub.unsubscribe();
-  }, [taskId, task?.projectId]);
+  }, [taskId, projectId]);
 
   useEffect(() => {
-    if (!taskId) return;
+    if (!taskId || !projectId) return;
+    const pid = projectId;
     const sub = liveQuery(() =>
-      db.tasks.where("projectId").equals(task!.projectId).toArray(),
+      db.tasks.where("projectId").equals(pid).toArray(),
     ).subscribe((rows) => setProjectTasks(rows.filter((r) => r.deletedAt === null)));
     return () => sub.unsubscribe();
-  }, [taskId, task?.projectId]);
+  }, [taskId, projectId]);
 
   // 关闭时还原焦点
   useEffect(() => {
@@ -779,7 +785,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                   <span
                     style={{ width: "100%" }}
                     className="comment-body__rich"
-                    dangerouslySetInnerHTML={{ __html: renderRichText(task.descriptionRich as never) }}
+                    dangerouslySetInnerHTML={{ __html: renderRichText(task.descriptionRich) }}
                   />
                 ) : (
                   <span className="field-row__value--empty">{t("descriptionEmpty")}</span>

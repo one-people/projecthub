@@ -17,7 +17,6 @@ import type { Label } from "~/models/label";
 import type { TaskTemplate } from "~/models/taskTemplate";
 import { t } from "~/lib/i18n";
 import { Column } from "./Column";
-import { TaskCard } from "./TaskCard";
 
 export interface MoveIntent {
   taskId: string;
@@ -34,6 +33,7 @@ export interface BoardProps {
   templates: TaskTemplate[];
   canCreate: boolean;
   canToggle: boolean;
+  /** 变更类回调由调用方包装异步（(intent) => void handleMove(intent)） */
   onMove: (intent: MoveIntent) => void;
   onOpenTask: (task: Task) => void;
   onToggleDone: (task: Task, done: boolean) => void;
