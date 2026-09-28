@@ -26,6 +26,7 @@ export function AppRail({ onSearch }: { onSearch: () => void }) {
       </button>
       {item({ to: "/", icon: "home", label: t("workbench") })}
       {item({ to: "/projects", icon: "kanban", label: t("projects") })}
+      {item({ to: "/users", icon: "user", label: t("usersMenu") })}
       <span className="rail__spacer" />
       <button
         className="rail__item"
