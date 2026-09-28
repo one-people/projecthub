@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  statusColor,
-  avatarColor,
-  activeFilterChips,
-  PALETTE,
-} from "~/lib/list-view";
-import { EMPTY_FILTERS } from "~/lib/list-view";
+import { statusColor, avatarColor, PALETTE } from "~/lib/list-view";
 
 describe("statusColor", () => {
   it("返回固定的确切颜色", () => {
@@ -28,37 +22,3 @@ describe("avatarColor", () => {
   });
 });
 
-describe("activeFilterChips", () => {
-  const opts = [{ id: "u1", name: "张三" }];
-  it("无筛选时返回空数组", () => {
-    expect(activeFilterChips(EMPTY_FILTERS, opts)).toEqual([]);
-  });
-  it("每个激活筛选产生一个 chip（key/labelKey/valueKey）", () => {
-    const chips = activeFilterChips(
-      { ...EMPTY_FILTERS, assigneeId: "u1", status: "done" },
-      opts,
-    );
-    expect(chips).toEqual([
-      { key: "assigneeId", labelKey: "colAssignee", value: "张三" },
-      { key: "status", labelKey: "colStatus", value: "done", valueKey: "statusDone" },
-    ]);
-  });
-  it("未知负责人 id 回退为 i18n key「unknownUser」", () => {
-    const chips = activeFilterChips(
-      { ...EMPTY_FILTERS, assigneeId: "nope" },
-      opts,
-    );
-    expect(chips).toEqual([
-      { key: "assigneeId", labelKey: "colAssignee", value: "unknownUser", valueKey: "unknownUser" },
-    ]);
-  });
-  it("未知 due 值回退为原始字符串", () => {
-    const chips = activeFilterChips(
-      { ...EMPTY_FILTERS, due: "custom" as never },
-      opts,
-    );
-    expect(chips).toEqual([
-      { key: "due", labelKey: "colDueDate", value: "custom", valueKey: undefined },
-    ]);
-  });
-});

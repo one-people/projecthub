@@ -7,7 +7,7 @@
 
 > **在线体验：<https://one-people.github.io/projecthub/>** —— 纯前端应用，数据仅存于你当前浏览器的 IndexedDB。
 
-<!-- TODO: 应用截图占位（看板视图 / 列表视图 / 任务详情弹窗），项目初始化后补充 -->
+<!-- TODO: 应用截图占位（看板视图 / 表格视图 / 任务详情弹窗），项目初始化后补充 -->
 <!-- <p align="center"><img src="./docs/screenshots/board.png" width="800" alt="看板视图"></p> -->
 
 一个基于 **Remix 3 + TypeScript** 构建的纯前端架构项目管理应用，旨在完整复刻 [Worktile](https://worktile.com/) 的核心功能模块。应用完全在浏览器端运行，不依赖任何后端服务，**所有数据（项目、任务、评论、通知、用户会话、视图偏好等）全部存储在浏览器的 IndexedDB 中**，天然支持离线操作。
@@ -52,10 +52,10 @@
 - **状态自动流转**：跨列拖动时自动更新任务状态（如「进行中 → 已完成」），已完成任务自动打勾、归档可选。
 - **卡片详情弹窗**：响应式 Dialog，展示任务全貌（描述、负责人、截止日期、优先级、标签、子任务、评论、操作历史），支持键盘导航与焦点陷阱。
 
-### 2. 列表视图
-- **多维度筛选**：按负责人、截止日期（今天 / 本周 / 已逾期 / 无日期）、优先级、标签、状态动态组合筛选。
-- **自定义排序**：用户可选择排序字段（标题、负责人、截止日期、优先级、更新时间）与升降序，排序偏好持久化到 IndexedDB。
-- **视图切换**：看板 / 列表双视图共享同一份数据源，切换零丢失。
+### 2. 表格视图（数据库表格）
+- **富单元格 + 内联编辑**：状态徽章、负责人、优先级、截止日期等以富单元格呈现，点击即改、失焦即存（Notion 式体验）。
+- **自定义字段**：支持新增 / 编辑 / 删除自定义字段列（文本 / 单选等类型），内置列可按需显隐。
+- **工具栏与行内新建**：标题搜索实时过滤 + 任务计数；表格底部内联新建任务（Enter 确认），大数据量行虚拟滚动。
 
 ### 3. 项目协作功能
 - **实时评论系统**：数据存于 IndexedDB，通过 BroadcastChannel 实现同源多标签页实时同步（不可用时降级监听 `storage` 事件）。
@@ -95,7 +95,7 @@
 │  ┌───────────┐  ┌───────────┐  ┌────────────┐   │
 │  │  Routes   │  │ Components│  │  UI Store  │   │
 │  │ (client   │  │ (Board/   │  │ (Zustand)  │   │
-│  │ Loader/…) │  │  List/…)  │  │            │   │
+│  │ Loader/…) │  │ Table/…)  │  │            │   │
 │  └─────┬─────┘  └─────┬─────┘  └─────┬──────┘   │
 │        │              │              │          │
 │  ┌─────┴──────────────┴──────────────┴──────┐   │
@@ -131,14 +131,14 @@ remix3/
 │   │   ├── login.tsx               # 本地登录（模拟身份）
 │   │   ├── projects_.$projectId/
 │   │   │   ├── board.tsx           # 任务看板视图
-│   │   │   ├── list.tsx            # 列表视图
+│   │   │   ├── table.tsx           # 表格视图（数据库表格）
 │   │   │   └── settings.tsx        # 项目设置（成员/角色）
 │   │   ├── tasks.$taskId.tsx       # 任务详情弹窗（拦截路由）
 │   │   ├── notifications.tsx       # 通知中心
 │   │   └── admin.tsx               # 用户与角色管理
 │   ├── components/
 │   │   ├── board/                  # Board, Column, TaskCard, DragOverlay
-│   │   ├── list/                   # ListTable, FilterBar, SortMenu
+│   │   ├── table/                  # TableView（数据库表格）
 │   │   ├── task/                   # TaskDialog, Subtasks, ActivityLog
 │   │   ├── comments/               # CommentList, CommentEditor, MentionInput
 │   │   ├── editor/                 # RichTextEditor (TipTap 封装)
@@ -291,7 +291,7 @@ can(user, 'task:update', task) → boolean
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│ Logo │ 项目名 ▾ │ 看板|列表 ││      🔍  通知🔔  头像 │  ← 顶栏 56px
+│ Logo │ 项目名 ▾ │ 看板|表格 ││      🔍  通知🔔  头像 │  ← 顶栏 56px
 ├──────────────────────────────────────────────────────┤
 │ 筛选：负责人▾ 截止日期▾ 优先级▾ 标签▾     + 新建任务   │  ← 工具栏
 ├──────────┬──────────┬──────────┬──────────┬──────────┤
@@ -360,7 +360,6 @@ export { projectRepository } from './repositories/project.repository'
 
 // 核心组件（供路由与故事书引用）
 export { Board } from './components/board/Board'
-export { ListView } from './components/list/ListTable'
 export { TaskDialog } from './components/task/TaskDialog'
 export { CommentList } from './components/comments/CommentList'
 export { RichTextEditor } from './components/editor/RichTextEditor'
@@ -408,7 +407,7 @@ export { uuid } from './lib/id'
 ## 国际化（i18n）
 
 - **目标**：首发中文（zh-CN），架构预留多语言能力。
-- **方案**：文案不硬编码，统一收敛到 `app/locales/{zh-CN,en}/` 的命名空间 JSON（common / board / list / task / notifications / settings），类型由 Zod 推导保证 key 完整性。
+- **方案**：文案不硬编码，统一收敛到 `app/locales/{zh-CN,en}/` 的命名空间 JSON（common / board / table / task / notifications / settings），类型由 Zod 推导保证 key 完整性。
 - **切换**：设置页选择语言，偏好持久化到 IndexedDB，运行时热切换无需刷新。
 - **格式化**：日期、相对时间（「3 小时前」）走 `Intl` API 按当前 locale 渲染。
 
@@ -429,8 +428,8 @@ export { uuid } from './lib/id'
 
 ## 性能考量
 
-- **虚拟滚动**：列表视图与看板列在任务数超过阈值（如 100 条）时启用虚拟化（`@tanstack/react-virtual`），只渲染可视区域行/卡。
-- **分页与游标查询**：Dexie 使用 `eachKeyRange` / `offset-limit` 分页加载，列表默认每页 50 条，滚动触底加载更多。
+- **虚拟滚动**：表格视图与看板列在任务数超过阈值（如 100 条）时启用虚拟化（`@tanstack/react-virtual`），只渲染可视区域行/卡。
+- **分页与游标查询**：Dexie 支持 `eachKeyRange` / `offset-limit` 分页加载，大数据量场景可平滑扩展。
 - **拖拽 60fps**：拖拽过程中仅移动 DragOverlay 与占位元素，使用 `transform` 合成层动画，避免触发布局/重排；落点才真正写入 IndexedDB（拖拽中不落库）。
 - **响应式订阅按需更新**：通过 Dexie `liveQuery` 精确订阅当前项目/列的数据，避免全表刷新。
 - **富文本懒加载**：TipTap 及其扩展按路由级动态 `import()`，不进入主 bundle。
@@ -572,6 +571,7 @@ npm run build
 - 视觉重设计：现代 SaaS 风格 → 黑白极简（monochrome）单色系、轻量侧边栏、分组导航。
 - 列表视图重构为 Notion 式数据库视图：筛选 chips（浮出编辑器）、富单元格（状态徽章/负责人头像/逾期日期/优先级 pill）、表头排序、浮出批量操作条、行内新建、i18n 全量覆盖。
 - 工程化：CI（typecheck + test + build）与 GitHub Pages 自动部署（含 SPA 深链接 404 兜底与子路径 BASE_URL 构建）。
+- 移除「列表」视图：与「表格」视图能力重复，由表格视图统一承接（项目视图现为 看板 / 表格 / 日历 / 时间轴 / 统计 / 设置）。
 
 ---
 

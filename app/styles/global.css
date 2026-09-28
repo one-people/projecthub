@@ -1222,84 +1222,6 @@ select.input {
 }
 .db-popover__wrap { position: relative; display: inline-flex; }
 
-.db-grid {
-  display: grid;
-  grid-template-columns: 36px minmax(240px, 1fr) 110px 120px 96px 92px 96px;
-  align-items: center;
-  font-size: 13px;
-  padding: 0 12px;
-}
-
-.db-grid__header {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  min-height: 38px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--color-surface);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.db-grid__header--sortable {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  height: 26px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  margin-left: -8px;
-  transition: background var(--transition), color var(--transition);
-}
-
-.db-grid__header--sortable:hover {
-  color: var(--color-text);
-  background: var(--color-surface-muted);
-}
-
-.db-row {
-  min-height: 40px;
-  border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background var(--transition);
-}
-.db-row:hover { background: var(--color-surface-muted); }
-
-.db-row:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
-
-.db-row:has(.db-row__check:checked) {
-  background: var(--color-primary-soft);
-}
-.db-row__check { opacity: 0; transition: opacity var(--transition); }
-
-.db-row:hover .db-row__check,
-.db-row__check:checked { opacity: 1; }
-
-.db-row__title {
-  font-weight: 500;
-  color: var(--color-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.db-row__title--done {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
-}
-
 /* tonal badge：浅色底 + 彩色字（--db-c 由单元格内联注入），深浅色模式均可读 */
 .db-badge {
   display: inline-flex;
@@ -1321,52 +1243,6 @@ select.input {
   background: var(--db-c);
 }
 
-.db-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-  background: color-mix(in srgb, var(--db-c) 16%, transparent);
-  color: color-mix(in srgb, var(--db-c) 80%, var(--color-text));
-}
-
-.db-avatar--empty {
-  border: 1px dashed var(--color-border-strong);
-  background: none;
-  color: var(--color-text-muted);
-}
-
-.db-assignee {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.db-assignee__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.db-due { color: var(--color-text-secondary); }
-.db-due--today { color: var(--color-text); font-weight: 600; }
-.db-due--overdue { color: var(--color-danger); font-weight: 500; }
-
-.db-due__dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentcolor;
-  margin-right: 5px;
-  vertical-align: 1px;
-}
-
 .db-prio {
   display: inline-flex;
   align-items: center;
@@ -1378,12 +1254,6 @@ select.input {
   background: color-mix(in srgb, var(--db-c) 12%, transparent);
   color: color-mix(in srgb, var(--db-c) 80%, var(--color-text));
 }
-
-.db-muted {
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.db-grid > :last-child { text-align: right; }
 
 /* 表格底部内联新建行（Notion/Linear 风格） */
 .db-newrow {
@@ -1434,36 +1304,6 @@ select.input {
   background: var(--color-surface-muted);
   color: var(--color-text);
 }
-
-.db-actionbar {
-  position: fixed;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-text);
-  color: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  font-size: 13px;
-}
-.db-actionbar__count { font-weight: 600; }
-
-.db-actionbar__btn {
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-}
-.db-actionbar__btn:hover { background: rgb(255 255 255 / 12%); }
-.db-actionbar__btn--danger { color: color-mix(in srgb, var(--color-danger) 60%, white); }
 
 /* ---------- 弹窗 ---------- */
 

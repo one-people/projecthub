@@ -8,7 +8,7 @@
 app/components/
 ├── ui/         # 基础组件：Icon、Toast、Popover、ConfirmDialog（与业务无关，可复用）
 ├── shell/      # 应用骨架：AppShell、AppRail、Breadcrumbs、GlobalSearch…
-└── <domain>/   # 领域组件：board/ calendar/ list/ table/ timeline/ task/ stats/ comments/ editor/
+└── <domain>/   # 领域组件：board/ calendar/ table/ timeline/ task/ stats/ comments/ editor/
 ```
 
 - 基础组件（`ui/`）：不得 import 任何 `~/models`、`~/services`、`~/repositories`；props 泛化（`children`、`onClose`），不出现业务词汇。

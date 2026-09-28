@@ -1,7 +1,6 @@
 // 统一 SVG 图标集（Lucide 风格，24×24 viewBox，stroke 2）
 export type IconName =
   | "kanban"
-  | "list"
   | "bell"
   | "settings"
   | "plus"
@@ -46,16 +45,6 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
       <path d="m15 5 4 4" />
-    </>
-  ),
-  list: (
-    <>
-      <path d="M8 6h13" />
-      <path d="M8 12h13" />
-      <path d="M8 18h13" />
-      <path d="M3 6h.01" />
-      <path d="M3 12h.01" />
-      <path d="M3 18h.01" />
     </>
   ),
   bell: (
