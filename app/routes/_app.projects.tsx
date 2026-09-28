@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
@@ -20,6 +20,24 @@ export const handle = { crumb: () => ({ label: translate("projects"), to: "/" })
 interface CardStat {
   total: number;
   done: number;
+}
+
+/** 卡片角块配色：按项目 id 稳定取色（靛蓝为主的 8 色） */
+const TILE_COLORS = [
+  "#4f46e5",
+  "#0284c7",
+  "#059669",
+  "#d97706",
+  "#e11d48",
+  "#7c3aed",
+  "#0d9488",
+  "#db2777",
+] as const;
+
+function tileColor(id: string): string {
+  let hash = 0;
+  for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return TILE_COLORS[hash % TILE_COLORS.length]!;
 }
 
 export default function ProjectsRoute() {
@@ -104,6 +122,9 @@ export default function ProjectsRoute() {
     <div className="page-pad">
       <div className="page-toolbar">
         <h1 style={{ fontSize: 18, margin: 0 }}>{t("allProjects")}</h1>
+        <span className="hint" style={{ marginLeft: 8 }}>
+          {t("memberProjectsCount", { count: projects.length })}
+        </span>
         <span className="page-toolbar__spacer" />
         <button className="btn" onClick={() => void createDemo()}>
           <Icon name="zap" size={16} />
@@ -118,15 +139,18 @@ export default function ProjectsRoute() {
         {projects.map((p) => {
           const role = me ? resolveRole(p, me.id) : null;
           const stat = stats[p.id] ?? { total: 0, done: 0 };
-          const members = Object.keys(p.memberRoles)
+          // 成员含所有者；头像最多 5 个，超出显示 +N
+          const memberUsers = [...new Set([p.ownerId, ...Object.keys(p.memberRoles)])]
             .map((id) => users.find((u) => u.id === id))
-            .filter((u): u is User => Boolean(u))
-            .slice(0, 5);
+            .filter((u): u is User => Boolean(u));
+          const visible = memberUsers.slice(0, 5);
+          const overflow = memberUsers.length - visible.length;
           const pct = stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0;
           return (
             <li key={p.id}>
               <div
                 className="project-card"
+                style={{ "--tile": tileColor(p.id) } as CSSProperties}
                 role="button"
                 tabIndex={0}
                 aria-label={t("openProjectAria", { name: p.name })}
@@ -135,11 +159,17 @@ export default function ProjectsRoute() {
                   if (e.key === "Enter") navigate(`/projects/${p.id}/board`);
                 }}
               >
-                <span className="project-card__name">{p.name}</span>
-                {p.description && <span className="project-card__desc">{p.description}</span>}
-                <span className="project-card__meta">
+                <span className="project-card__tile" aria-hidden>
+                  {p.name.slice(0, 1)}
+                </span>
+                <span className="project-card__head">
+                  <span className="project-card__name" title={p.name}>{p.name}</span>
+                  {role && <span className="badge badge--role">{t(ROLE_LABEL_KEY[role])}</span>}
+                </span>
+                <span className="project-card__desc">{p.description ?? ""}</span>
+                <span className="project-card__foot">
                   <span className="avatar-stack">
-                    {members.map((u) => (
+                    {visible.map((u) => (
                       <span
                         key={u.id}
                         className="avatar"
@@ -149,9 +179,12 @@ export default function ProjectsRoute() {
                         {u.name.slice(0, 1)}
                       </span>
                     ))}
+                    {overflow > 0 && <span className="avatar-stack__more">+{overflow}</span>}
                   </span>
-                  <span className="hint">{t("taskCountLabel", { count: stat.total })}</span>
-                  {role && <span className="badge badge--role">{t(ROLE_LABEL_KEY[role])}</span>}
+                  <span className="project-card__count">
+                    <Icon name="check" size={13} />
+                    {t("progressLabel", { done: stat.done, total: stat.total })}
+                  </span>
                 </span>
                 <span className="project-card__progress">
                   <span className="project-card__progress-track" aria-hidden>
@@ -160,9 +193,7 @@ export default function ProjectsRoute() {
                       style={{ width: `${pct}%` }}
                     />
                   </span>
-                  <span className="project-card__progress-label">
-                    {t("progressLabel", { done: stat.done, total: stat.total })}
-                  </span>
+                  <span className="project-card__progress-label">{pct}%</span>
                 </span>
               </div>
             </li>
