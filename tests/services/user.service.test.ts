@@ -94,6 +94,35 @@ describe("userService.create", () => {
   });
 });
 
+describe("userService.update", () => {
+  it("修改姓名与邮箱：裁剪空白并落库", async () => {
+    const created = await userService.create("张三");
+    const updated = await userService.update(created.id, {
+      name: "  张小三  ",
+      email: "  zhang@example.com  ",
+    });
+    expect(updated.name).toBe("张小三");
+    expect(updated.email).toBe("zhang@example.com");
+    expect((await db.users.get(created.id))?.name).toBe("张小三");
+  });
+
+  it("未提供的字段保持原值", async () => {
+    const created = await userService.create("李四");
+    const updated = await userService.update(created.id, { email: "li@example.com" });
+    expect(updated.name).toBe("李四");
+    expect(updated.email).toBe("li@example.com");
+  });
+
+  it("空白姓名被拒", async () => {
+    const created = await userService.create("王五");
+    await expect(userService.update(created.id, { name: "   " })).rejects.toThrow(/姓名/);
+  });
+
+  it("修改不存在的用户报错", async () => {
+    await expect(userService.update("u-missing", { name: "谁" })).rejects.toThrow();
+  });
+});
+
 describe("userService.remove", () => {
   it("清理成员角色、任务指派、指派自动化与 @ 提及", async () => {
     const p = await seedProject();

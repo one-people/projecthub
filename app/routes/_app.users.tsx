@@ -23,6 +23,9 @@ export default function UsersRoute() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBatch, setConfirmBatch] = useState(false);
   const [filter, setFilter] = useState("");
+  const [editing, setEditing] = useState<User | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   useEffect(() => {
     const sub = liveQuery(async () => {
@@ -46,6 +49,23 @@ export default function UsersRoute() {
     try {
       await userService.create(name);
       setNewUserName("");
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  function openEdit(u: User) {
+    setEditing(u);
+    setEditName(u.name);
+    setEditEmail(u.email);
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    try {
+      await userService.update(editing.id, { name: editName, email: editEmail });
+      setEditing(null);
       toast.success(t("saved"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("updateFailed"));
@@ -160,9 +180,19 @@ export default function UsersRoute() {
                     {u.name}
                     {isMe && <span className="hint">{t("itsYou")}</span>}
                   </span>
+                  {u.email && <span className="hint">{u.email}</span>}
                   {owned > 0 && <span className="badge badge--role">{t("ownsProjectsCount", { count: owned })}</span>}
                   {memberOf > 0 && <span className="badge">{t("memberProjectsCount", { count: memberOf })}</span>}
                   <span style={{ flex: 1 }} />
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={t("editUserAria", { name: u.name })}
+                    title={t("editUser")}
+                    onClick={() => openEdit(u)}
+                  >
+                    <Icon name="pencil" size={14} />
+                  </button>
                   <button
                     className="btn btn--danger"
                     onClick={() => setPendingDeleteUser(u)}
@@ -211,6 +241,68 @@ export default function UsersRoute() {
           <p className="hint">{t("userManagementHint")}</p>
         </section>
       </div>
+
+      {editing && (
+        <div
+          className="modal-overlay"
+          role="presentation"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(null); }}
+        >
+          <form
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("editUser")}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void saveEdit();
+            }}
+          >
+            <div className="modal__header">
+              <h2 style={{ fontSize: 16, margin: 0 }}>{t("editUser")}</h2>
+              <button type="button" className="icon-btn" aria-label={t("close")} onClick={() => setEditing(null)}>
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+            <label className="field-label" style={{ display: "block", marginTop: 14 }}>
+              {t("userNameLabel")}
+              <input
+                className="input"
+                style={{ width: "100%", marginTop: 4 }}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder={t("userNameLabel")}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); void saveEdit(); }
+                  if (e.key === "Escape") setEditing(null);
+                }}
+              />
+            </label>
+            <label className="field-label" style={{ display: "block", marginTop: 10 }}>
+              {t("userEmailLabel")}
+              <input
+                className="input"
+                type="email"
+                style={{ width: "100%", marginTop: 4 }}
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder={t("userEmailPlaceholder")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); void saveEdit(); }
+                  if (e.key === "Escape") setEditing(null);
+                }}
+              />
+            </label>
+            <div className="confirm-actions">
+              <button type="button" className="btn" onClick={() => setEditing(null)}>{t("cancel")}</button>
+              <button type="submit" className="btn btn--primary" disabled={!editName.trim()}>
+                {t("save")}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingDeleteUser)}

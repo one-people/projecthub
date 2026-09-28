@@ -5,7 +5,7 @@ import { userSchema, type User } from "~/models/user";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
-/** 全局用户管理：新建本地用户 / 删除用户并清理所有引用 */
+/** 全局用户管理：新建本地用户 / 修改资料 / 删除用户并清理所有引用 */
 export const userService = {
   async create(name: string): Promise<User> {
     const trimmed = name.trim().slice(0, 50);
@@ -20,6 +20,18 @@ export const userService = {
     });
     await db.users.add(user);
     return user;
+  },
+
+  /** 修改用户资料：姓名必填（截断到 50），邮箱可空；合并后走 schema 校验 */
+  async update(userId: string, patch: { name?: string; email?: string }): Promise<User> {
+    const user = await db.users.get(userId);
+    if (!user) throw new Error(t("userNotFound"));
+    const name = (patch.name ?? user.name).trim().slice(0, 50);
+    if (!name) throw new Error(t("errNameRequired"));
+    const email = (patch.email ?? user.email).trim();
+    const next = userSchema.parse({ ...user, name, email });
+    await db.users.put(next);
+    return next;
   },
 
   async remove(userId: string): Promise<void> {
