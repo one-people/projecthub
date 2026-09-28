@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@remix-run/react";
 import { db } from "~/repositories/db";
+import { session } from "~/auth/session";
+import { isProjectVisible } from "~/auth/rbac";
 import { Icon } from "~/components/ui/Icon";
 import { useI18n } from "~/lib/i18n";
 import type { Task } from "~/models/task";
@@ -28,9 +30,16 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
       setActive(0);
       setTimeout(() => inputRef.current?.focus(), 0);
       void (async () => {
-        const [ts, ps] = await Promise.all([db.tasks.toArray(), db.projects.toArray()]);
-        setTasks(ts.filter((x) => !x.deletedAt));
-        setProjects(ps.filter((x) => !x.deletedAt));
+        const [ts, ps, user] = await Promise.all([
+          db.tasks.toArray(),
+          db.projects.toArray(),
+          session.currentUser(),
+        ]);
+        // 私有制：只搜索可见项目的项目名与其任务
+        const visibleProjects = ps.filter((x) => isProjectVisible(x, user.id));
+        const visibleIds = new Set(visibleProjects.map((p) => p.id));
+        setTasks(ts.filter((x) => !x.deletedAt && visibleIds.has(x.projectId)));
+        setProjects(visibleProjects);
       })();
     }
   }, [open]);

@@ -47,6 +47,24 @@ describe("workbenchService.load", () => {
     expect(card.openTaskCount).toBe(3);
   });
 
+  it("非成员项目不可见，其任务也不进入我的任务", async () => {
+    const uid = await seed();
+    await db.projects.add({
+      id: "p2", name: "别人的项目", description: "", statusColumns: [
+        { id: "c1", name: "待办", order: 0, isDone: false },
+      ], customFields: [], ownerId: "u-other", memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
+    });
+    await db.tasks.add({
+      id: "t5", projectId: "p2", title: "分配给我的越权任务", descriptionRich: null, status: "c1", assigneeId: uid,
+      startDate: null, dueDate: today, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none",
+      order: "a0", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, createdAt: now, updatedAt: now, version: 0,
+    });
+    const data = await workbenchService.load(uid);
+    expect(data.projects.map((p) => p.id)).toEqual(["p1"]);
+    expect(data.pending.map((t) => t.id)).toEqual(["t1", "t2"]);
+    expect(data.today.map((t) => t.id)).toEqual(["t1"]);
+  });
+
   it("weekDone 统计最近 7 天我完成的任务", async () => {
     const uid = await seed();
     const data = await workbenchService.load(uid);

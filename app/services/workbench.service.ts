@@ -1,4 +1,5 @@
 import { db } from "~/repositories/db";
+import { isProjectVisible } from "~/auth/rbac";
 import type { Task } from "~/models/task";
 
 export interface WorkbenchProjectCard {
@@ -22,7 +23,12 @@ export const workbenchService = {
       db.tasks.toArray(),
       db.projects.toArray(),
     ]);
-    const live = allTasks.filter((t) => t.deletedAt === null);
+    // 私有制：非成员项目不可见，其任务也不进入我的任务/统计
+    const visibleIds = new Set(
+      projects.filter((p) => isProjectVisible(p, userId)).map((p) => p.id),
+    );
+    const visibleProjects = projects.filter((p) => p.deletedAt === null && visibleIds.has(p.id));
+    const live = allTasks.filter((t) => t.deletedAt === null && visibleIds.has(t.projectId));
     const mine = live.filter(
       (t) => t.assigneeId === userId && t.completedAt === null,
     );
@@ -50,8 +56,7 @@ export const workbenchService = {
           t.completedAt !== null &&
           new Date(t.completedAt).getTime() > Date.now() - 7 * 86400000,
       ).length,
-      projects: projects
-        .filter((p) => p.deletedAt === null)
+      projects: visibleProjects
         .map((p) => ({
           id: p.id,
           name: p.name,

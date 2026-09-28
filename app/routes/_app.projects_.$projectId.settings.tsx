@@ -58,6 +58,8 @@ export default function ProjectSettingsRoute() {
   const [desc, setDesc] = useState("");
   const [confirmText, setConfirmText] = useState("");
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
+  const [pendingTransfer, setPendingTransfer] = useState<User | null>(null);
+  const [newUserName, setNewUserName] = useState("");
   const [newColumnName, setNewColumnName] = useState("");
   const [labels, setLabels] = useState<Label[]>([]);
   const [newLabelName, setNewLabelName] = useState("");
@@ -160,6 +162,30 @@ export default function ProjectSettingsRoute() {
   async function addMember(userId: string) {
     try {
       await projectService.addMember(current.id, actorId, userId);
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function transferOwnership() {
+    if (!pendingTransfer) return;
+    try {
+      await projectService.transferOwnership(current.id, actorId, pendingTransfer.id);
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+      return;
+    }
+    setPendingTransfer(null);
+  }
+
+  async function createMemberUser() {
+    const trimmed = newUserName.trim();
+    if (!trimmed) return;
+    try {
+      await projectService.createMemberUser(current.id, actorId, trimmed);
+      setNewUserName("");
       toast.success(t("saved"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("updateFailed"));
@@ -379,11 +405,15 @@ export default function ProjectSettingsRoute() {
   const sortedColumns = [...project.statusColumns].sort((a, b) => a.order - b.order);
   const nonMembers = users.filter((u) => !project.memberRoles[u.id]);
   const members = users.filter((u) => project.memberRoles[u.id]);
+  const isOwner = role === "owner";
 
   return (
     <div className="page-pad">
       <nav className="tabs settings-tabs" aria-label={t("projectSettings")}>
-        {(["basic", "members", "columns", "labels", "milestones", "templates", "automations", "danger"] as Tab[]).map((k) => (
+        {/* 危险区仅所有者可见（删除/恢复走 project:delete） */}
+        {(["basic", "members", "columns", "labels", "milestones", "templates", "automations", "danger"] as Tab[])
+          .filter((k) => k !== "danger" || isOwner)
+          .map((k) => (
           <button
             key={k}
             type="button"
@@ -424,32 +454,78 @@ export default function ProjectSettingsRoute() {
       {tab === "members" && (
         <section className="card">
           <ul className="user-list">
-            {members.map((u) => (
-              <li key={u.id} className="user-row">
-                <span className="avatar" style={{ background: u.avatarColor }}>{u.name.slice(0, 1)}</span>
-                <strong style={{ flex: 1 }}>{u.name}</strong>
-                <select
-                  className="input"
-                  value={project.memberRoles[u.id] as MemberRole}
-                  disabled={!canManage}
-                  onChange={(e) => void changeMemberRole(u.id, e.target.value as MemberRole)}
-                  aria-label={`${u.name} ${t("myRole")}`}
-                >
-                  {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{t(ROLE_LABEL_KEY[r])}</option>)}
-                </select>
-                <button className="btn btn--danger" disabled={!canManage} onClick={() => setPendingRemove(u.id)}>
-                  <Icon name="close" size={14} />{t("removeMember")}
-                </button>
-              </li>
-            ))}
+            {members.map((u) => {
+              const isOwnerRow = project.ownerId === u.id;
+              const isSelf = u.id === actorId;
+              const memberRole = project.memberRoles[u.id] as MemberRole | undefined;
+              // admin 级成员的增删改仅 owner；自己的角色与所有者不可在此变更
+              const adminLocked = role !== "owner" && memberRole === "admin";
+              const canEditRole = canManage && !isOwnerRow && !isSelf && !adminLocked;
+              const canRemove = canManage && !isOwnerRow && !isSelf && !adminLocked;
+              const roleOptions = role === "owner" ? ROLE_OPTIONS : ROLE_OPTIONS.filter((r) => r !== "admin");
+              return (
+                <li key={u.id} className="user-row">
+                  <span className="avatar" style={{ background: u.avatarColor }}>{u.name.slice(0, 1)}</span>
+                  <strong style={{ flex: 1 }}>
+                    {u.name}
+                    {isSelf && <span className="hint">{t("itsYou")}</span>}
+                  </strong>
+                  {isOwnerRow ? (
+                    <span className="badge badge--role">{t(ROLE_LABEL_KEY.owner)}</span>
+                  ) : canEditRole ? (
+                    <select
+                      className="input"
+                      value={memberRole}
+                      onChange={(e) => void changeMemberRole(u.id, e.target.value as MemberRole)}
+                      aria-label={`${u.name} ${t("tabMembers")}`}
+                    >
+                      {roleOptions.map((r) => <option key={r} value={r}>{t(ROLE_LABEL_KEY[r])}</option>)}
+                    </select>
+                  ) : (
+                    memberRole && <span className="badge">{t(ROLE_LABEL_KEY[memberRole])}</span>
+                  )}
+                  {canRemove && (
+                    <button className="btn btn--danger" onClick={() => setPendingRemove(u.id)}>
+                      <Icon name="close" size={14} />{t("removeMember")}
+                    </button>
+                  )}
+                  {role === "owner" && !isOwnerRow && (
+                    <button
+                      className="icon-btn"
+                      onClick={() => setPendingTransfer(u)}
+                      aria-label={t("transferOwnershipAria", { name: u.name })}
+                      title={t("transferOwnership")}
+                    >
+                      <Icon name="flag" size={15} />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
-          {canManage && nonMembers.length > 0 && (
-            <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
-              <span className="field-label" style={{ margin: 0 }}>{t("addMember")}</span>
-              <select className="input" value="" onChange={(e) => e.target.value && void addMember(e.target.value)} aria-label={t("addMember")}>
-                <option value="">—</option>
-                {nonMembers.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
+          {canManage && (
+            <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center", flexWrap: "wrap" }}>
+              {nonMembers.length > 0 && (
+                <>
+                  <span className="field-label" style={{ margin: 0 }}>{t("addMember")}</span>
+                  <select className="input" value="" onChange={(e) => e.target.value && void addMember(e.target.value)} aria-label={t("addMember")}>
+                    <option value="">—</option>
+                    {nonMembers.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  </select>
+                </>
+              )}
+              <input
+                className="input"
+                style={{ maxWidth: 220 }}
+                value={newUserName}
+                placeholder={t("newUserNamePlaceholder")}
+                aria-label={t("newUserNamePlaceholder")}
+                onChange={(e) => setNewUserName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void createMemberUser(); }}
+              />
+              <button className="btn" disabled={!newUserName.trim()} onClick={() => void createMemberUser()}>
+                <Icon name="plus" size={14} />{t("createAndAdd")}
+              </button>
             </div>
           )}
         </section>
@@ -886,6 +962,14 @@ export default function ProjectSettingsRoute() {
         danger
         onConfirm={() => pendingRemove && void removeMember(pendingRemove)}
         onCancel={() => setPendingRemove(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(pendingTransfer)}
+        title={t("transferOwnership")}
+        message={t("confirmTransferOwnership", { name: pendingTransfer?.name ?? "" })}
+        danger
+        onConfirm={() => void transferOwnership()}
+        onCancel={() => setPendingTransfer(null)}
       />
       <ConfirmDialog
         open={Boolean(pendingDeleteLabel)}

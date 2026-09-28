@@ -173,6 +173,9 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   if (!task || !project) return null;
 
   const canEdit = actor?.role ? can(actor.role, "task:update") : false;
+  const canManageLabels = actor?.role ? can(actor.role, "label:manage") : false;
+  const canSaveTemplate = actor?.role ? can(actor.role, "template:manage") : false;
+  const canComment = actor?.role ? can(actor.role, "comment:create") : false;
   const columns = [...project.statusColumns].sort((a, b) => a.order - b.order);
   const done = Boolean(task.completedAt);
   const assignee = task.assigneeId ? users.find((u) => u.id === task.assigneeId) : undefined;
@@ -353,7 +356,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
               aria-label={t("editTitleAria")}
             />
           </div>
-          {actor && canEdit && (
+          {actor && canSaveTemplate && (
             <button
               className="icon-btn"
               onClick={() => void saveAsTemplate()}
@@ -604,7 +607,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                     {task.labels.includes(l.id) && <Icon name="check" size={13} />}
                   </button>
                 ))}
-                {canEdit && (
+                {canManageLabels && (
                   <form
                     className="popover__form"
                     onSubmit={(e) => {
@@ -853,6 +856,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                   users={users}
                   actorId={actor.id}
                   actorRole={actor.role ?? "guest"}
+                  canComment={canComment}
                   onAdd={addComment}
                   compact
                 />

@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
-import { resolveRole } from "~/auth/rbac";
+import { isProjectVisible } from "~/auth/rbac";
 import { projectRepository } from "~/repositories/project.repository";
 import { useI18n } from "~/lib/i18n";
 import { Icon } from "~/components/ui/Icon";
@@ -20,7 +20,7 @@ export function ContextPanel() {
       const me = await session.currentUser();
       const rows = await db.projects.toArray();
       return rows
-        .filter((p) => !p.deletedAt && resolveRole(p, me.id) !== null)
+        .filter((p) => isProjectVisible(p, me.id))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .map((p) => ({ id: p.id, name: p.name }));
     }).subscribe(setProjects);

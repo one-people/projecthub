@@ -19,3 +19,11 @@ export function resolveRole(
   const role = project.memberRoles[userId];
   return role === "admin" || role === "member" || role === "guest" ? role : null;
 }
+
+/** 私有制可见性：项目仅对成员（含所有者）可见，非成员在列表/搜索/工作台一律过滤 */
+export function isProjectVisible(
+  project: { ownerId?: string; memberRoles: Record<string, string>; deletedAt?: string | null },
+  userId: string,
+): boolean {
+  return !project.deletedAt && resolveRole(project, userId) !== null;
+}

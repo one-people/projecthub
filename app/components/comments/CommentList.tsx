@@ -15,9 +15,11 @@ export interface CommentListProps {
   onAdd: (json: unknown) => Promise<void>;
   /** 抽屉内嵌时去掉外层卡片间距 */
   compact?: boolean;
+  /** 无 comment:create 时隐藏输入框（访客只读） */
+  canComment?: boolean;
 }
 
-export function CommentList({ comments, users, actorId, actorRole, onAdd, compact }: CommentListProps) {
+export function CommentList({ comments, users, actorId, actorRole, onAdd, compact, canComment = true }: CommentListProps) {
   useI18n(); // 语言切换时重渲染
   const [draft, setDraft] = useState<unknown>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -66,20 +68,22 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd, compac
         {comments.length === 0 && <li className="hint">{t("noComments")}</li>}
       </ul>
 
-      <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 16, marginTop: 12 }}>
-        <p className="hint" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-          {t("commentAs", { name: name(actorId), role: t(ROLE_LABEL_KEY[actorRole]) })}
-        </p>
-        <RichTextEditor users={users.map(({ id, name }) => ({ id, name }))} content={null} onChange={setDraft} />
-        <button
-          className="btn btn--primary"
-          onClick={() => void submit()}
-          disabled={submitting || draft == null}
-          style={{ marginTop: 8 }}
-        >
-          {t("postComment")}
-        </button>
-      </div>
+      {canComment && (
+        <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 16, marginTop: 12 }}>
+          <p className="hint" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            {t("commentAs", { name: name(actorId), role: t(ROLE_LABEL_KEY[actorRole]) })}
+          </p>
+          <RichTextEditor users={users.map(({ id, name }) => ({ id, name }))} content={null} onChange={setDraft} />
+          <button
+            className="btn btn--primary"
+            onClick={() => void submit()}
+            disabled={submitting || draft == null}
+            style={{ marginTop: 8 }}
+          >
+            {t("postComment")}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

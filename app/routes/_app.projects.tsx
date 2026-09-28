@@ -5,7 +5,7 @@ import { db } from "~/repositories/db";
 import { projectRepository } from "~/repositories/project.repository";
 import { projectTemplateService } from "~/services/projectTemplate.service";
 import { session } from "~/auth/session";
-import { resolveRole } from "~/auth/rbac";
+import { isProjectVisible, resolveRole } from "~/auth/rbac";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { ROLE_LABEL_KEY } from "~/lib/role-labels";
 import { Icon } from "~/components/ui/Icon";
@@ -52,7 +52,8 @@ export default function ProjectsRoute() {
       }
       return { rows, us, user, byProject };
     }).subscribe(({ rows, us, user, byProject }) => {
-      setProjects(rows);
+      // 私有制：非成员项目不在列表出现
+      setProjects(user ? rows.filter((p) => isProjectVisible(p, user.id)) : []);
       setUsers(us);
       setMe(user);
       setStats(byProject);
@@ -150,9 +151,7 @@ export default function ProjectsRoute() {
                     ))}
                   </span>
                   <span className="hint">{t("taskCountLabel", { count: stat.total })}</span>
-                  <span className={`badge${role ? " badge--role" : ""}`}>
-                    {role ? t(ROLE_LABEL_KEY[role]) : t("notMember")}
-                  </span>
+                  {role && <span className="badge badge--role">{t(ROLE_LABEL_KEY[role])}</span>}
                 </span>
                 <span className="project-card__progress">
                   <span className="project-card__progress-track" aria-hidden>

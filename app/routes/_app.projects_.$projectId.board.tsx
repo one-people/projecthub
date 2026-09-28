@@ -67,6 +67,11 @@ export default function BoardRoute() {
     prevOrder: string | null;
     nextOrder: string | null;
   }) {
+    // 无 task:update 时先拦截，避免乐观移动后被服务层回滚造成闪烁
+    if (!canToggle) {
+      toast.error(t("noPermission"));
+      return;
+    }
     // 乐观更新：本地先移动，失败则由 liveQuery 回读
     setTasks((prev) =>
       prev.map((t) =>
