@@ -23,7 +23,9 @@ export const projectSchema = z.object({
   description: z.string().default(""),
   statusColumns: z.array(statusColumnSchema),
   customFields: z.array(customFieldSchema).default([]),
-  memberRoles: z.record(z.string()), // userId -> roleId
+  /** 项目所有者（Worktile 式唯一所有者，可移交）；所有者同时保留 admin 成员项便于展示 */
+  ownerId: z.string(),
+  memberRoles: z.record(z.enum(["admin", "member", "guest"])), // userId -> roleId
   deletedAt: z.string().nullable().default(null),
   createdAt: z.string(),
   updatedAt: z.string(),

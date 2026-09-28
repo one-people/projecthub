@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "@remix-run/react";
 import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
-import { can, type RoleId } from "~/auth/rbac";
+import { can, type MemberRole, type RoleId } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
 import { labelService } from "~/services/label.service";
 import { milestoneService } from "~/services/milestone.service";
@@ -27,7 +27,8 @@ import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 export const handle = { crumb: () => ({ label: translate("projectSettings") }) };
 
 type Tab = "basic" | "members" | "columns" | "labels" | "milestones" | "templates" | "automations" | "danger";
-const ROLE_OPTIONS: RoleId[] = ["admin", "projectAdmin", "member", "guest"];
+/** 成员可选角色：owner 由 ownerId 唯一标记，只能通过「移交所有权」变更 */
+const ROLE_OPTIONS: MemberRole[] = ["admin", "member", "guest"];
 
 const TAB_KEY: Record<Tab, keyof Dict> = {
   basic: "tabBasic",
@@ -130,14 +131,14 @@ export default function ProjectSettingsRoute() {
     toast.success(t("saved"));
   }
 
-  async function changeMemberRole(userId: string, nextRole: RoleId) {
-    const memberRoles = { ...current.memberRoles, [userId]: nextRole };
+  async function changeMemberRole(userId: string, nextRole: MemberRole) {
+    const memberRoles: Record<string, MemberRole> = { ...current.memberRoles, [userId]: nextRole };
     await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
     toast.success(t("saved"));
   }
 
   async function removeMember(userId: string) {
-    const memberRoles = { ...current.memberRoles };
+    const memberRoles: Record<string, MemberRole> = { ...current.memberRoles };
     delete memberRoles[userId];
     await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
     toast.success(t("saved"));
@@ -145,7 +146,7 @@ export default function ProjectSettingsRoute() {
   }
 
   async function addMember(userId: string) {
-    const memberRoles = { ...current.memberRoles, [userId]: "member" };
+    const memberRoles: Record<string, MemberRole> = { ...current.memberRoles, [userId]: "member" };
     await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
     toast.success(t("saved"));
   }
@@ -358,9 +359,9 @@ export default function ProjectSettingsRoute() {
                 <strong style={{ flex: 1 }}>{u.name}</strong>
                 <select
                   className="input"
-                  value={project.memberRoles[u.id] as RoleId}
+                  value={project.memberRoles[u.id] as MemberRole}
                   disabled={!canManage}
-                  onChange={(e) => void changeMemberRole(u.id, e.target.value as RoleId)}
+                  onChange={(e) => void changeMemberRole(u.id, e.target.value as MemberRole)}
                   aria-label={`${u.name} ${t("myRole")}`}
                 >
                   {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{t(ROLE_LABEL_KEY[r])}</option>)}

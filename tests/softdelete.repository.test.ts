@@ -39,8 +39,8 @@ describe("soft delete filtering", () => {
 
   it("projectRepository.list 排除软删项目", async () => {
     await db.projects.bulkAdd([
-      { id: "p1", name: "活", description: "", statusColumns: [], customFields: [], memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0 },
-      { id: "p2", name: "死", description: "", statusColumns: [], customFields: [], memberRoles: {}, deletedAt: now, createdAt: now, updatedAt: now, version: 0 },
+      { id: "p1", name: "活", description: "", statusColumns: [], customFields: [], ownerId: "u1", memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0 },
+      { id: "p2", name: "死", description: "", statusColumns: [], customFields: [], ownerId: "u1", memberRoles: {}, deletedAt: now, createdAt: now, updatedAt: now, version: 0 },
     ]);
     const list = await projectRepository.list();
     expect(list.map((p) => p.id)).toEqual(["p1"]);

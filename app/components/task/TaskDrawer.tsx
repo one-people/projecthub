@@ -7,8 +7,7 @@ import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
 import type { Label } from "~/models/label";
 import type { TaskLink } from "~/models/taskLink";
-import type { RoleId } from "~/auth/rbac";
-import { can } from "~/auth/rbac";
+import { can, resolveRole, type RoleId } from "~/auth/rbac";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
 import { taskService, PermissionError, type TaskUpdatePatch } from "~/services/task.service";
@@ -70,7 +69,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   const [linkMode, setLinkMode] = useState<LinkMode>("predecessor");
   const [linkQuery, setLinkQuery] = useState("");
   const [newLabelName, setNewLabelName] = useState("");
-  const [actor, setActor] = useState<{ id: string; role: RoleId } | null>(null);
+  const [actor, setActor] = useState<{ id: string; role: RoleId | null } | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [picker, setPicker] = useState<Picker>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -104,7 +103,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
       ]);
       setProject(p ?? null);
       setUsers(us);
-      setActor({ id: me.id, role: (p?.memberRoles[me.id] as RoleId | undefined) ?? "member" });
+      setActor({ id: me.id, role: p ? resolveRole(p, me.id) : null });
     })();
   }, [task?.projectId, taskId]);
 
@@ -173,7 +172,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
 
   if (!task || !project) return null;
 
-  const canEdit = actor ? can(actor.role, "task:update") : false;
+  const canEdit = actor?.role ? can(actor.role, "task:update") : false;
   const columns = [...project.statusColumns].sort((a, b) => a.order - b.order);
   const done = Boolean(task.completedAt);
   const assignee = task.assigneeId ? users.find((u) => u.id === task.assigneeId) : undefined;
@@ -226,7 +225,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   }
 
   async function apply(patch: TaskUpdatePatch) {
-    if (!actor || !task) return;
+    if (!actor?.role || !task) return;
     try {
       await taskService.updateTask(actor.id, actor.role, task.id, patch);
     } catch (e) {
@@ -297,7 +296,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   }
 
   async function addComment(json: unknown) {
-    if (!task || !actor) return;
+    if (!task || !actor?.role) return;
     await commentService.create(actor.id, actor.role, {
       id: uuid(),
       taskId: task.id,
@@ -364,7 +363,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
               <Icon name="copy" size={16} />
             </button>
           )}
-          {actor && can(actor.role, "task:delete") && (
+          {actor?.role && can(actor.role, "task:delete") && (
             <button
               className="icon-btn"
               onClick={() => setConfirmDelete(true)}
@@ -851,7 +850,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                   comments={comments}
                   users={users}
                   actorId={actor.id}
-                  actorRole={actor.role}
+                  actorRole={actor.role ?? "guest"}
                   onAdd={addComment}
                   compact
                 />
@@ -866,13 +865,14 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           message={t("confirmDeleteTask")}
           danger
           onConfirm={async () => {
-            if (!task || !actor) return;
+            if (!task || !actor?.role) return;
+            const role = actor.role;
             try {
-              await trashService.deleteTask(actor.id, actor.role, task.id);
+              await trashService.deleteTask(actor.id, role, task.id);
               setConfirmDelete(false);
               onClose();
               toast.success(t("deleted"), {
-                undo: () => trashService.restoreTask(actor.id, actor.role, task.id),
+                undo: () => trashService.restoreTask(actor.id, role, task.id),
               });
             } catch (err) {
               toast.error(err instanceof Error ? err.message : t("updateFailed"));

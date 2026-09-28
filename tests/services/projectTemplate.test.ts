@@ -21,6 +21,7 @@ async function seedProject(id: string): Promise<Project> {
       { id: "c3", name: "已完成", isDone: true, order: 2 },
     ],
     customFields: [{ id: "f1", name: "Story Points", type: "number", options: [] }],
+    ownerId: "u1",
     memberRoles: { u1: "admin" },
     deletedAt: null,
     createdAt: now,

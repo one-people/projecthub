@@ -10,7 +10,7 @@ async function seed() {
   await db.projects.add({
     id: "p1", name: "项目", description: "", statusColumns: [
       { id: "c1", name: "待办", isDone: false, order: 0 },
-    ], customFields: [], memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
+    ], customFields: [], ownerId: "u1", memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
   });
   await db.tasks.add({
     id: "t1", projectId: "p1", title: "任务", descriptionRich: null, status: "c1",
@@ -44,9 +44,14 @@ describe("trashService", () => {
     await expect(trashService.deleteTask("u1", "guest", "t1")).rejects.toThrow(/权限/);
   });
 
+  it("admin 不能删除项目（仅所有者）", async () => {
+    await seed();
+    await expect(trashService.deleteProject("u1", "admin", "p1")).rejects.toThrow(/权限/);
+  });
+
   it("deleteProject 级联软删任务并标记 deletedByProjectId", async () => {
     await seed();
-    await trashService.deleteProject("u1", "admin", "p1");
+    await trashService.deleteProject("u1", "owner", "p1");
     expect((await db.projects.get("p1"))?.deletedAt).toBeTruthy();
     const task = await db.tasks.get("t1");
     expect(task?.deletedAt).toBeTruthy();
@@ -55,8 +60,8 @@ describe("trashService", () => {
 
   it("restoreProject 级联恢复", async () => {
     await seed();
-    await trashService.deleteProject("u1", "admin", "p1");
-    await trashService.restoreProject("u1", "admin", "p1");
+    await trashService.deleteProject("u1", "owner", "p1");
+    await trashService.restoreProject("u1", "owner", "p1");
     expect((await db.projects.get("p1"))?.deletedAt).toBeNull();
     expect((await db.tasks.get("t1"))?.deletedAt).toBeNull();
     expect((await db.tasks.get("t1"))?.deletedByProjectId).toBeNull();
@@ -64,7 +69,7 @@ describe("trashService", () => {
 
   it("restoreTask 只恢复独立删除的任务", async () => {
     await seed();
-    await trashService.deleteProject("u1", "admin", "p1");
+    await trashService.deleteProject("u1", "owner", "p1");
     await expect(trashService.restoreTask("u1", "member", "t1")).rejects.toThrow(/所属项目/);
     // 复位为未删除状态，再验证独立删除路径
     await db.tasks.update("t1", { deletedAt: null, deletedByProjectId: null });

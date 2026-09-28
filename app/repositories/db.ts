@@ -81,6 +81,21 @@ class ProjectHubDB extends Dexie {
         if (row.customValues === undefined) row.customValues = {};
       });
     });
+    // v7：权限模型重构 —— projectAdmin 归并为 admin；回填项目所有者 ownerId（取首位 admin，无则首个成员）
+    this.version(7).upgrade(async (tx) => {
+      await tx.table("projects").toCollection().modify((row: Record<string, unknown>) => {
+        const roles = (row.memberRoles ?? {}) as Record<string, string>;
+        for (const [uid, r] of Object.entries(roles)) {
+          if (r === "projectAdmin" || r === "owner") roles[uid] = "admin";
+        }
+        row.memberRoles = roles;
+        if (typeof row.ownerId !== "string" || !row.ownerId) {
+          const entries = Object.entries(roles);
+          const admin = entries.find(([, r]) => r === "admin");
+          row.ownerId = admin ? admin[0] : (entries[0]?.[0] ?? "");
+        }
+      });
+    });
   }
 }
 

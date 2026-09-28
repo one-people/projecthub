@@ -23,6 +23,7 @@ async function seedProject() {
       { id: COL_DONE, name: "已完成", isDone: true, order: 2 },
     ],
     customFields: [],
+    ownerId: "u1",
     memberRoles: { u1: "admin" },
     deletedAt: null,
     createdAt: NOW,

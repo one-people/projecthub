@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation, useNavigate, useParams } from "@remix-run/re
 import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
-import { can, type RoleId } from "~/auth/rbac";
+import { can, resolveRole, type RoleId } from "~/auth/rbac";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { ROLE_LABEL_KEY } from "~/lib/role-labels";
 import { Icon, type IconName } from "~/components/ui/Icon";
@@ -25,7 +25,7 @@ export default function ProjectLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useI18n();
-  const [state, setState] = useState<ProjectOutletContext | null>(null);
+  const [state, setState] = useState<{ project: Project; role: RoleId | null; actorId: string; users: User[] } | null>(null);
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function ProjectLayout() {
     const sub = liveQuery(async () => {
       const p = await db.projects.get(projectId);
       const [me, users] = await Promise.all([session.currentUser(), db.users.toArray()]);
-      const role = (p?.memberRoles[me.id] as RoleId | undefined) ?? "member";
+      const role = p ? resolveRole(p, me.id) : null;
       return { p, me, users, role };
     }).subscribe(({ p, me, users, role }) => {
       if (!p || p.deletedAt) {
@@ -59,7 +59,7 @@ export default function ProjectLayout() {
   }
 
   const { project, role, actorId, users } = state;
-  if (!can(role, "task:read")) {
+  if (!role || !can(role, "task:read")) {
     return (
       <div className="project-layout">
         <div className="empty" style={{ padding: 80 }}>

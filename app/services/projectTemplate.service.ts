@@ -218,6 +218,7 @@ export const projectTemplateService = {
       description: template.builtin ? "" : template.description,
       statusColumns: template.columns.map((c, i) => ({ id: uuid(), name: c.name, isDone: c.isDone, order: i })),
       customFields: template.customFields.map((f) => ({ ...f, id: uuid() })),
+      ownerId: actorId,
       memberRoles: { [actorId]: "admin" },
       deletedAt: null,
       createdAt: now,

@@ -14,7 +14,7 @@ async function seed() {
   await db.projects.add({
     id: "p1", name: "项目A", description: "", statusColumns: [
       { id: "c1", name: "待办", order: 0, isDone: false }, { id: "c2", name: "完成", order: 1, isDone: true },
-    ], customFields: [], memberRoles: { [uid]: "member" }, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
+    ], customFields: [], ownerId: uid, memberRoles: { [uid]: "member" }, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
   });
   await db.tasks.bulkAdd([
     { id: "t1", projectId: "p1", title: "待处理", descriptionRich: null, status: "c1", assigneeId: uid, startDate: null, dueDate: today, customValues: {}, priority: "high", labels: [], subtasks: [], recurrence: "none", order: "a0", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, createdAt: now, updatedAt: now, version: 0 },

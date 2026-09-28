@@ -5,7 +5,7 @@ import { db } from "~/repositories/db";
 import { projectRepository } from "~/repositories/project.repository";
 import { projectTemplateService } from "~/services/projectTemplate.service";
 import { session } from "~/auth/session";
-import type { RoleId } from "~/auth/rbac";
+import { resolveRole } from "~/auth/rbac";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { ROLE_LABEL_KEY } from "~/lib/role-labels";
 import { Icon } from "~/components/ui/Icon";
@@ -114,7 +114,7 @@ export default function ProjectsRoute() {
       </div>
       <ul className="project-list">
         {projects.map((p) => {
-          const role = (p.memberRoles[me?.id ?? ""] as RoleId | undefined) ?? null;
+          const role = me ? resolveRole(p, me.id) : null;
           const stat = stats[p.id] ?? { total: 0, done: 0 };
           const members = Object.keys(p.memberRoles)
             .map((id) => users.find((u) => u.id === id))

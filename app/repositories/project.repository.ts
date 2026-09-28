@@ -51,6 +51,7 @@ export const projectRepository = {
       name: "演示项目",
       description: "ProjectHub 演示数据",
       statusColumns: DEFAULT_COLUMNS.map((c) => ({ ...c, id: uuid() })),
+      ownerId: users[0]!.id,
       memberRoles: {
         [users[0]!.id]: "admin",
         [users[1]!.id]: "member",

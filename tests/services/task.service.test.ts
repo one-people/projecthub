@@ -24,13 +24,20 @@ describe("fractional indexing", () => {
 });
 
 describe("RBAC", () => {
-  it("管理员拥有全部权限", () => {
-    expect(can("admin", "task:delete")).toBe(true);
-    expect(can("admin", "project:create")).toBe(true);
+  it("所有者拥有全部权限（含删除项目）", () => {
+    expect(can("owner", "task:delete")).toBe(true);
+    expect(can("owner", "project:delete")).toBe(true);
+  });
+
+  it("管理员可管理项目但不能删除", () => {
+    expect(can("admin", "project:update")).toBe(true);
+    expect(can("admin", "member:manage")).toBe(true);
+    expect(can("admin", "project:delete")).toBe(false);
   });
 
   it("成员不能管理项目", () => {
     expect(can("member", "project:delete")).toBe(false);
+    expect(can("member", "project:update")).toBe(false);
   });
 
   it("只读访客只能查看", () => {

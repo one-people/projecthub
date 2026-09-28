@@ -1,6 +1,6 @@
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
-import type { RoleId } from "./rbac";
+import { resolveRole, type RoleId } from "./rbac";
 import type { User } from "~/models/user";
 
 const SESSION_KEY = "currentUserId";
@@ -35,22 +35,32 @@ export const session = {
     await db.preferences.put({ key: SESSION_KEY, value: userId });
   },
 
-  async roleIn(project: { memberRoles: Record<string, string> }): Promise<RoleId> {
+  /** 当前身份在项目中的角色；非成员返回 null（可见性与鉴权统一走 resolveRole） */
+  async roleIn(project: { ownerId?: string; memberRoles: Record<string, string> }): Promise<RoleId | null> {
     const user = await this.currentUser();
-    return (project.memberRoles[user.id] as RoleId) ?? "member";
+    return resolveRole(project, user.id);
   },
 };
 
 export async function seedUsers(names: string[]): Promise<User[]> {
+  const existing = await db.users.toArray();
+  const byName = new Map(existing.map((u) => [u.name, u]));
   const now = new Date().toISOString();
-  const users = names.map((name, i) => ({
-    id: uuid(),
-    name,
-    email: "",
-    active: true,
-    avatarColor: COLORS[i % COLORS.length]!,
-    createdAt: now,
-  }));
-  await db.users.bulkAdd(users);
+  const created: User[] = [];
+  const users = names.map((name) => {
+    const found = byName.get(name);
+    if (found) return found;
+    const user: User = {
+      id: uuid(),
+      name,
+      email: "",
+      active: true,
+      avatarColor: COLORS[(existing.length + created.length) % COLORS.length]!,
+      createdAt: now,
+    };
+    created.push(user);
+    return user;
+  });
+  if (created.length > 0) await db.users.bulkAdd(created);
   return users;
 }
