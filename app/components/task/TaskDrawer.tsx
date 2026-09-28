@@ -4,14 +4,12 @@ import type { Project, StatusColumn } from "~/models/project";
 import type { Task, Priority, Subtask } from "~/models/task";
 import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
-import type { AuditLog } from "~/models/auditLog";
 import type { RoleId } from "~/auth/rbac";
 import { can } from "~/auth/rbac";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
 import { taskService, PermissionError, type TaskUpdatePatch } from "~/services/task.service";
 import { commentService } from "~/services/comment.service";
-import { auditService } from "~/services/audit.service";
 import { trashService } from "~/services/trash.service";
 import { RichTextEditor, renderRichText } from "~/components/editor/RichTextEditor";
 import { CommentList } from "~/components/comments/CommentList";
@@ -22,7 +20,7 @@ import { Icon, type IconName } from "~/components/ui/Icon";
 import { useI18n } from "~/lib/i18n";
 import { PRIORITY_META, PRIORITY_LABEL_KEY } from "~/lib/priority";
 import { statusColor } from "~/lib/list-view";
-import { formatDate, formatRelative } from "~/lib/date";
+import { formatDate } from "~/lib/date";
 import { uuid } from "~/lib/id";
 
 export interface TaskDrawerProps {
@@ -31,7 +29,6 @@ export interface TaskDrawerProps {
 }
 
 type Picker = "assignee" | "priority" | "status" | null;
-type DetailTab = "comments" | "activity";
 
 const PRIORITIES: Priority[] = ["urgent", "high", "medium", "low", "none"];
 
@@ -46,8 +43,6 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [actor, setActor] = useState<{ id: string; role: RoleId } | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [activity, setActivity] = useState<AuditLog[]>([]);
-  const [tab, setTab] = useState<DetailTab>("comments");
   const [picker, setPicker] = useState<Picker>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -92,21 +87,13 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
     setComments(await commentService.list(taskId));
   }, [taskId]);
 
-  const refreshActivity = useCallback(async () => {
-    if (!taskId) return;
-    const rows = await auditService.list({ entityType: "task", limit: 300 });
-    setActivity(rows.filter((r) => r.entityId === taskId));
-  }, [taskId]);
-
   useEffect(() => {
     void refreshComments();
-    void refreshActivity();
     setTitleDraft(task?.title ?? "");
     setEditingDesc(false);
     setDueEditing(false);
     setPicker(null);
-    setTab("comments");
-  }, [taskId, task, refreshComments, refreshActivity]);
+  }, [taskId, task, refreshComments]);
 
   // Escape：优先关弹层 → 退出编辑 → 关抽屉
   useEffect(() => {
@@ -477,46 +464,19 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
           </section>
 
           <section className="drawer__section" style={{ flex: 1 }} aria-label={t("tabComments")}>
-            <nav className="tabs" aria-label={t("taskDetailAria", { title: task.title })}>
-              <button
-                type="button"
-                className={`tabs__item${tab === "comments" ? " is-active" : ""}`}
-                onClick={() => setTab("comments")}
-              >
-                {t("tabComments")}（{comments.length}）
-              </button>
-              <button
-                type="button"
-                className={`tabs__item${tab === "activity" ? " is-active" : ""}`}
-                onClick={() => { setTab("activity"); void refreshActivity(); }}
-              >
-                {t("tabActivity")}（{activity.length}）
-              </button>
-            </nav>
-            {tab === "comments" ? (
-              actor ? (
-                <div style={{ paddingTop: 8 }}>
-                  <CommentList
-                    comments={comments}
-                    users={users}
-                    actorId={actor.id}
-                    actorRole={actor.role}
-                    onAdd={addComment}
-                    compact
-                  />
-                </div>
-              ) : null
-            ) : (
-              <ul className="drawer-activity" style={{ marginTop: 8 }}>
-                {activity.map((a) => (
-                  <li key={a.id}>
-                    <span>{a.summary}</span>
-                    <time>{formatRelative(a.createdAt, locale)}</time>
-                  </li>
-                ))}
-                {activity.length === 0 && <li className="hint" style={{ border: 0 }}>{t("noActivity")}</li>}
-              </ul>
-            )}
+            <h3 className="drawer__section-title">{t("tabComments")}（{comments.length}）</h3>
+            {actor ? (
+              <div style={{ paddingTop: 8 }}>
+                <CommentList
+                  comments={comments}
+                  users={users}
+                  actorId={actor.id}
+                  actorRole={actor.role}
+                  onAdd={addComment}
+                  compact
+                />
+              </div>
+            ) : null}
           </section>
         </div>
 

@@ -1240,18 +1240,6 @@ select.input {
 }
 
 /* 抽屉内动态流 */
-.drawer-activity { list-style: none; margin: 0; padding: 0; }
-.drawer-activity li {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-.drawer-activity li:last-child { border-bottom: 0; }
-.drawer-activity time { margin-left: auto; flex-shrink: 0; color: var(--color-text-muted); }
 
 /* ---------- 通用弹层（Pop Over） ---------- */
 .popover {
@@ -1406,23 +1394,6 @@ select.input {
 
 /* ---------- 通知 ---------- */
 
-.notif-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.notif-item.is-read {
-  opacity: 0.55;
-}
-.notif-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  flex-shrink: 0;
-}
 
 /* ---------- 项目卡片 ---------- */
 
@@ -1607,7 +1578,6 @@ select.input {
   border-radius: var(--radius-full); background: var(--color-accent); color: var(--color-primary-contrast);
   font-size: 10px; font-weight: 700; line-height: 1;
 }
-.rail__divider { width: 24px; height: 1px; background: #3f3f46; margin: 8px 0; }
 .rail__spacer { flex: 1; }
 
 /* ----- 二级项目面板 ----- */
@@ -1853,8 +1823,6 @@ select.input {
 .audit-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 0 0; }
 
 /* ===== Activity feed ===== */
-.activity-list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; }
-.activity-list li { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
 
 /* ===== Danger zone / column controls ===== */
 .danger-zone { border: 1px solid var(--color-danger); }

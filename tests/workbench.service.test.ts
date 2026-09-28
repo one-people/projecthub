@@ -27,7 +27,7 @@ async function seed() {
 
 describe("workbenchService.load", () => {
   beforeEach(async () => {
-    await Promise.all([db.tasks.clear(), db.projects.clear(), db.users.clear(), db.notifications.clear()]);
+    await Promise.all([db.tasks.clear(), db.projects.clear(), db.users.clear()]);
   });
 
   it("按 assignee 过滤并分四组", async () => {

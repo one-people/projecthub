@@ -15,7 +15,6 @@ beforeEach(async () => {
     db.projects.clear(),
     db.tasks.clear(),
     db.comments.clear(),
-    db.notifications.clear(),
   ]);
   project = await projectRepository.createDemo();
   const fresh = await projectRepository.get(project.id);
@@ -60,22 +59,9 @@ describe("taskService RBAC", () => {
     expect(moved.completedAt).not.toBeNull();
   });
 
-  it("移动任务给负责人发送状态变更通知", async () => {
-    const assigneeId = "u-assignee";
-    await db.tasks.update(task.id, { assigneeId });
-    await taskService.moveTask("actor", "member", task.id, columns[1]!.id, null, null);
-    const notices = await db.notifications
-      .where("userId")
-      .equals(assigneeId)
-      .toArray();
-    expect(notices).toHaveLength(1);
-    expect(notices[0]!.type).toBe("status_change");
-  });
-
-  it("同列重排不产生状态变更通知", async () => {
-    const assigneeId = "u-assignee";
-    await db.tasks.update(task.id, { assigneeId });
-    await taskService.moveTask(
+  it("同列重排不变更完成态", async () => {
+    await db.tasks.update(task.id, { assigneeId: "u-assignee" });
+    const moved = await taskService.moveTask(
       "actor",
       "member",
       task.id,
@@ -83,10 +69,6 @@ describe("taskService RBAC", () => {
       null,
       null,
     );
-    const notices = await db.notifications
-      .where("userId")
-      .equals(assigneeId)
-      .toArray();
-    expect(notices).toHaveLength(0);
+    expect(moved.completedAt).toBeNull();
   });
 });

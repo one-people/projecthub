@@ -4,13 +4,10 @@ export * from "./models/task";
 export * from "./models/project";
 export * from "./models/comment";
 export * from "./models/user";
-export * from "./models/notification";
 
 // 领域服务
 export { taskService } from "./services/task.service";
 export { commentService } from "./services/comment.service";
-export { extractMentionIds } from "./services/mention.service";
-export { notificationService } from "./services/notification.service";
 
 // 权限
 export { can } from "./auth/rbac";

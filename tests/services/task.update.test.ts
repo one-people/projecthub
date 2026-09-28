@@ -2,7 +2,6 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { taskService, PermissionError } from "~/services/task.service";
 import { projectRepository } from "~/repositories/project.repository";
-import { auditService } from "~/services/audit.service";
 import { db } from "~/repositories/db";
 import type { Project, StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
@@ -16,8 +15,6 @@ beforeEach(async () => {
     db.projects.clear(),
     db.tasks.clear(),
     db.comments.clear(),
-    db.notifications.clear(),
-    db.auditLogs.clear(),
   ]);
   project = await projectRepository.createDemo();
   const fresh = await projectRepository.get(project.id);
@@ -43,7 +40,7 @@ describe("taskService.updateTask", () => {
     ).rejects.toThrow();
   });
 
-  it("成员可以修改标题与优先级并写入审计", async () => {
+  it("成员可以修改标题与优先级", async () => {
     const updated = await taskService.updateTask("actor", "member", task.id, {
       title: "新标题",
       priority: "urgent",
@@ -51,35 +48,20 @@ describe("taskService.updateTask", () => {
     expect(updated.title).toBe("新标题");
     expect(updated.priority).toBe("urgent");
     expect(updated.version).toBeGreaterThan(task.version);
-
-    const logs = await auditService.list({ entityType: "task" });
-    const mine = logs.filter((l) => l.entityId === task.id);
-    expect(mine.length).toBeGreaterThan(0);
-    expect(mine[0]!.summary).toContain("标题");
-    expect(mine[0]!.summary).toContain("优先级");
   });
 
-  it("指派负责人会发送 assign 通知", async () => {
-    await taskService.updateTask("actor", "member", task.id, { assigneeId: "u-1" });
-    const notices = await db.notifications.where("userId").equals("u-1").toArray();
-    expect(notices).toHaveLength(1);
-    expect(notices[0]!.type).toBe("assign");
+  it("指派负责人生效", async () => {
+    const updated = await taskService.updateTask("actor", "member", task.id, { assigneeId: "u-1" });
+    expect(updated.assigneeId).toBe("u-1");
   });
 
-  it("状态切换到完成列自动记录 completedAt 并通知负责人", async () => {
+  it("状态切换到完成列自动记录 completedAt", async () => {
     const done = columns.find((c) => c.isDone)!;
-    await db.tasks.update(task.id, { assigneeId: "u-assignee" });
     const updated = await taskService.updateTask("actor", "member", task.id, {
       status: done.id,
     });
     expect(updated.status).toBe(done.id);
     expect(updated.completedAt).not.toBeNull();
-    const notices = await db.notifications
-      .where("userId")
-      .equals("u-assignee")
-      .toArray();
-    expect(notices).toHaveLength(1);
-    expect(notices[0]!.type).toBe("status_change");
   });
 
   it("completed=true 流转到完成列并记录 completedAt", async () => {

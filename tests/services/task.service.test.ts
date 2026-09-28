@@ -26,7 +26,7 @@ describe("fractional indexing", () => {
 describe("RBAC", () => {
   it("管理员拥有全部权限", () => {
     expect(can("admin", "task:delete")).toBe(true);
-    expect(can("admin", "user:manage")).toBe(true);
+    expect(can("admin", "project:create")).toBe(true);
   });
 
   it("成员不能管理项目", () => {

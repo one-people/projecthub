@@ -1,5 +1,4 @@
 export type Permission =
-  | "user:manage"
   | "project:create"
   | "project:delete"
   | "project:update"
@@ -18,7 +17,6 @@ export interface Role {
 }
 
 const all: Permission[] = [
-  "user:manage",
   "project:create",
   "project:delete",
   "project:update",

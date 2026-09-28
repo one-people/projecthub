@@ -3,8 +3,6 @@ import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
 import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
-import type { Notification } from "~/models/notification";
-import type { AuditLog } from "~/models/auditLog";
 
 export interface Preference {
   key: string;
@@ -15,10 +13,8 @@ class ProjectHubDB extends Dexie {
   projects!: EntityTable<Project, "id">;
   tasks!: EntityTable<Task, "id">;
   comments!: EntityTable<Comment, "id">;
-  notifications!: EntityTable<Notification, "id">;
   users!: EntityTable<User, "id">;
   preferences!: EntityTable<Preference, "key">;
-  auditLogs!: EntityTable<AuditLog, "id">;
 
   constructor() {
     super("projecthub");
@@ -47,6 +43,11 @@ class ProjectHubDB extends Dexie {
           });
         }
       });
+    // v3：移除通知/审计功能（回收站页、通知页、用户管理与审计已删）
+    this.version(3).stores({
+      notifications: null,
+      auditLogs: null,
+    });
   }
 }
 

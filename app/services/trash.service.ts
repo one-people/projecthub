@@ -1,7 +1,6 @@
 import { db } from "~/repositories/db";
 import { taskRepository } from "~/repositories/task.repository";
 import { can, type RoleId } from "~/auth/rbac";
-import { auditService } from "./audit.service";
 
 class PermissionError extends Error {}
 
@@ -9,8 +8,12 @@ function assert(role: RoleId, permission: Parameters<typeof can>[1]) {
   if (!can(role, permission)) throw new PermissionError(`角色 ${role} 无 ${permission} 权限`);
 }
 
+/**
+ * 软删除机制（回收站页面已移除）：
+ * 删除 = 打 deletedAt 标记 + toast 撤销；30 天后由 purgeExpired 自动彻底清理。
+ */
 export const trashService = {
-  async deleteTask(actorId: string, actorRole: RoleId, taskId: string): Promise<void> {
+  async deleteTask(_actorId: string, actorRole: RoleId, taskId: string): Promise<void> {
     assert(actorRole, "task:delete");
     const task = await db.tasks.get(taskId);
     if (!task || task.deletedAt) return;
@@ -19,30 +22,26 @@ export const trashService = {
       await db.tasks.update(taskId, { deletedAt: now, deletedByProjectId: null });
       await db.comments.where("taskId").equals(taskId).modify({ deletedAt: now });
     });
-    await auditService.log(actorId, "delete", "task", taskId, `删除了任务「${task.title}」`);
   },
 
-  async restoreTask(actorId: string, actorRole: RoleId, taskId: string): Promise<void> {
+  async restoreTask(_actorId: string, actorRole: RoleId, taskId: string): Promise<void> {
     assert(actorRole, "task:delete");
     const task = await db.tasks.get(taskId);
     if (!task) return;
     if (task.deletedByProjectId) {
-      throw new Error("该任务随项目删除，请在回收站恢复所属项目");
+      throw new Error("该任务随所属项目删除，无法单独恢复");
     }
     await db.transaction("rw", db.tasks, db.comments, async () => {
       await db.tasks.update(taskId, { deletedAt: null });
       await db.comments.where("taskId").equals(taskId).modify({ deletedAt: null });
     });
-    await auditService.log(actorId, "restore", "task", taskId, `恢复了任务「${task.title}」`);
   },
 
-  async purgeTask(actorId: string, taskId: string): Promise<void> {
-    const task = await db.tasks.get(taskId);
+  async purgeTask(taskId: string): Promise<void> {
     await taskRepository.purge(taskId);
-    await auditService.log(actorId, "purge", "task", taskId, `彻底删除了任务「${task?.title ?? taskId}」`);
   },
 
-  async deleteProject(actorId: string, actorRole: RoleId, projectId: string): Promise<void> {
+  async deleteProject(_actorId: string, actorRole: RoleId, projectId: string): Promise<void> {
     assert(actorRole, "project:delete");
     const project = await db.projects.get(projectId);
     if (!project || project.deletedAt) return;
@@ -56,10 +55,9 @@ export const trashService = {
         await db.comments.where("taskId").equals(t.id).modify({ deletedAt: now });
       }
     });
-    await auditService.log(actorId, "delete", "project", projectId, `删除了项目「${project.name}」`);
   },
 
-  async restoreProject(actorId: string, actorRole: RoleId, projectId: string): Promise<void> {
+  async restoreProject(_actorId: string, actorRole: RoleId, projectId: string): Promise<void> {
     assert(actorRole, "project:delete");
     const project = await db.projects.get(projectId);
     if (!project?.deletedAt) return;
@@ -72,11 +70,9 @@ export const trashService = {
         await db.comments.where("taskId").equals(t.id).modify({ deletedAt: null });
       }
     });
-    await auditService.log(actorId, "restore", "project", projectId, `恢复了项目「${project.name}」`);
   },
 
-  async purgeProject(actorId: string, projectId: string): Promise<void> {
-    const project = await db.projects.get(projectId);
+  async purgeProject(projectId: string): Promise<void> {
     await db.transaction("rw", db.projects, db.tasks, db.comments, async () => {
       const tasks = await db.tasks.where("projectId").equals(projectId).toArray();
       for (const t of tasks) {
@@ -85,7 +81,6 @@ export const trashService = {
       }
       await db.projects.delete(projectId);
     });
-    await auditService.log(actorId, "purge", "project", projectId, `彻底删除了项目「${project?.name ?? projectId}」`);
   },
 
   async purgeExpired(): Promise<number> {
@@ -95,14 +90,14 @@ export const trashService = {
       (p) => p.deletedAt && new Date(p.deletedAt).getTime() < cutoff,
     );
     for (const p of projects) {
-      await this.purgeProject("system", p.id);
+      await this.purgeProject(p.id);
       count++;
     }
     const tasks = (await db.tasks.toArray()).filter(
       (t) => t.deletedAt && t.deletedByProjectId === null && new Date(t.deletedAt).getTime() < cutoff,
     );
     for (const t of tasks) {
-      await this.purgeTask("system", t.id);
+      await this.purgeTask(t.id);
       count++;
     }
     return count;

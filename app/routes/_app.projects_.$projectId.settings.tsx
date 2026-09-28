@@ -3,7 +3,6 @@ import { useNavigate, useOutletContext } from "@remix-run/react";
 import { db } from "~/repositories/db";
 import { can, type RoleId } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
-import { auditService } from "~/services/audit.service";
 import { uuid } from "~/lib/id";
 import { useI18n, t as translate } from "~/lib/i18n";
 import type { Dict } from "~/locales/zh-CN";
@@ -54,14 +53,12 @@ export default function ProjectSettingsRoute() {
     }
     setNameError("");
     await db.projects.update(current.id, { name: trimmed, description: desc.trim(), updatedAt: new Date().toISOString() });
-    await auditService.log(actorId, "update", "project", current.id, `更新了项目「${trimmed}」的基本信息`);
     toast.success(t("saved"));
   }
 
   async function changeMemberRole(userId: string, nextRole: RoleId) {
     const memberRoles = { ...current.memberRoles, [userId]: nextRole };
     await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
-    await auditService.log(actorId, "update", "project", current.id, `调整了成员角色（${translate(ROLE_LABEL_KEY[nextRole])}）`);
     toast.success(t("saved"));
   }
 
@@ -69,7 +66,6 @@ export default function ProjectSettingsRoute() {
     const memberRoles = { ...current.memberRoles };
     delete memberRoles[userId];
     await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
-    await auditService.log(actorId, "update", "project", current.id, "移除了项目成员");
     toast.success(t("saved"));
     setPendingRemove(null);
   }
@@ -77,7 +73,6 @@ export default function ProjectSettingsRoute() {
   async function addMember(userId: string) {
     const memberRoles = { ...current.memberRoles, [userId]: "member" };
     await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
-    await auditService.log(actorId, "update", "project", current.id, "添加了项目成员");
     toast.success(t("saved"));
   }
 
@@ -99,7 +94,6 @@ export default function ProjectSettingsRoute() {
   async function deleteColumn(colId: string) {
     const statusColumns = current.statusColumns.filter((c) => c.id !== colId);
     await db.projects.update(current.id, { statusColumns, updatedAt: new Date().toISOString() });
-    await auditService.log(actorId, "update", "project", current.id, "删除了状态列");
     toast.success(t("saved"));
   }
 

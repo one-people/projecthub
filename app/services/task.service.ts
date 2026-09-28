@@ -1,8 +1,6 @@
 import { taskRepository } from "~/repositories/task.repository";
 import { db } from "~/repositories/db";
 import { can, type RoleId } from "~/auth/rbac";
-import { notificationService } from "./notification.service";
-import { auditService } from "./audit.service";
 import type { Task, TaskInput } from "~/models/task";
 
 export class PermissionError extends Error {}
@@ -38,7 +36,6 @@ export const taskService = {
   ): Promise<Task> {
     assertPermission(actorRole, "task:create");
     const task = await taskRepository.create(input);
-    await auditService.log(actorId, "create", "task", task.id, `创建了任务「${task.title}」`);
     return task;
   },
 
@@ -56,15 +53,6 @@ export const taskService = {
     const project = await db.projects.get(original.projectId);
     const targetColumn = project?.statusColumns.find((c) => c.id === targetStatus);
     const task = await taskRepository.move(taskId, targetStatus, prevOrder, nextOrder);
-    if (task.assigneeId && original.status !== targetStatus) {
-      await notificationService.notify({
-        userId: task.assigneeId,
-        actorId,
-        type: "status_change",
-        taskId: task.id,
-        taskTitle: task.title,
-      });
-    }
     // 状态自动流转：落入「完成列」记录 completedAt，离开则清除
     let result = task;
     if (targetColumn?.isDone && !task.completedAt) {
@@ -74,7 +62,6 @@ export const taskService = {
     } else if (!targetColumn?.isDone && task.completedAt) {
       result = await taskRepository.update(taskId, { completedAt: null }, task.version);
     }
-    await auditService.log(actorId, "update", "task", taskId, `移动了任务「${task.title}」`);
     return result;
   },
 
@@ -103,15 +90,6 @@ export const taskService = {
       const next: Partial<TaskInput> = { completedAt: new Date().toISOString() };
       if (doneColumn && current.status !== doneColumn.id) {
         next.status = doneColumn.id;
-        if (original.assigneeId) {
-          await notificationService.notify({
-            userId: original.assigneeId,
-            actorId,
-            type: "status_change",
-            taskId: original.id,
-            taskTitle: original.title,
-          });
-        }
       }
       current = await taskRepository.update(taskId, next, current.version);
       changed.push("完成");
@@ -133,15 +111,6 @@ export const taskService = {
     if (patch.status !== undefined && patch.status !== current.status) {
       const targetColumn = project?.statusColumns.find((c) => c.id === patch.status);
       current = await taskRepository.update(taskId, { status: patch.status }, current.version);
-      if (original.assigneeId && original.status !== patch.status) {
-        await notificationService.notify({
-          userId: original.assigneeId,
-          actorId,
-          type: "status_change",
-          taskId: original.id,
-          taskTitle: original.title,
-        });
-      }
       if (targetColumn?.isDone && !current.completedAt) {
         current = await taskRepository.update(
           taskId,
@@ -152,17 +121,6 @@ export const taskService = {
         current = await taskRepository.update(taskId, { completedAt: null }, current.version);
       }
       changed.push("状态");
-    }
-
-    // 指派通知（不通知操作者本人，由 notificationService 处理）
-    if (patch.assigneeId && patch.assigneeId !== original.assigneeId) {
-      await notificationService.notify({
-        userId: patch.assigneeId,
-        actorId,
-        type: "assign",
-        taskId: original.id,
-        taskTitle: original.title,
-      });
     }
 
     // 其余字段只在真正变化时写库
@@ -193,16 +151,6 @@ export const taskService = {
     }
     if (Object.keys(rest).length > 0) {
       current = await taskRepository.update(taskId, rest, current.version);
-    }
-
-    if (changed.length > 0) {
-      await auditService.log(
-        actorId,
-        "update",
-        "task",
-        taskId,
-        `更新了任务「${original.title}」（${changed.join("、")}）`,
-      );
     }
     return current;
   },

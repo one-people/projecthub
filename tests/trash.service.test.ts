@@ -27,7 +27,7 @@ async function seed() {
 
 describe("trashService", () => {
   beforeEach(async () => {
-    await Promise.all([db.tasks.clear(), db.projects.clear(), db.comments.clear(), db.auditLogs.clear()]);
+    await Promise.all([db.tasks.clear(), db.projects.clear(), db.comments.clear()]);
   });
 
   it("deleteTask 软删并级联软删评论", async () => {
@@ -37,7 +37,6 @@ describe("trashService", () => {
     const comment = await db.comments.get("m1");
     expect(task?.deletedAt).toBeTruthy();
     expect(comment?.deletedAt).toBeTruthy();
-    expect((await db.auditLogs.toArray()).some((a) => a.action === "delete" && a.entityId === "t1")).toBe(true);
   });
 
   it("guest 无删除权限", async () => {
@@ -66,7 +65,7 @@ describe("trashService", () => {
   it("restoreTask 只恢复独立删除的任务", async () => {
     await seed();
     await trashService.deleteProject("u1", "admin", "p1");
-    await expect(trashService.restoreTask("u1", "member", "t1")).rejects.toThrow(/随项目/);
+    await expect(trashService.restoreTask("u1", "member", "t1")).rejects.toThrow(/所属项目/);
     // 复位为未删除状态，再验证独立删除路径
     await db.tasks.update("t1", { deletedAt: null, deletedByProjectId: null });
     await db.projects.update("p1", { deletedAt: null });
@@ -78,7 +77,7 @@ describe("trashService", () => {
   it("purgeTask 物理删除", async () => {
     await seed();
     await trashService.deleteTask("u1", "member", "t1");
-    await trashService.purgeTask("u1", "t1");
+    await trashService.purgeTask("t1");
     expect(await db.tasks.get("t1")).toBeUndefined();
     expect(await db.comments.get("m1")).toBeUndefined();
   });
