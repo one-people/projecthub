@@ -234,4 +234,19 @@ export const en: Dict = {
   selectOptionsHint: "Separate options with commas or newlines",
   deleteFieldAria: "Delete field {name}",
   confirmDeleteField: "Deleting a field clears its values on all tasks. Continue?",
+
+  /* ===== Calendar view ===== */
+  calendarView: "Calendar",
+  calToday: "Today",
+  prevMonth: "Previous month",
+  nextMonth: "Next month",
+  unscheduled: "No date",
+  calAllScheduled: "Nothing unscheduled",
+  calMon: "Mon",
+  calTue: "Tue",
+  calWed: "Wed",
+  calThu: "Thu",
+  calFri: "Fri",
+  calSat: "Sat",
+  calSun: "Sun",
 };

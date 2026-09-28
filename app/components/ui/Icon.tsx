@@ -18,6 +18,7 @@ export type IconName =
   | "trash"
   | "search"
   | "chevronRight"
+  | "chevronLeft"
   | "chevronDown"
   | "more"
   | "flag"
@@ -141,6 +142,7 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   chevronRight: <path d="m9 6 6 6-6 6" />,
+  chevronLeft: <path d="m15 6-6 6 6 6" />,
   chevronDown: <path d="m6 9 6 6 6-6" />,
   more: (
     <>

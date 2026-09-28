@@ -232,6 +232,21 @@ export const zhCN = {
   selectOptionsHint: "选项用逗号或换行分隔",
   deleteFieldAria: "删除字段 {name}",
   confirmDeleteField: "删除字段会清空所有任务上该字段的值，确定继续？",
+
+  /* ===== 日历视图 ===== */
+  calendarView: "日历",
+  calToday: "今天",
+  prevMonth: "上个月",
+  nextMonth: "下个月",
+  unscheduled: "未排期",
+  calAllScheduled: "没有未排期任务",
+  calMon: "一",
+  calTue: "二",
+  calWed: "三",
+  calThu: "四",
+  calFri: "五",
+  calSat: "六",
+  calSun: "日",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;
