@@ -4,7 +4,7 @@ import { resolveRole } from "~/auth/rbac";
 import { assertProjectPermission, assertRole } from "~/auth/assert";
 import { statusColumnSchema, customFieldSchema, type StatusColumn, type CustomField } from "~/models/project";
 import { t } from "~/lib/i18n";
-import { uuid } from "~/lib/id";
+import { userService } from "~/services/user.service";
 
 /**
  * 项目配置与成员管理（服务层收口：设置页不再直写 db.projects）。
@@ -151,21 +151,10 @@ export const projectService = {
   /** 内联新建本地用户并加入项目（成员来源：设置 → 成员页） */
   async createMemberUser(projectId: string, actorId: string, name: string): Promise<string> {
     await assertProjectPermission(projectId, actorId, "member:manage");
-    const trimmed = name.trim().slice(0, 50);
-    if (!trimmed) throw new Error(t("errNameRequired"));
-    const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
-    const existing = await db.users.count();
-    const userId = uuid();
-    await db.users.add({
-      id: userId,
-      name: trimmed,
-      email: "",
-      active: true,
-      avatarColor: COLORS[existing % COLORS.length]!,
-      createdAt: new Date().toISOString(),
-    });
-    await this.addMember(projectId, actorId, userId, "member");
-    return userId;
+    if (!name.trim()) throw new Error(t("errNameRequired"));
+    const user = await userService.create(name);
+    await this.addMember(projectId, actorId, user.id, "member");
+    return user.id;
   },
 
   assertOwner(project: { ownerId?: string }, actorId: string, message: string): void {

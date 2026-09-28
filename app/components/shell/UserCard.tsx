@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@remix-run/react";
+import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
 import { useI18n } from "~/lib/i18n";
@@ -18,8 +19,10 @@ export function UserCard() {
   useEffect(() => {
     void (async () => {
       setMe(await session.currentUser());
-      setUsers(await db.users.toArray());
     })();
+    // liveQuery：设置页新建/删除用户后，身份菜单即时刷新
+    const sub = liveQuery(() => db.users.toArray()).subscribe(setUsers);
+    return () => sub.unsubscribe();
   }, []);
 
   useEffect(() => {
