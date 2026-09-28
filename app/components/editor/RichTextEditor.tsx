@@ -40,7 +40,7 @@ export function RichTextEditor({ users, content, onChange }: RichTextEditorProps
         <EditorContent editor={editor} />
       </div>
       <div className="mention-picker">
-        <span className="hint" style={{ margin: 0 }}>{t("mentionHint")}</span>
+        <span className="hint hint--flush">{t("mentionHint")}</span>
         {users.map((u) => (
           <button
             key={u.id}

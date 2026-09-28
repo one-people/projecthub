@@ -81,7 +81,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="modal search-modal" role="dialog" aria-modal="true" aria-label={t("globalSearch")}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className="search-modal__bar">
           <Icon name="search" size={16} />
           <input
             ref={inputRef}
@@ -116,7 +116,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             </li>
           ))}
           {query.trim() && results.length === 0 && (
-            <li className="empty"><p style={{ margin: 0 }}>{t("noResults")}</p></li>
+            <li className="empty"><p>{t("noResults")}</p></li>
           )}
         </ul>
       </div>

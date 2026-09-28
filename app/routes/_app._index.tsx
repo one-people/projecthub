@@ -139,7 +139,7 @@ export default function WorkbenchRoute() {
             {rows.length === 0 && (
               <li className="empty">
                 <Icon name="kanban" size={28} />
-                <p style={{ margin: 0 }}>{t("noMyTasks")}</p>
+                <p>{t("noMyTasks")}</p>
                 <button className="btn" onClick={() => navigate("/projects")}>{t("goProjects")}</button>
               </li>
             )}

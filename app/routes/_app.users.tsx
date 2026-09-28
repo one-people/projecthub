@@ -122,8 +122,8 @@ export default function UsersRoute() {
   return (
     <div className="page-pad">
       <div className="page-toolbar">
-        <h1 style={{ fontSize: 18, margin: 0 }}>{t("usersMenu")}</h1>
-        <span className="hint" style={{ marginLeft: 8 }}>
+        <h1>{t("usersMenu")}</h1>
+        <span className="hint">
           {t("usersCount", { count: users.length })}
         </span>
         <span className="page-toolbar__spacer" />
@@ -176,7 +176,7 @@ export default function UsersRoute() {
                     aria-label={t("selectUserAria", { name: u.name })}
                   />
                   <span className="avatar" style={{ background: u.avatarColor }}>{u.name.slice(0, 1)}</span>
-                  <span style={{ fontWeight: 600, fontSize: 13, minWidth: 72 }}>
+                  <span className="user-list__name">
                     {u.name}
                     {isMe && <span className="hint">{t("itsYou")}</span>}
                   </span>
@@ -205,17 +205,17 @@ export default function UsersRoute() {
             })}
           </ul>
           {visible.length === 0 && (
-            <p className="empty" style={{ marginBottom: 0 }}>{t("noMatchUsers")}</p>
+            <p className="empty">{t("noMatchUsers")}</p>
           )}
         </section>
 
         <section className="card">
-          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <h2 className="section-title">
             <Icon name="user" size={16} />
             {t("addUser")}
           </h2>
           <form
-            style={{ display: "flex", flexDirection: "column", gap: 8 }}
+            className="form-col"
             onSubmit={(e) => {
               e.preventDefault();
               void addUser();
@@ -259,16 +259,15 @@ export default function UsersRoute() {
             }}
           >
             <div className="modal__header">
-              <h2 style={{ fontSize: 16, margin: 0 }}>{t("editUser")}</h2>
+              <h2>{t("editUser")}</h2>
               <button type="button" className="icon-btn" aria-label={t("close")} onClick={() => setEditing(null)}>
                 <Icon name="close" size={16} />
               </button>
             </div>
-            <label className="field-label" style={{ display: "block", marginTop: 14 }}>
+            <label className="field-label form-field">
               {t("userNameLabel")}
               <input
                 className="input"
-                style={{ width: "100%", marginTop: 4 }}
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder={t("userNameLabel")}
@@ -279,12 +278,11 @@ export default function UsersRoute() {
                 }}
               />
             </label>
-            <label className="field-label" style={{ display: "block", marginTop: 10 }}>
+            <label className="field-label form-field">
               {t("userEmailLabel")}
               <input
                 className="input"
                 type="email"
-                style={{ width: "100%", marginTop: 4 }}
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
                 placeholder={t("userEmailPlaceholder")}

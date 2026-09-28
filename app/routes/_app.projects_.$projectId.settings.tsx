@@ -426,7 +426,7 @@ export default function ProjectSettingsRoute() {
       </nav>
 
       {tab === "basic" && (
-        <section className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <section className="card card--stack">
           <label className="field-label">
             {t("projectNameLabel")}
             <input
@@ -504,10 +504,10 @@ export default function ProjectSettingsRoute() {
             })}
           </ul>
           {canManage && (
-            <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="form-actions">
               {nonMembers.length > 0 && (
                 <>
-                  <span className="field-label" style={{ margin: 0 }}>{t("addMember")}</span>
+                  <span className="field-label">{t("addMember")}</span>
                   <select className="input" value="" onChange={(e) => e.target.value && void addMember(e.target.value)} aria-label={t("addMember")}>
                     <option value="">—</option>
                     {nonMembers.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -544,7 +544,7 @@ export default function ProjectSettingsRoute() {
                   onBlur={(e) => e.target.value.trim() && void updateColumn(c.id, { name: e.target.value.trim() })}
                   aria-label={t("columnName")}
                 />
-                <label style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                <label className="check-row">
                   <input
                     type="checkbox"
                     checked={c.isDone}
@@ -567,7 +567,7 @@ export default function ProjectSettingsRoute() {
             ))}
           </ul>
           {canManage && (
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <div className="form-actions">
               <input
                 className="input"
                 style={{ maxWidth: 220 }}
@@ -624,7 +624,7 @@ export default function ProjectSettingsRoute() {
             {labels.length === 0 && <p className="empty">{t("noLabels")}</p>}
           </ul>
           {canManage && (
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <div className="form-actions">
               <input
                 className="input"
                 style={{ maxWidth: 220 }}
@@ -645,7 +645,7 @@ export default function ProjectSettingsRoute() {
       {tab === "milestones" && (
         <section className="card">
           {milestones.length > 0 && (
-            <p className="hint" style={{ marginTop: 0 }}>
+            <p className="hint hint--flush">
               {t("msProgress", { done: milestones.filter((m) => m.doneAt).length, total: milestones.length })}
             </p>
           )}
@@ -690,7 +690,7 @@ export default function ProjectSettingsRoute() {
             {milestones.length === 0 && <p className="empty">{t("noMilestones")}</p>}
           </ul>
           {canManage && (
-            <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <div className="form-actions">
               <input
                 className="input"
                 style={{ maxWidth: 240 }}
@@ -719,7 +719,7 @@ export default function ProjectSettingsRoute() {
       {tab === "templates" && (
         <div className="stack">
           <section className="card">
-            <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <h2 className="section-title">
               <Icon name="repeat" size={16} />
               {t("taskTemplateLib")}
             </h2>
@@ -755,13 +755,13 @@ export default function ProjectSettingsRoute() {
           </section>
 
           <section className="card">
-            <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <h2 className="section-title">
               <Icon name="kanban" size={16} />
               {t("saveProjectAsTemplate")}
             </h2>
             <p className="hint">{t("projectTemplateHint")}</p>
             {canManage && (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className="form-actions form-actions--flush">
                 <input
                   className="input"
                   style={{ maxWidth: 280 }}
@@ -781,7 +781,7 @@ export default function ProjectSettingsRoute() {
 
       {tab === "automations" && (
         <section className="card">
-          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <h2 className="section-title">
             <Icon name="zap" size={16} />
             {t("tabAutomations")}
           </h2>
@@ -809,7 +809,7 @@ export default function ProjectSettingsRoute() {
                     onChange={(e) => void toggleAutomation(rule, e.target.checked)}
                     aria-label={t("automationToggleAria", { name: rule.name })}
                   />
-                  <span style={{ minWidth: 120, fontWeight: 600, fontSize: 13 }}>{rule.name}</span>
+                  <span className="auto-rule__name">{rule.name}</span>
                   <span className="auto-rule">
                     {rule.trigger.type === "task_created" && t("autoWhenCreated")}
                     {rule.trigger.type === "task_completed" && t("autoWhenCompleted")}
@@ -931,9 +931,9 @@ export default function ProjectSettingsRoute() {
 
       {tab === "danger" && (
         <section className="danger-zone card">
-          <h2 className="section-title" style={{ color: "var(--color-danger)" }}>{t("dangerZone")}</h2>
+          <h2 className="section-title section-title--danger">{t("dangerZone")}</h2>
           <p className="hint">{t("deleteProjectHint")}</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 360 }}>
+          <div className="form-col form-col--narrow">
             <label className="field-label">
               {t("typeToConfirm")}
               <input

@@ -55,7 +55,7 @@ export function ErrorBoundary() {
       ? error.message
       : "未知错误";
   return (
-    <div style={{ padding: 32 }}>
+    <div className="error-shell">
       <h1>出错了</h1>
       <p>{message}</p>
     </div>

@@ -208,7 +208,7 @@ export function TableView({
           if (key === "labels") {
             return taskLabels.length > 0 ? (
               <span key={key} className="tv-cell">
-                <span className="db-row__labels" style={{ marginLeft: 0 }}>
+                <span className="db-row__labels db-row__labels--flush">
                   {taskLabels.map((l) => (
                     <span key={l.id} className="label-chip" style={{ "--chip-c": l.color } as CSSProperties}>{l.name}</span>
                   ))}

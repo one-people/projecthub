@@ -62,9 +62,9 @@ export default function ProjectLayout() {
   if (!role || !can(role, "task:read")) {
     return (
       <div className="project-layout">
-        <div className="empty" style={{ padding: 80 }}>
+        <div className="empty empty--page">
           <Icon name="user" size={32} />
-          <p style={{ margin: 0 }}>{t("forbidden")}</p>
+          <p>{t("forbidden")}</p>
         </div>
       </div>
     );

@@ -165,24 +165,24 @@ export function StatsView({ tasks, columns, users }: StatsViewProps) {
       </div>
 
       <section className="card stats-card">
-        <h3 className="section-title" style={{ fontSize: 13 }}>{t("statsBurndown")}</h3>
+        <h3 className="section-title section-title--sm">{t("statsBurndown")}</h3>
         <BurndownChart points={burn} />
       </section>
 
       <div className="stats-grid-2">
         <section className="card stats-card">
-          <h3 className="section-title" style={{ fontSize: 13 }}>{t("statsWorkload")}</h3>
+          <h3 className="section-title section-title--sm">{t("statsWorkload")}</h3>
           <WorkloadChart rows={workload} />
         </section>
         <section className="card stats-card">
-          <h3 className="section-title" style={{ fontSize: 13 }}>{t("statsTrend")}</h3>
+          <h3 className="section-title section-title--sm">{t("statsTrend")}</h3>
           <TrendChart weeks={trend} />
         </section>
       </div>
 
       <div className="stats-grid-2">
         <section className="card stats-card">
-          <h3 className="section-title" style={{ fontSize: 13 }}>{t("statsStatusDist")}</h3>
+          <h3 className="section-title section-title--sm">{t("statsStatusDist")}</h3>
           <div className="stats-stack" role="img" aria-label={t("statsStatusDist")}>
             {status.map((s) => (
               <div key={s.columnId} className="stats-stack__row">
@@ -196,7 +196,7 @@ export function StatsView({ tasks, columns, users }: StatsViewProps) {
           </div>
         </section>
         <section className="card stats-card">
-          <h3 className="section-title" style={{ fontSize: 13 }}>{t("statsPriorityDist")}</h3>
+          <h3 className="section-title section-title--sm">{t("statsPriorityDist")}</h3>
           <ul className="stats-prio">
             {priority.map((p) => (
               <li key={p.priority} className="stats-prio__row">

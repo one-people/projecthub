@@ -399,7 +399,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
               >
                 {assignee ? (
                   <>
-                    <span className="avatar" style={{ background: assignee.avatarColor, width: 22, height: 22, fontSize: 11 }}>
+                    <span className="avatar avatar--sm" style={{ background: assignee.avatarColor }}>
                       {assignee.name.slice(0, 1)}
                     </span>
                     {assignee.name}
@@ -425,7 +425,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                     className={`popover__item${u.id === task.assigneeId ? " is-selected" : ""}`}
                     onClick={() => { setPicker(null); void apply({ assigneeId: u.id }); }}
                   >
-                    <span className="avatar" style={{ background: u.avatarColor, width: 22, height: 22, fontSize: 11 }}>
+                    <span className="avatar avatar--sm" style={{ background: u.avatarColor }}>
                       {u.name.slice(0, 1)}
                     </span>
                     {u.name}
@@ -723,12 +723,11 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                   ))}
                 </div>
                 <input
-                  className="input"
                   value={linkQuery}
                   onChange={(e) => setLinkQuery(e.target.value)}
                   placeholder={t("searchTasks")}
                   aria-label={t("searchTasks")}
-                  style={{ width: "100%", marginBottom: 6 }}
+                  className="input drawer__link-search"
                 />
                 <div className="popover__list">
                   {linkResults.length === 0 ? (
@@ -761,7 +760,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                   content={(task.descriptionRich as JSONContent | null) ?? null}
                   onChange={setDescDraft}
                 />
-                <div className="confirm-actions" style={{ marginTop: 8 }}>
+                <div className="confirm-actions confirm-actions--tight">
                   <button className="btn" onClick={() => setEditingDesc(false)}>{t("cancel")}</button>
                   <button
                     className="btn btn--primary"
@@ -847,7 +846,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                   onChange={(e) => setSubtaskDraft(e.target.value)}
                   placeholder={t("addSubtask")}
                   aria-label={t("addSubtask")}
-                  style={{ border: 0, outline: "none", background: "none", font: "inherit", fontSize: 13, color: "var(--color-text)", width: "100%" }}
+                  className="subtask-input"
                 />
               </form>
             )}
@@ -856,7 +855,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           <section className="drawer__section" style={{ flex: 1 }} aria-label={t("tabComments")}>
             <h3 className="drawer__section-title">{t("tabComments")}（{comments.length}）</h3>
             {actor ? (
-              <div style={{ paddingTop: 8 }}>
+              <div className="drawer__comments">
                 <CommentList
                   comments={comments}
                   users={users}

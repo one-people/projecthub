@@ -150,8 +150,8 @@ export default function ProjectsRoute() {
   return (
     <div className="page-pad">
       <div className="page-toolbar">
-        <h1 style={{ fontSize: 18, margin: 0 }}>{t("allProjects")}</h1>
-        <span className="hint" style={{ marginLeft: 8 }}>
+        <h1>{t("allProjects")}</h1>
+        <span className="hint">
           {t("memberProjectsCount", { count: projects.length })}
         </span>
         <span className="page-toolbar__spacer" />
@@ -268,7 +268,7 @@ export default function ProjectsRoute() {
       {projects.length === 0 && (
         <div className="empty">
           <Icon name="kanban" size={32} />
-          <p style={{ margin: 0 }}>{t("noProjects")}</p>
+          <p>{t("noProjects")}</p>
         </div>
       )}
 
@@ -280,14 +280,13 @@ export default function ProjectsRoute() {
         >
           <div className="modal" role="dialog" aria-modal="true" aria-label={t("newProject")}>
             <div className="modal__header">
-              <h2 style={{ fontSize: 16, margin: 0 }}>{t("newProject")}</h2>
+              <h2>{t("newProject")}</h2>
               <button className="icon-btn" aria-label={t("close")} onClick={() => setShowCreate(false)}>
                 <Icon name="close" size={16} />
               </button>
             </div>
             <input
-              className="input"
-              style={{ width: "100%", marginTop: 12 }}
+              className="input input--block"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder={t("projectNamePlaceholder")}
@@ -347,16 +346,15 @@ export default function ProjectsRoute() {
         >
           <div className="modal" role="dialog" aria-modal="true" aria-label={t("editProject")}>
             <div className="modal__header">
-              <h2 style={{ fontSize: 16, margin: 0 }}>{t("editProject")}</h2>
+              <h2>{t("editProject")}</h2>
               <button className="icon-btn" aria-label={t("close")} onClick={() => setEditing(null)}>
                 <Icon name="close" size={16} />
               </button>
             </div>
-            <label className="field-label" style={{ display: "block", marginTop: 14 }}>
+            <label className="field-label form-field">
               {t("projectNameLabel")}
               <input
                 className="input"
-                style={{ width: "100%", marginTop: 4 }}
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder={t("projectNameLabel")}
@@ -364,11 +362,11 @@ export default function ProjectsRoute() {
                 onKeyDown={(e) => { if (e.key === "Escape") setEditing(null); }}
               />
             </label>
-            <label className="field-label" style={{ display: "block", marginTop: 10 }}>
+            <label className="field-label form-field">
               {t("projectDescLabel")}
               <textarea
                 className="input"
-                style={{ width: "100%", marginTop: 4, resize: "vertical" }}
+                style={{ resize: "vertical" }}
                 rows={3}
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}

@@ -33,11 +33,11 @@ export function ConfirmDialog({
 
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="modal" role="alertdialog" aria-modal="true" aria-label={title} style={{ maxWidth: 400 }}>
+      <div className="modal modal--sm" role="alertdialog" aria-modal="true" aria-label={title}>
         <div className="modal__header">
-          <h2 style={{ fontSize: 16, margin: 0, color: danger ? "var(--color-danger)" : undefined }}>{title}</h2>
+          <h2 className={danger ? "modal__title--danger" : undefined}>{title}</h2>
         </div>
-        <p style={{ margin: "12px 0", color: "var(--color-text-secondary)" }}>{message}</p>
+        <p className="modal__message">{message}</p>
         {requireText && (
           <input
             ref={inputRef}

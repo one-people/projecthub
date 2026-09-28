@@ -65,7 +65,7 @@ export function UserCard() {
       </button>
       {open && (
         <div className="user-card__menu" role="menu" aria-label={t("currentUser")}>
-          <p className="field-label" style={{ padding: "4px 8px" }}>{t("currentUser")}</p>
+          <p className="field-label field-label--boxed">{t("currentUser")}</p>
           {users.map((u) => (
             <button
               key={u.id}

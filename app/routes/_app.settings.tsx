@@ -94,12 +94,12 @@ export default function SettingsRoute() {
   return (
     <div className="page-pad">
       <div className="page-toolbar">
-        <h1 style={{ fontSize: 18, margin: 0 }}>{t("settings")}</h1>
+        <h1>{t("settings")}</h1>
       </div>
 
       <div className="stack">
         <section className="card">
-          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <h2 className="section-title">
             <Icon name="sun" size={16} />
             {t("appearance")}
           </h2>
@@ -130,7 +130,7 @@ export default function SettingsRoute() {
         </section>
 
         <section className="card">
-          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <h2 className="section-title">
             <Icon name="settings" size={16} />
             {t("language")}
           </h2>
@@ -148,7 +148,7 @@ export default function SettingsRoute() {
         <section className="card">
           <h2 className="section-title">{t("backup")}</h2>
           <p className="hint">{t("backupHint", { usage: usage || "…" })}</p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="form-actions">
             <button className="btn btn--primary" onClick={() => void backupService.downloadBackup()}>
               <Icon name="download" size={15} />
               {t("exportBackup")}
@@ -167,14 +167,14 @@ export default function SettingsRoute() {
             />
           </div>
           {message && (
-            <p role="status" style={{ marginTop: 12, color: "var(--color-text-secondary)", marginBottom: 0 }}>
+            <p role="status" className="form-status">
               {message}
             </p>
           )}
         </section>
 
         <section className="card">
-          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <h2 className="section-title">
             <Icon name="zap" size={16} />
             {t("devTools")}
           </h2>

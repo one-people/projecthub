@@ -38,9 +38,9 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd, compac
   }
 
   return (
-    <section aria-label={t("tabComments")} style={compact ? undefined : { marginTop: 24 }}>
+    <section aria-label={t("tabComments")} className={compact ? undefined : "comments-block"}>
       {!compact && <h3 className="section-title">{t("comments", { count: comments.length })}</h3>}
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+      <ul className="comment-list">
         {comments.map((c) => {
           const author = user(c.authorId);
           return (
@@ -53,8 +53,8 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd, compac
                 {name(c.authorId).slice(0, 1)}
               </span>
               <div className="comment-body">
-                <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                  <strong style={{ fontSize: 13 }}>{name(c.authorId)}</strong>
+                <div className="comment-head">
+                  <strong>{name(c.authorId)}</strong>
                   <span className="comment-meta">{formatRelative(c.createdAt)}</span>
                 </div>
                 <div
@@ -69,8 +69,8 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd, compac
       </ul>
 
       {canComment && (
-        <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 16, marginTop: 12 }}>
-          <p className="hint" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <div className="comment-form">
+          <p className="hint comment-form__label">
             {t("commentAs", { name: name(actorId), role: t(ROLE_LABEL_KEY[actorRole]) })}
           </p>
           <RichTextEditor users={users.map(({ id, name }) => ({ id, name }))} content={null} onChange={setDraft} />
@@ -78,7 +78,6 @@ export function CommentList({ comments, users, actorId, actorRole, onAdd, compac
             className="btn btn--primary"
             onClick={() => void submit()}
             disabled={submitting || draft == null}
-            style={{ marginTop: 8 }}
           >
             {t("postComment")}
           </button>
