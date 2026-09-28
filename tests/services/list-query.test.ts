@@ -17,6 +17,7 @@ function task(patch: Partial<Task>): Task {
     priority: "none",
     labels: [],
     subtasks: [],
+    recurrence: "none",
     order: "a0",
     archived: false,
     completedAt: null,

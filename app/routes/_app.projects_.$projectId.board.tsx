@@ -4,6 +4,7 @@ import { liveQuery } from "dexie";
 import { Board } from "~/components/board/Board";
 import { TaskDrawer } from "~/components/task/TaskDrawer";
 import { taskService, PermissionError } from "~/services/task.service";
+import { taskTemplateService } from "~/services/taskTemplate.service";
 import { db } from "~/repositories/db";
 import { can } from "~/auth/rbac";
 import { uuid } from "~/lib/id";
@@ -11,6 +12,7 @@ import { t } from "~/lib/i18n";
 import { useToast } from "~/components/ui/Toast";
 import type { Task } from "~/models/task";
 import type { Label } from "~/models/label";
+import type { TaskTemplate } from "~/models/taskTemplate";
 import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: t("board") }) };
@@ -20,6 +22,7 @@ export default function BoardRoute() {
   const toast = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +36,16 @@ export default function BoardRoute() {
     const sub = liveQuery(() =>
       db.labels.where("projectId").equals(project.id).toArray(),
     ).subscribe((rows) => setLabels(rows));
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
+  useEffect(() => {
+    const sub = liveQuery(() => db.taskTemplates.toArray()).subscribe((rows) => {
+      const usable = rows
+        .filter((tpl) => tpl.projectId === null || tpl.projectId === project.id)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setTemplates(usable);
+    });
     return () => sub.unsubscribe();
   }, [project.id]);
 
@@ -60,6 +73,8 @@ export default function BoardRoute() {
         t.id === intent.taskId ? { ...t, status: intent.targetStatus } : t,
       ),
     );
+    const moved = tasks.find((t) => t.id === intent.taskId);
+    const targetDone = project.statusColumns.find((c) => c.id === intent.targetStatus)?.isDone;
     try {
       await taskService.moveTask(
         actorId,
@@ -69,6 +84,7 @@ export default function BoardRoute() {
         intent.prevOrder,
         intent.nextOrder,
       );
+      if (targetDone && moved && moved.recurrence !== "none") toast.success(t("recurrenceSpawned"));
     } catch (e) {
       guard(e);
     }
@@ -90,6 +106,16 @@ export default function BoardRoute() {
   async function handleToggleDone(task: Task, done: boolean) {
     try {
       await taskService.updateTask(actorId, role, task.id, { completed: done });
+      // 卡片勾选完成重复任务时与抽屉路径一样提示已生成下一期
+      if (done && task.recurrence !== "none") toast.success(t("recurrenceSpawned"));
+    } catch (e) {
+      guard(e);
+    }
+  }
+
+  async function handleCreateFromTemplate(tpl: TaskTemplate, status: string) {
+    try {
+      await taskService.create(actorId, role, taskTemplateService.buildTaskInput(tpl, project.id, status));
     } catch (e) {
       guard(e);
     }
@@ -102,12 +128,14 @@ export default function BoardRoute() {
         tasks={tasks}
         users={users}
         labels={labels}
+        templates={templates}
         canCreate={canCreate}
         canToggle={canToggle}
         onMove={handleMove}
         onOpenTask={(task) => setOpenTaskId(task.id)}
         onToggleDone={handleToggleDone}
         onCreate={handleCreate}
+        onCreateFromTemplate={handleCreateFromTemplate}
       />
       <TaskDrawer task={openTask} onClose={() => setOpenTaskId(null)} onOpenTask={setOpenTaskId} />
     </>

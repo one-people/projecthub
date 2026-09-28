@@ -576,6 +576,37 @@ select.input {
   color: var(--color-text);
   outline: none;
 }
+.col-add__templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+.col-add__tpl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.col-add__tpl-chip span,
+.col-add__tpl-chip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.col-add__tpl-chip:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
 
 .task-card {
   position: relative;

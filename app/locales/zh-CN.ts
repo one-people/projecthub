@@ -283,6 +283,17 @@ export const zhCN = {
   confirmDeleteMilestone: "删除后不可恢复，确定删除该里程碑？",
   toggleMilestoneAria: "切换里程碑完成状态 {name}",
   colProgressAria: "本列已完成 {done}/{total}",
+
+  /* ===== 重复任务 + 任务模板 ===== */
+  fieldRepeat: "重复",
+  repeatNone: "不重复",
+  repeatDaily: "每天",
+  repeatWeekly: "每周",
+  repeatMonthly: "每月",
+  recurrenceSpawned: "重复任务已生成下一期",
+  saveAsTemplate: "保存为模板",
+  templateSaved: "已保存为模板",
+  fromTemplate: "从模板创建",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;

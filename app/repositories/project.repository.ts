@@ -81,6 +81,7 @@ export const projectRepository = {
         priority: "medium",
         labels: [],
         subtasks: [],
+        recurrence: "none",
         order,
         archived: false,
         completedAt: null,

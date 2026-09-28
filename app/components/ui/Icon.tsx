@@ -29,7 +29,9 @@ export type IconName =
   | "tag"
   | "table"
   | "link"
-  | "timeline";
+  | "timeline"
+  | "copy"
+  | "repeat";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   kanban: (
@@ -204,6 +206,20 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="M3 10h18" />
       <path d="M10 4v16" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </>
+  ),
+  repeat: (
+    <>
+      <polyline points="17 1 21 5 17 9" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
     </>
   ),
 };

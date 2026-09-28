@@ -285,4 +285,15 @@ export const en: Dict = {
   confirmDeleteMilestone: "This cannot be undone. Delete this milestone?",
   toggleMilestoneAria: "Toggle milestone {name}",
   colProgressAria: "{done} of {total} completed in this column",
+
+  /* ===== Recurring tasks + task templates ===== */
+  fieldRepeat: "Repeat",
+  repeatNone: "Never",
+  repeatDaily: "Daily",
+  repeatWeekly: "Weekly",
+  repeatMonthly: "Monthly",
+  recurrenceSpawned: "Next occurrence created",
+  saveAsTemplate: "Save as template",
+  templateSaved: "Saved as template",
+  fromTemplate: "Create from template",
 };

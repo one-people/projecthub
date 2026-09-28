@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "~/repositories/db";
 import { milestoneService } from "~/services/milestone.service";
 import { milestoneSchema } from "~/models/milestone";
@@ -29,7 +29,13 @@ describe("milestoneService", () => {
 
   it("update 切换完成态并回写 updatedAt", async () => {
     const ms = await milestoneService.create(P, "内测", "2026-10-01T00:00:00");
-    await milestoneService.update(ms.id, { doneAt: "2026-10-02T08:00:00.000Z" });
+    // 固定时钟避免 create/update 同毫秒导致时间戳比较抖动（只伪造 Date，不伪造定时器）
+    vi.useFakeTimers({ now: Date.now() + 10_000, toFake: ["Date"] });
+    try {
+      await milestoneService.update(ms.id, { doneAt: "2026-10-02T08:00:00.000Z" });
+    } finally {
+      vi.useRealTimers();
+    }
     let row = await db.milestones.get(ms.id);
     expect(row!.doneAt).toBe("2026-10-02T08:00:00.000Z");
     expect(row!.updatedAt > ms.updatedAt).toBe(true);

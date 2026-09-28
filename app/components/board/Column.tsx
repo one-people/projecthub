@@ -1,9 +1,11 @@
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
+import type { CSSProperties } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
 import type { Label } from "~/models/label";
+import type { TaskTemplate } from "~/models/taskTemplate";
 import { statusColor } from "~/lib/list-view";
 import { t } from "~/lib/i18n";
 import { Icon } from "~/components/ui/Icon";
@@ -14,16 +16,18 @@ export interface ColumnProps {
   tasks: Task[];
   assigneeNames: Record<string, string>;
   labels: Label[];
+  templates: TaskTemplate[];
   canCreate: boolean;
   canToggle: boolean;
   onOpenTask: (task: Task) => void;
   onToggleDone: (task: Task, done: boolean) => void;
   onCreate: (status: string, title: string) => void;
+  onCreateFromTemplate: (tpl: TaskTemplate, status: string) => void;
 }
 
-/** 看板列：色点列头 + 计数 + 列内快捷创建 */
+/** 看板列：色点列头 + 计数 + 完成进度条 + 列内快捷创建（支持模板） */
 export function Column({
-  column, tasks, assigneeNames, labels, canCreate, canToggle, onOpenTask, onToggleDone, onCreate,
+  column, tasks, assigneeNames, labels, templates, canCreate, canToggle, onOpenTask, onToggleDone, onCreate, onCreateFromTemplate,
 }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${column.id}`,
@@ -85,19 +89,37 @@ export function Column({
       </div>
       {canCreate && (
         adding ? (
-          <input
-            className="col-add__input"
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => { submit(); setAdding(false); }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); submit(); }
-              if (e.key === "Escape") { setDraft(""); setAdding(false); }
-            }}
-            placeholder={t("newTaskTitle")}
-            aria-label={t("addTaskInAria", { column: column.name })}
-          />
+          <div className="col-add">
+            {templates.length > 0 && (
+              <div className="col-add__templates" aria-label={t("fromTemplate")}>
+                {templates.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className="col-add__tpl-chip"
+                    onClick={() => { setAdding(false); onCreateFromTemplate(tpl, column.id); }}
+                    title={tpl.title}
+                  >
+                    <Icon name="copy" size={12} />
+                    {tpl.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <input
+              className="col-add__input"
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={() => { submit(); setAdding(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); submit(); }
+                if (e.key === "Escape") { setDraft(""); setAdding(false); }
+              }}
+              placeholder={t("newTaskTitle")}
+              aria-label={t("addTaskInAria", { column: column.name })}
+            />
+          </div>
         ) : (
           <button type="button" className="col-add__trigger" onClick={() => { setAdding(true); setDraft(""); }}>
             <Icon name="plus" size={14} />

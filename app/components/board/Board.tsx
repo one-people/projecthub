@@ -14,6 +14,7 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
 import type { Label } from "~/models/label";
+import type { TaskTemplate } from "~/models/taskTemplate";
 import { t } from "~/lib/i18n";
 import { Column } from "./Column";
 import { TaskCard } from "./TaskCard";
@@ -30,16 +31,18 @@ export interface BoardProps {
   tasks: Task[];
   users: { id: string; name: string }[];
   labels: Label[];
+  templates: TaskTemplate[];
   canCreate: boolean;
   canToggle: boolean;
   onMove: (intent: MoveIntent) => void;
   onOpenTask: (task: Task) => void;
   onToggleDone: (task: Task, done: boolean) => void;
   onCreate: (status: string, title: string) => void;
+  onCreateFromTemplate: (tpl: TaskTemplate, status: string) => void;
 }
 
 export function Board({
-  columns, tasks, users, labels, canCreate, canToggle, onMove, onOpenTask, onToggleDone, onCreate,
+  columns, tasks, users, labels, templates, canCreate, canToggle, onMove, onOpenTask, onToggleDone, onCreate, onCreateFromTemplate,
 }: BoardProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -118,11 +121,13 @@ export function Board({
               tasks={tasksIn(column.id)}
               assigneeNames={assigneeNames}
               labels={labels}
+              templates={templates}
               canCreate={canCreate}
               canToggle={canToggle}
               onOpenTask={onOpenTask}
               onToggleDone={onToggleDone}
               onCreate={onCreate}
+              onCreateFromTemplate={onCreateFromTemplate}
             />
           ))}
       </div>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { JSONContent } from "@tiptap/react";
 import { liveQuery } from "dexie";
 import type { Project, StatusColumn } from "~/models/project";
-import type { Task, Priority, Subtask } from "~/models/task";
+import type { Task, Priority, Subtask, Recurrence } from "~/models/task";
 import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
 import type { Label } from "~/models/label";
@@ -14,6 +14,7 @@ import { session } from "~/auth/session";
 import { taskService, PermissionError, type TaskUpdatePatch } from "~/services/task.service";
 import { labelService } from "~/services/label.service";
 import { taskLinkService, LinkError } from "~/services/taskLink.service";
+import { taskTemplateService } from "~/services/taskTemplate.service";
 import { commentService } from "~/services/comment.service";
 import { trashService } from "~/services/trash.service";
 import { RichTextEditor, renderRichText } from "~/components/editor/RichTextEditor";
@@ -35,13 +36,21 @@ export interface TaskDrawerProps {
   onOpenTask?: (taskId: string) => void;
 }
 
-type Picker = "assignee" | "priority" | "status" | "labels" | "links" | null;
+type Picker = "assignee" | "priority" | "status" | "recurrence" | "labels" | "links" | null;
 type LinkMode = "predecessor" | "successor" | "related";
 
 const LINK_MODE_KEY: Record<LinkMode, "linkModePre" | "linkModeSucc" | "linkModeRel"> = {
   predecessor: "linkModePre",
   successor: "linkModeSucc",
   related: "linkModeRel",
+};
+
+const RECURRENCE_OPTIONS: Recurrence[] = ["none", "daily", "weekly", "monthly"];
+const RECURRENCE_KEY: Record<Recurrence, "repeatNone" | "repeatDaily" | "repeatWeekly" | "repeatMonthly"> = {
+  none: "repeatNone",
+  daily: "repeatDaily",
+  weekly: "repeatWeekly",
+  monthly: "repeatMonthly",
 };
 
 const PRIORITIES: Priority[] = ["urgent", "high", "medium", "low", "none"];
@@ -190,8 +199,11 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
     .filter((tk) => tk.title.toLowerCase().includes(linkQuery.trim().toLowerCase()));
 
   function requestComplete() {
+    if (!task) return;
     if (!done && openBlockers.length > 0) setPendingComplete(true);
-    else void apply({ completed: !done });
+    else void apply({ completed: !done }).then(() => {
+      if (!done && task.recurrence !== "none") toast.success(t("recurrenceSpawned"));
+    });
   }
 
   async function addLink(target: Task) {
@@ -230,6 +242,16 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
       return;
     }
     if (next !== task.title) void apply({ title: next });
+  }
+
+  async function saveAsTemplate() {
+    if (!task || !actor) return;
+    try {
+      await taskTemplateService.createFromTask(task);
+      toast.success(t("templateSaved"));
+    } catch {
+      toast.error(t("updateFailed"));
+    }
   }
 
   function toggleSubtask(st: Subtask) {
@@ -332,6 +354,16 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
               aria-label={t("editTitleAria")}
             />
           </div>
+          {actor && canEdit && (
+            <button
+              className="icon-btn"
+              onClick={() => void saveAsTemplate()}
+              aria-label={t("saveAsTemplate")}
+              title={t("saveAsTemplate")}
+            >
+              <Icon name="copy" size={16} />
+            </button>
+          )}
           {actor && can(actor.role, "task:delete") && (
             <button
               className="icon-btn"
@@ -499,6 +531,35 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                   >
                     <span className="board-column__dot" style={{ "--col-c": statusColor(c.id) } as React.CSSProperties} />
                     {c.name}
+                  </button>
+                ))}
+              </Popover>
+            </div>
+          ))}
+
+          {fieldRow("repeat", t("fieldRepeat"), (
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                className={`field-row__value${canEdit ? " field-row__value--editable" : ""}${task.recurrence === "none" ? " field-row__value--empty" : ""}`}
+                onClick={() => canEdit && setPicker(picker === "recurrence" ? null : "recurrence")}
+                aria-haspopup="dialog"
+                aria-expanded={picker === "recurrence"}
+              >
+                {t(RECURRENCE_KEY[task.recurrence])}
+                {canEdit && <Icon name="chevronDown" size={13} />}
+              </button>
+              <Popover open={picker === "recurrence"} onClose={() => setPicker(null)} label={t("fieldRepeat")}>
+                {RECURRENCE_OPTIONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={`popover__item${r === task.recurrence ? " is-selected" : ""}`}
+                    onClick={() => { setPicker(null); void apply({ recurrence: r }); }}
+                  >
+                    <Icon name="repeat" size={13} />
+                    {t(RECURRENCE_KEY[r])}
+                    {r === task.recurrence && <Icon name="check" size={13} />}
                   </button>
                 ))}
               </Popover>
@@ -825,7 +886,10 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           message={t("confirmBlockedComplete", { count: openBlockers.length })}
           onConfirm={() => {
             setPendingComplete(false);
-            void apply({ completed: true });
+            const recurring = task?.recurrence !== "none";
+            void apply({ completed: true }).then(() => {
+              if (recurring) toast.success(t("recurrenceSpawned"));
+            });
           }}
           onCancel={() => setPendingComplete(false)}
         />

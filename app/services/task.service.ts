@@ -1,6 +1,7 @@
 import { taskRepository } from "~/repositories/task.repository";
 import { db } from "~/repositories/db";
 import { can, type RoleId } from "~/auth/rbac";
+import { uuid } from "~/lib/id";
 import type { Task, TaskInput } from "~/models/task";
 
 export class PermissionError extends Error {}
@@ -16,6 +17,7 @@ export interface TaskUpdatePatch {
   subtasks?: Task["subtasks"];
   labels?: string[];
   status?: string;
+  recurrence?: Task["recurrence"];
   /** 自定义字段值（fieldId -> 值），整包替换 */
   customValues?: Task["customValues"];
   /** true=完成（若有完成列则同时流转状态）；false=取消完成 */
@@ -26,6 +28,47 @@ function assertPermission(roleId: RoleId, permission: Parameters<typeof can>[1])
   if (!can(roleId, permission)) {
     throw new PermissionError(`角色 ${roleId} 无 ${permission} 权限`);
   }
+}
+
+/** 按重复规则推进 ISO 日期（月底自动收敛到月末最后一天） */
+function advanceIso(iso: string, freq: Exclude<Task["recurrence"], "none">): string {
+  const d = new Date(iso);
+  if (freq === "daily") d.setUTCDate(d.getUTCDate() + 1);
+  else if (freq === "weekly") d.setUTCDate(d.getUTCDate() + 7);
+  else {
+    const day = d.getUTCDate();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+    d.setUTCDate(Math.min(day, lastDay));
+  }
+  return d.toISOString();
+}
+
+/** 重复任务完成时生成下一期：回到首个未完成列、日期按周期推进、子任务重置 */
+async function spawnNextOccurrence(task: Task): Promise<Task | null> {
+  if (task.recurrence === "none") return null;
+  const project = await db.projects.get(task.projectId);
+  const firstColumn = project?.statusColumns
+    .filter((c) => !c.isDone)
+    .sort((a, b) => a.order - b.order)[0];
+  if (!firstColumn) return null;
+  const input: Omit<TaskInput, "createdAt" | "updatedAt" | "version"> = {
+    id: uuid(),
+    projectId: task.projectId,
+    title: task.title,
+    descriptionRich: task.descriptionRich,
+    status: firstColumn.id,
+    assigneeId: task.assigneeId,
+    startDate: task.startDate ? advanceIso(task.startDate, task.recurrence) : null,
+    dueDate: task.dueDate ? advanceIso(task.dueDate, task.recurrence) : null,
+    customValues: task.customValues,
+    priority: task.priority,
+    labels: task.labels,
+    subtasks: task.subtasks.map((s) => ({ id: uuid(), title: s.title, done: false })),
+    recurrence: task.recurrence,
+  };
+  return taskRepository.create(input);
 }
 
 export const taskService = {
@@ -63,6 +106,7 @@ export const taskService = {
       result = await taskRepository.update(taskId, {
         completedAt: new Date().toISOString(),
       }, task.version);
+      await spawnNextOccurrence(result);
     } else if (!targetColumn?.isDone && task.completedAt) {
       result = await taskRepository.update(taskId, { completedAt: null }, task.version);
     }
@@ -89,7 +133,7 @@ export const taskService = {
     const changed: string[] = [];
     let current = original;
 
-    // 勾选完成：记录 completedAt，若有完成列则同时流转状态
+    // 勾选完成：记录 completedAt，若有完成列则同时流转状态；重复任务生成下一期
     if (patch.completed === true && !current.completedAt) {
       const next: Partial<TaskInput> = { completedAt: new Date().toISOString() };
       if (doneColumn && current.status !== doneColumn.id) {
@@ -97,6 +141,7 @@ export const taskService = {
       }
       current = await taskRepository.update(taskId, next, current.version);
       changed.push("完成");
+      await spawnNextOccurrence(current);
     }
     if (patch.completed === false && current.completedAt) {
       // 取消完成：若停留在完成列，则回到第一个未完成列
@@ -121,6 +166,7 @@ export const taskService = {
           { completedAt: new Date().toISOString() },
           current.version,
         );
+        await spawnNextOccurrence(current);
       } else if (!targetColumn?.isDone && current.completedAt) {
         current = await taskRepository.update(taskId, { completedAt: null }, current.version);
       }
@@ -156,6 +202,10 @@ export const taskService = {
     if (patch.subtasks !== undefined && patch.subtasks !== current.subtasks) {
       rest.subtasks = patch.subtasks;
       changed.push("子任务");
+    }
+    if (patch.recurrence !== undefined && patch.recurrence !== current.recurrence) {
+      rest.recurrence = patch.recurrence;
+      changed.push("重复");
     }
     if (patch.labels !== undefined && patch.labels.join("\u0000") !== current.labels.join("\u0000")) {
       rest.labels = patch.labels;

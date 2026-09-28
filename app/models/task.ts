@@ -16,6 +16,9 @@ export const subtaskSchema = z.object({
 });
 export type Subtask = z.infer<typeof subtaskSchema>;
 
+export const recurrenceSchema = z.enum(["none", "daily", "weekly", "monthly"]);
+export type Recurrence = z.infer<typeof recurrenceSchema>;
+
 export const taskSchema = z.object({
   id: z.string(),
   projectId: z.string(),
@@ -29,6 +32,7 @@ export const taskSchema = z.object({
   priority: prioritySchema.default("none"),
   labels: z.array(z.string()).default([]),
   subtasks: z.array(subtaskSchema).default([]),
+  recurrence: recurrenceSchema.default("none"), // 重复规则：完成时自动生成下一期
   order: z.string().default("a0"), // fractional indexing
   archived: z.boolean().default(false),
   deletedAt: z.string().nullable().default(null),

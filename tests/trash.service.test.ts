@@ -14,7 +14,7 @@ async function seed() {
   });
   await db.tasks.add({
     id: "t1", projectId: "p1", title: "任务", descriptionRich: null, status: "c1",
-    assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [],
+    assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none",
     order: "a0", archived: false, completedAt: null,
     deletedAt: null, deletedByProjectId: null,
     createdAt: now, updatedAt: now, version: 0,
@@ -91,7 +91,7 @@ describe("optimistic locking", () => {
   it("version 不匹配抛 VersionConflictError", async () => {
     await db.tasks.add({
       id: "t9", projectId: "p1", title: "x", descriptionRich: null, status: "c1",
-      assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [],
+      assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none",
       order: "a0", archived: false, completedAt: null,
       deletedAt: null, deletedByProjectId: null,
       createdAt: now, updatedAt: now, version: 3,

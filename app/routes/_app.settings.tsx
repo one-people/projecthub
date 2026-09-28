@@ -76,6 +76,7 @@ export default function SettingsRoute() {
         priority: priorities[i % 5]!,
         labels: [],
         subtasks: [],
+        recurrence: "none" as const,
         order,
         archived: false,
         completedAt: null,

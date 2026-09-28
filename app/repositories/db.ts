@@ -73,6 +73,14 @@ class ProjectHubDB extends Dexie {
     this.version(5).stores({
       taskLinks: "id, projectId, fromTaskId, toTaskId",
     });
+    // v6：回填后续版本新增的任务字段（旧数据行缺省，liveQuery 原始读取不经 Zod 默认值）
+    this.version(6).upgrade(async (tx) => {
+      await tx.table("tasks").toCollection().modify((row: Record<string, unknown>) => {
+        if (row.recurrence === undefined) row.recurrence = "none";
+        if (row.labels === undefined) row.labels = [];
+        if (row.customValues === undefined) row.customValues = {};
+      });
+    });
   }
 }
 
