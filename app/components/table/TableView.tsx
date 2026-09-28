@@ -89,6 +89,13 @@ export function TableView({
     overscan: 10,
   });
 
+  // 子任务行标识：标题前加缩进图标，悬停提示父任务名
+  const parentTitles = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const tk of tasks) map[tk.id] = tk.title;
+    return map;
+  }, [tasks]);
+
   useEffect(() => {
     if (!colPopover) return;
     function onDocClick(e: MouseEvent) {
@@ -132,13 +139,19 @@ export function TableView({
     return (
       <div className="tv-grid tv-row" role="row" aria-label={task.title} style={{ gridTemplateColumns: gridTemplate }}>
         <div
-          className={done ? "tv-cell tv-cell--title tv-cell--done" : "tv-cell tv-cell--title"}
+          className={`tv-cell tv-cell--title${done ? " tv-cell--done" : ""}${task.parentId ? " tv-cell--sub" : ""}`}
           onClick={() => onOpenTask(task)}
           onKeyDown={(e) => { if (e.key === "Enter") onOpenTask(task); }}
           tabIndex={0}
           role="button"
           aria-label={t("openTaskAria", { title: task.title })}
+          title={task.parentId
+            ? t("parentTaskAria", { title: parentTitles[task.parentId] ?? "" })
+            : undefined}
         >
+          {task.parentId && (
+            <Icon name="cornerDownRight" size={12} className="tv-cell__sub-icon" />
+          )}
           {task.title}
         </div>
 

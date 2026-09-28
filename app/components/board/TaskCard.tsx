@@ -12,6 +12,10 @@ import { isOverdue } from "~/lib/date";
 export interface TaskCardProps {
   task: Task;
   assigneeName: string | null;
+  /** 父任务标题（子任务卡片标识用，顶层任务为 null） */
+  parentTitle: string | null;
+  /** 子任务完成进度（父任务卡片角标用，无子任务为 null） */
+  subProgress: { done: number; total: number } | null;
   labels: Label[];
   canToggle: boolean;
   onOpen: (task: Task) => void;
@@ -24,7 +28,7 @@ function isSameDay(a: Date, b: Date): boolean {
     && a.getDate() === b.getDate();
 }
 
-export function TaskCard({ task, assigneeName, labels, canToggle, onOpen, onToggleDone }: TaskCardProps) {
+export function TaskCard({ task, assigneeName, parentTitle, subProgress, labels, canToggle, onOpen, onToggleDone }: TaskCardProps) {
   const { locale } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id, data: { type: "task", status: task.status } });
@@ -84,6 +88,15 @@ export function TaskCard({ task, assigneeName, labels, canToggle, onOpen, onTogg
         <Icon name="check" size={11} />
       </button>
       <div className="task-card__main">
+        {parentTitle && (
+          <span
+            className="task-card__parent"
+            title={t("parentTaskAria", { title: parentTitle })}
+          >
+            <Icon name="cornerDownRight" size={11} />
+            {parentTitle}
+          </span>
+        )}
         <p className={`task-card__title${done ? " task-card__title--done" : ""}`}>
           {task.title}
         </p>
@@ -111,6 +124,18 @@ export function TaskCard({ task, assigneeName, labels, canToggle, onOpen, onTogg
             >
               <Icon name="calendar" size={12} />
               {dueText}
+            </span>
+          )}
+          {subProgress && (
+            <span
+              className="task-card__subtask-count"
+              title={t("subtaskProgressTitle", {
+                done: subProgress.done,
+                total: subProgress.total,
+              })}
+            >
+              <Icon name="cornerDownRight" size={11} />
+              {subProgress.done}/{subProgress.total}
             </span>
           )}
           {task.subtasks.length > 0 && (

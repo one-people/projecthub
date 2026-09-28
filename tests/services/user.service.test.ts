@@ -44,6 +44,7 @@ async function seedTask(projectId: string, overrides: Partial<Task> = {}): Promi
   const task: Task = {
     id: `t-${Math.random().toString(36).slice(2, 8)}`,
     projectId,
+    parentId: null,
     title: "任务",
     descriptionRich: null,
     status: "c1",
@@ -59,7 +60,7 @@ async function seedTask(projectId: string, overrides: Partial<Task> = {}): Promi
     archived: false,
     completedAt: null,
     deletedAt: null,
-    deletedByProjectId: null,
+    deletedByProjectId: null, deletedByParentTaskId: null,
     createdAt: now,
     updatedAt: now,
     version: 0,

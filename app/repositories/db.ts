@@ -96,6 +96,22 @@ class ProjectHubDB extends Dexie {
         }
       });
     });
+    // v8：任务支持父子子任务 —— 加 parentId 索引并回填旧行（liveQuery 原始读取不经 Zod 默认值）
+    this.version(8)
+      .stores({
+        tasks: "id, projectId, status, [projectId+status+order], assigneeId, dueDate, priority, archived, deletedAt, parentId",
+      })
+      .upgrade(async (tx) => {
+        await tx.table("tasks").toCollection().modify((row: Record<string, unknown>) => {
+          if (row.parentId === undefined) row.parentId = null;
+        });
+      });
+    // v9：级联软删标记字段回填（同 v6 理由：liveQuery 原始读取不经 Zod 默认值）
+    this.version(9).upgrade(async (tx) => {
+      await tx.table("tasks").toCollection().modify((row: Record<string, unknown>) => {
+        if (row.deletedByParentTaskId === undefined) row.deletedByParentTaskId = null;
+      });
+    });
   }
 }
 

@@ -8,10 +8,10 @@ const now = new Date().toISOString();
 
 async function seedTask(id: string, deletedAt: string | null) {
   await db.tasks.add({
-    id, projectId: "p1", title: `任务${id}`, descriptionRich: null, status: "c1",
+    id, projectId: "p1", parentId: null, title: `任务${id}`, descriptionRich: null, status: "c1",
     assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none",
     order: `a${id}`, archived: false, completedAt: null,
-    deletedAt, deletedByProjectId: null,
+    deletedAt, deletedByProjectId: null, deletedByParentTaskId: null,
     createdAt: now, updatedAt: now, version: 0,
   });
 }

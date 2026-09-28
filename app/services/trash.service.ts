@@ -13,26 +13,47 @@ export const trashService = {
     if (!task || task.deletedAt) return;
     await assertProjectPermission(task.projectId, actorId, "task:delete");
     const now = new Date().toISOString();
+    // 级联子任务打上 deletedByParentTaskId 标记（同项目级联的 deletedByProjectId 模式），
+    // 恢复父任务时按标记识别同批；已单独删除的子任务不动，保留其自身删除状态
+    const children = (await db.tasks.where("parentId").equals(taskId).toArray())
+      .filter((c) => !c.deletedAt);
+    const ids = [taskId, ...children.map((c) => c.id)];
     await db.transaction("rw", db.tasks, db.comments, async () => {
-      await db.tasks.update(taskId, { deletedAt: now, deletedByProjectId: null });
-      await db.comments.where("taskId").equals(taskId).modify({ deletedAt: now });
+      for (const id of ids) {
+        await db.tasks.update(id, {
+          deletedAt: now,
+          deletedByProjectId: null,
+          deletedByParentTaskId: id === taskId ? null : taskId,
+        });
+        await db.comments.where("taskId").equals(id).modify({ deletedAt: now });
+      }
     });
   },
 
   async restoreTask(actorId: string, taskId: string): Promise<void> {
     const task = await db.tasks.get(taskId);
-    if (!task) return;
+    if (!task || !task.deletedAt) return;
     await assertProjectPermission(task.projectId, actorId, "task:delete");
     if (task.deletedByProjectId) {
       throw new Error("该任务随所属项目删除，无法单独恢复");
     }
     await db.transaction("rw", db.tasks, db.comments, async () => {
-      await db.tasks.update(taskId, { deletedAt: null });
+      // 单独恢复即清除级联标记（若它是随父删除后又单独恢复的子任务）
+      await db.tasks.update(taskId, { deletedAt: null, deletedByParentTaskId: null });
       await db.comments.where("taskId").equals(taskId).modify({ deletedAt: null });
+      // 仅恢复随本任务级联删除（带标记）的子任务；此前单独删除的子任务不在其列
+      const children = await db.tasks.where("parentId").equals(taskId).toArray();
+      for (const c of children) {
+        if (c.deletedByParentTaskId !== taskId) continue;
+        await db.tasks.update(c.id, { deletedAt: null, deletedByParentTaskId: null });
+        await db.comments.where("taskId").equals(c.id).modify({ deletedAt: null });
+      }
     });
   },
 
   async purgeTask(taskId: string): Promise<void> {
+    const children = await db.tasks.where("parentId").equals(taskId).toArray();
+    for (const c of children) await taskRepository.purge(c.id);
     await taskRepository.purge(taskId);
   },
 

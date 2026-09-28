@@ -15,6 +15,10 @@ export interface ColumnProps {
   column: StatusColumn;
   tasks: Task[];
   assigneeNames: Record<string, string>;
+  /** taskId → 标题（子卡展示父任务标识用） */
+  parentTitles: Record<string, string>;
+  /** parentId → 子任务完成进度（父卡角标用） */
+  subProgress: Record<string, { done: number; total: number }>;
   labels: Label[];
   templates: TaskTemplate[];
   canCreate: boolean;
@@ -27,7 +31,7 @@ export interface ColumnProps {
 
 /** 看板列：色点列头 + 计数 + 完成进度条 + 列内快捷创建（支持模板） */
 export function Column({
-  column, tasks, assigneeNames, labels, templates, canCreate, canToggle, onOpenTask, onToggleDone, onCreate, onCreateFromTemplate,
+  column, tasks, assigneeNames, parentTitles, subProgress, labels, templates, canCreate, canToggle, onOpenTask, onToggleDone, onCreate, onCreateFromTemplate,
 }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${column.id}`,
@@ -79,6 +83,8 @@ export function Column({
               key={task.id}
               task={task}
               assigneeName={task.assigneeId ? assigneeNames[task.assigneeId] ?? null : null}
+              parentTitle={task.parentId ? parentTitles[task.parentId] ?? null : null}
+              subProgress={subProgress[task.id] ?? null}
               labels={labels}
               canToggle={canToggle}
               onOpen={onOpenTask}

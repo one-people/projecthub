@@ -72,6 +72,7 @@ export const projectRepository = {
       await db.tasks.add({
         id: uuid(),
         projectId: project.id,
+        parentId: null,
         title,
         descriptionRich: null,
         status: colName(col),
@@ -88,7 +89,7 @@ export const projectRepository = {
         // 落在完成列的演示任务带完成时间，统计口径一致
         completedAt: col === 3 ? now : null,
         deletedAt: null,
-        deletedByProjectId: null,
+        deletedByProjectId: null, deletedByParentTaskId: null,
         createdAt: now,
         updatedAt: now,
         version: 0,

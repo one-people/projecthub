@@ -14,6 +14,7 @@ function task(patch: Partial<Task>): Task {
   return {
     id: Math.random().toString(36).slice(2),
     projectId: "p1",
+    parentId: null,
     title: "任务",
     descriptionRich: null,
     status: "todo",
@@ -29,7 +30,7 @@ function task(patch: Partial<Task>): Task {
     archived: false,
     completedAt: null,
     deletedAt: null,
-    deletedByProjectId: null,
+    deletedByProjectId: null, deletedByParentTaskId: null,
     createdAt: "2026-09-20T08:00:00.000Z",
     updatedAt: "2026-09-20T08:00:00.000Z",
     version: 0,

@@ -909,6 +909,22 @@ select.input {
 
 .task-card__main { flex: 1; min-width: 0; }
 
+/* 子任务卡片：标题上方的父任务标识 */
+.task-card__parent {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.task-card__parent svg { flex: none; }
+
 .task-card__title {
   margin: 0;
   font-size: 13px;
@@ -938,6 +954,17 @@ select.input {
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* 父卡片上的子任务完成进度角标（完整子任务，区别于清单角标） */
+.task-card__subtask-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.task-card__subtask-count svg { color: var(--color-text-faint); }
 
 .task-card__due {
   display: inline-flex;
@@ -1079,6 +1106,10 @@ select.input {
 .tv-cell--title { font-weight: 500; cursor: pointer; }
 .tv-cell--title:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; border-radius: var(--radius-sm); }
 .tv-cell--done { text-decoration: line-through; color: var(--color-text-muted); }
+
+/* 子任务行：缩进弱化，标题前拐角图标 */
+.tv-cell--sub { color: var(--color-text-secondary); }
+.tv-cell__sub-icon { flex: none; margin-right: 4px; color: var(--color-text-faint); }
 .tv-cell--muted { color: var(--color-text-muted); }
 
 .tv-cell--btn {
@@ -1549,8 +1580,8 @@ select.input {
 .drawer__desc { width: 100%; min-height: 48px; align-items: flex-start; }
 .drawer__desc-rich { width: 100%; }
 
-/* 子任务清单 */
-.subtask-list {
+/* 清单（轻量勾选列表，与子任务是两套概念） */
+.checklist {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1558,7 +1589,7 @@ select.input {
   flex-direction: column;
 }
 
-.subtask {
+.checklist-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -1567,10 +1598,10 @@ select.input {
   border-radius: var(--radius-sm);
   font-size: 13px;
 }
-.subtask:hover { background: var(--color-surface-muted); }
-.subtask .check { margin-top: 0; }
+.checklist-item:hover { background: var(--color-surface-muted); }
+.checklist-item .check { margin-top: 0; }
 
-.subtask__title {
+.checklist-item__title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -1578,12 +1609,12 @@ select.input {
   white-space: nowrap;
 }
 
-.subtask__title--done {
+.checklist-item__title--done {
   text-decoration: line-through;
   color: var(--color-text-muted);
 }
 
-.subtask__del {
+.checklist-item__del {
   opacity: 0;
   width: 24px;
   height: 24px;
@@ -1591,11 +1622,11 @@ select.input {
   transition: opacity var(--transition), color var(--transition);
 }
 
-.subtask:hover .subtask__del,
-.subtask__del:focus-visible { opacity: 1; }
-.subtask__del:hover { color: var(--color-danger); }
+.checklist-item:hover .checklist-item__del,
+.checklist-item__del:focus-visible { opacity: 1; }
+.checklist-item__del:hover { color: var(--color-danger); }
 
-.subtask-add {
+.checklist-add {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1611,14 +1642,156 @@ select.input {
   cursor: pointer;
   text-align: left;
 }
-.subtask-add:hover { background: var(--color-surface-muted); color: var(--color-text); }
+.checklist-add:hover { background: var(--color-surface-muted); color: var(--color-text); }
 
-.subtask-progress {
+/* 区块标题右侧的 x/y 进度角标（子任务 / 清单共用） */
+.drawer__progress {
   margin-left: auto;
   font-size: 12px;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+.drawer__section-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* 子任务（挂在本任务下的完整任务：行内维护状态/负责人/起止日期） */
+.childtask-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.childtask {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 6px;
+  margin: 0 -6px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.childtask:hover { background: var(--color-surface-muted); }
+.childtask .check { margin-top: 0; flex: none; }
+
+.childtask__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.childtask__title:hover { color: var(--color-primary); }
+
+.childtask.is-done .childtask__title {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.childtask__ctrls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+/* 行内控件锚点（弹层定位上下文） */
+.childtask__anchor { position: relative; display: inline-flex; }
+
+.childtask__ctrl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.childtask__ctrl:hover { background: var(--color-surface-muted); color: var(--color-text); }
+.childtask__ctrl:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+
+.childtask__ctrl--status {
+  width: 12px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--col-c);
+}
+
+.childtask__ctrl--assignee .avatar--sm { width: 20px; height: 20px; font-size: 10px; }
+
+.childtask__ctrl--date.has-date { color: var(--color-text); }
+.childtask__due { font-variant-numeric: tabular-nums; }
+
+.childtask__del {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-muted);
+  transition: opacity var(--transition), color var(--transition);
+}
+
+.childtask:hover .childtask__del,
+.childtask__del:focus-visible { opacity: 1; }
+.childtask__del:hover { color: var(--color-danger); }
+
+.childtask__dates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  min-width: 180px;
+}
+
+.childtask__date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.childtask-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 32px;
+  padding: var(--space-1) 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: text;
+  text-align: left;
+}
+.childtask-add:hover { background: var(--color-surface-muted); color: var(--color-text); }
+
+.childtask-input { width: 100%; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--color-text); }
 
 /* 抽屉内动态流 */
 
@@ -2778,6 +2951,20 @@ select.input {
 }
 .tl__name.is-done { text-decoration: line-through; color: var(--color-text-muted); }
 .tl__name:hover { color: var(--color-primary); }
+
+/* 子任务行：缩进 + 前置拐角图标，弱化层级感 */
+.tl__name--sub {
+  padding-left: var(--space-5);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.tl__name--sub::before {
+  content: "↳";
+  position: absolute;
+  left: var(--space-3);
+  color: var(--color-text-faint);
+}
 .tl__lane { position: relative; flex: 1; }
 
 .tl__bar {
@@ -2797,6 +2984,14 @@ select.input {
 }
 .tl__bar:hover { filter: brightness(1.12); }
 .tl__bar.is-done { background: color-mix(in srgb, var(--bar-c) 30%, transparent); }
+
+/* 子任务条带：更细更淡，与父任务行区分 */
+.tl__bar--sub {
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--bar-c) 50%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-c) 70%, transparent);
+}
+.tl__bar--sub .tl__bar-label { font-size: 10px; font-weight: 500; }
 
 /* 条带内居中的负责人名 */
 .tl__bar-label {
@@ -2978,8 +3173,8 @@ select.input {
 .auto-rule__name { min-width: 120px; font-weight: 600; font-size: 13px; }
 .form-actions--flush { margin-top: 0; }
 
-/* 字号/尺寸下沉：统计页小节标题、用户行姓名、小号头像、子任务内联输入 */
+/* 字号/尺寸下沉：统计页小节标题、用户行姓名、小号头像、清单内联输入 */
 .section-title--sm { font-size: 13px; }
 .user-list__name { min-width: 72px; font-weight: 600; font-size: 13px; }
 .avatar--sm { width: 22px; height: 22px; font-size: 11px; }
-.subtask-input { width: 100%; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--color-text); }
+.checklist-input { width: 100%; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--color-text); }

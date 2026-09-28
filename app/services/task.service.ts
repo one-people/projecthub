@@ -7,6 +7,14 @@ import type { Task, TaskInput } from "~/models/task";
 
 export { PermissionError };
 
+/** 领域错误：子任务层级约束（仅允许一层） */
+export class SubtaskError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SubtaskError";
+  }
+}
+
 /** 自动化规则失败不阻断任务主流程 */
 async function runAutomations(event: AutomationEvent): Promise<void> {
   try {
@@ -85,9 +93,50 @@ export const taskService = {
     input: Omit<TaskInput, "createdAt" | "updatedAt" | "version">,
   ): Promise<Task> {
     await assertProjectPermission(input.projectId, actorId, "task:create");
+    // 直建路径若带 parentId，先校验父任务合法（UI 创建子任务请走 createSubtask）
+    if (input.parentId) {
+      const parent = await taskRepository.get(input.parentId);
+      if (!parent || parent.projectId !== input.projectId || parent.parentId || parent.deletedAt) {
+        throw new SubtaskError("父任务不存在或不支持多级子任务");
+      }
+    }
     const task = await taskRepository.create(input);
     await runAutomations({ projectId: task.projectId, type: "task_created", taskId: task.id });
     return task;
+  },
+
+  /**
+   * 在父任务下创建子任务：子任务是完整任务（状态/负责人/起止日期独立维护），
+   * 默认继承父任务状态，便于在看板中与父任务同列出现；仅允许一层嵌套。
+   */
+  async createSubtask(
+    actorId: string,
+    parentId: string,
+    input: {
+      title: string;
+      status?: string;
+      assigneeId?: string | null;
+      startDate?: string | null;
+      dueDate?: string | null;
+    },
+  ): Promise<Task> {
+    const parent = await taskRepository.get(parentId);
+    if (!parent) throw new Error(`Task ${parentId} not found`);
+    if (parent.parentId) throw new SubtaskError("子任务下不能再挂子任务");
+    // 父任务在回收站期间不可再挂子任务：purge 父任务会级联清理子任务，避免新数据被连带清除
+    if (parent.deletedAt) throw new SubtaskError("父任务已删除，无法添加子任务");
+    await assertProjectPermission(parent.projectId, actorId, "task:create");
+    if (!input.title.trim()) throw new Error("任务标题不能为空");
+    return this.create(actorId, {
+      id: uuid(),
+      projectId: parent.projectId,
+      parentId,
+      title: input.title.trim(),
+      status: input.status ?? parent.status,
+      assigneeId: input.assigneeId ?? null,
+      startDate: input.startDate ?? null,
+      dueDate: input.dueDate ?? null,
+    });
   },
 
   async moveTask(

@@ -58,6 +58,24 @@ export function Board({
     return map;
   }, [users]);
 
+  // 父子信息：子卡显示父任务标识；父卡显示子任务完成进度（勾选完成以 completedAt 为准）
+  const parentTitles = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const tk of tasks) map[tk.id] = tk.title;
+    return map;
+  }, [tasks]);
+
+  const subProgress = useMemo(() => {
+    const map: Record<string, { done: number; total: number }> = {};
+    for (const tk of tasks) {
+      if (!tk.parentId) continue;
+      const stat = (map[tk.parentId] ??= { done: 0, total: 0 });
+      stat.total += 1;
+      if (tk.completedAt) stat.done += 1;
+    }
+    return map;
+  }, [tasks]);
+
   function tasksIn(status: string): Task[] {
     return tasks
       .filter((t) => t.status === status && !t.archived)
@@ -127,6 +145,8 @@ export function Board({
               column={column}
               tasks={tasksIn(column.id)}
               assigneeNames={assigneeNames}
+              parentTitles={parentTitles}
+              subProgress={subProgress}
               labels={labels}
               templates={templates}
               canCreate={canCreate}

@@ -22,6 +22,8 @@ export type Recurrence = z.infer<typeof recurrenceSchema>;
 export const taskSchema = z.object({
   id: z.string(),
   projectId: z.string(),
+  /** 父任务 id：非空即为子任务（仅允许一层，服务层校验）；与内嵌 subtasks 清单是两套概念 */
+  parentId: z.string().nullable().default(null),
   title: z.string().min(1).max(200),
   descriptionRich: z.unknown().nullable().default(null), // TipTap JSON
   status: z.string(), // StatusColumn.id
@@ -37,6 +39,9 @@ export const taskSchema = z.object({
   archived: z.boolean().default(false),
   deletedAt: z.string().nullable().default(null),
   deletedByProjectId: z.string().nullable().default(null),
+  /** 随父任务级联软删的标记（= 父任务 id）：恢复父任务时按此识别同批子任务；
+   * 用显式标记而非 deletedAt 时间戳相等判断，避免两次删除落在同一毫秒的误恢复 */
+  deletedByParentTaskId: z.string().nullable().default(null),
   completedAt: z.string().nullable().default(null),
   createdAt: z.string(),
   updatedAt: z.string(),

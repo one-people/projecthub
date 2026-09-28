@@ -10,7 +10,7 @@ import type { TaskLink } from "~/models/taskLink";
 import { can, resolveRole, type RoleId } from "~/auth/rbac";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
-import { taskService, PermissionError, type TaskUpdatePatch } from "~/services/task.service";
+import { taskService, PermissionError, SubtaskError, type TaskUpdatePatch } from "~/services/task.service";
 import { labelService } from "~/services/label.service";
 import { taskLinkService, LinkError } from "~/services/taskLink.service";
 import { taskTemplateService } from "~/services/taskTemplate.service";
@@ -36,6 +36,10 @@ export interface TaskDrawerProps {
 }
 
 type Picker = "assignee" | "priority" | "status" | "recurrence" | "labels" | "links" | null;
+/** 子任务行内可编辑的字段 */
+type SubPickerField = "status" | "assignee" | "date";
+/** 子任务行内编辑的弹层目标（每行独立） */
+type SubPicker = { taskId: string; field: SubPickerField } | null;
 type LinkMode = "predecessor" | "successor" | "related";
 
 const LINK_MODE_KEY: Record<LinkMode, "linkModePre" | "linkModeSucc" | "linkModeRel"> = {
@@ -74,12 +78,15 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   const [picker, setPicker] = useState<Picker>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingComplete, setPendingComplete] = useState(false);
+  const [subPicker, setSubPicker] = useState<SubPicker>(null);
+  const [confirmSubDelete, setConfirmSubDelete] = useState<Task | null>(null);
 
   const [titleDraft, setTitleDraft] = useState("");
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState<JSONContent | null>(null);
   const [dueEditing, setDueEditing] = useState(false);
   const [startEditing, setStartEditing] = useState(false);
+  const [checklistDraft, setChecklistDraft] = useState("");
   const [subtaskDraft, setSubtaskDraft] = useState("");
 
   const taskId = task?.id ?? null;
@@ -160,6 +167,8 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   // 仅在切换任务时收起弹层/清空草稿——标签多选弹层在勾选后需保持展开
   useEffect(() => {
     setPicker(null);
+    setSubPicker(null);
+    setConfirmSubDelete(null);
     setNewLabelName("");
   }, [taskId]);
 
@@ -169,12 +178,13 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
       if (picker) { setPicker(null); return; }
+      if (subPicker) { setSubPicker(null); return; }
       if (editingDesc) { setEditingDesc(false); return; }
       onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [task, picker, editingDesc, onClose]);
+  }, [task, picker, subPicker, editingDesc, onClose]);
 
   if (!task || !project) return null;
 
@@ -190,6 +200,12 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
 
   // 关联分组：前置（阻塞本任务）/ 后续（被本任务阻塞）/ 相关
   const taskById = new Map(projectTasks.map((tk) => [tk.id, tk]));
+  // 子任务（parentId 指向本任务的完整任务），按创建顺序稳定展示
+  const childTasks = projectTasks
+    .filter((tk) => tk.parentId === task.id)
+    .sort((a, b) => (a.createdAt === b.createdAt ? a.order.localeCompare(b.order) : a.createdAt < b.createdAt ? -1 : 1));
+  const childDone = childTasks.filter((tk) => tk.completedAt).length;
+  const parentTask = task.parentId ? taskById.get(task.parentId) ?? null : null;
   const predecessorLinks = links.filter((l) => l.type === "blocks" && l.toTaskId === task.id);
   const successorLinks = links.filter((l) => l.type === "blocks" && l.fromTaskId === task.id);
   const relatedLinks = links.filter(
@@ -262,14 +278,14 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
     }
   }
 
-  function toggleSubtask(st: Subtask) {
+  function toggleChecklistItem(st: Subtask) {
     if (!task) return;
     void apply({
       subtasks: task.subtasks.map((s) => (s.id === st.id ? { ...s, done: !s.done } : s)),
     });
   }
 
-  function removeSubtask(st: Subtask) {
+  function removeChecklistItem(st: Subtask) {
     if (!task) return;
     void apply({ subtasks: task.subtasks.filter((s) => s.id !== st.id) });
   }
@@ -296,12 +312,49 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
     }
   }
 
-  function addSubtask() {
+  function addChecklistItem() {
     if (!task) return;
-    const title = subtaskDraft.trim();
+    const title = checklistDraft.trim();
     if (!title) return;
     void apply({ subtasks: [...task.subtasks, { id: uuid(), title, done: false }] });
-    setSubtaskDraft("");
+    setChecklistDraft("");
+  }
+
+  /** 子任务与主任务走同一服务入口，仅更新目标不同 */
+  async function applyToTask(taskId: string, patch: TaskUpdatePatch) {
+    if (!actor?.role) return;
+    try {
+      await taskService.updateTask(actor.id, taskId, patch);
+    } catch (e) {
+      toast.error(e instanceof PermissionError ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function createChildTask() {
+    if (!task || !actor?.role) return;
+    const title = subtaskDraft.trim();
+    if (!title) return;
+    try {
+      await taskService.createSubtask(actor.id, task.id, { title });
+      setSubtaskDraft("");
+    } catch (e) {
+      toast.error(
+        e instanceof SubtaskError || e instanceof PermissionError ? e.message : t("updateFailed"),
+      );
+    }
+  }
+
+  async function deleteChildTask(child: Task) {
+    if (!actor) return;
+    try {
+      await trashService.deleteTask(actor.id, child.id);
+      setConfirmSubDelete(null);
+      toast.success(t("deleted"), {
+        undo: () => trashService.restoreTask(actor.id, child.id),
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("updateFailed"));
+    }
   }
 
   async function addComment(json: unknown) {
@@ -394,6 +447,24 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
 
         <div className="drawer__body">
           <div className="drawer__fields">
+          {task.parentId && (
+            fieldRow("cornerDownRight", t("fieldParentTask"), (
+              parentTask ? (
+                <button
+                  type="button"
+                  className="field-row__value field-row__value--editable"
+                  onClick={() => onOpenTask?.(parentTask.id)}
+                  disabled={!onOpenTask}
+                  title={parentTask.title}
+                >
+                  {parentTask.title}
+                </button>
+              ) : (
+                <span className="field-row__value field-row__value--empty">{t("parentTaskMissing")}</span>
+              )
+            ))
+          )}
+
           {fieldRow("user", t("colAssignee"), (
             <div className="field-row__anchor">
               <button
@@ -801,35 +872,224 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           <section className="drawer__section" aria-label={t("subtasks")}>
             <h3 className="drawer__section-title">
               {t("subtasks")}
+              {childTasks.length > 0 && (
+                <span className="drawer__progress">
+                  {t("subtaskProgress", { done: childDone, total: childTasks.length })}
+                </span>
+              )}
+            </h3>
+            {childTasks.length === 0 && (
+              // 子任务自身不可再嵌套：空态说明层级限制，也不给输入框
+              <p className="drawer__section-empty">
+                {t(task.parentId ? "noNestedSubtasks" : "noSubtasks")}
+              </p>
+            )}
+            <ul className="childtask-list">
+              {childTasks.map((child) => {
+                const childDoneRow = Boolean(child.completedAt);
+                const childAssignee = child.assigneeId
+                  ? users.find((u) => u.id === child.assigneeId)
+                  : undefined;
+                const childStatusCol = columns.find((c) => c.id === child.status);
+                const subOpen = (field: SubPickerField) =>
+                  subPicker?.taskId === child.id && subPicker.field === field;
+                return (
+                  <li key={child.id} className={`childtask${childDoneRow ? " is-done" : ""}`}>
+                    <button
+                      type="button"
+                      className={`check${childDoneRow ? " is-done" : ""}`}
+                      onClick={() => void applyToTask(child.id, { completed: !childDoneRow })}
+                      disabled={!canEdit}
+                      aria-label={childDoneRow ? t("markUndone") : t("markDone")}
+                      aria-pressed={childDoneRow}
+                    >
+                      <Icon name="check" size={11} />
+                    </button>
+                    <button
+                      type="button"
+                      className="childtask__title"
+                      onClick={() => onOpenTask?.(child.id)}
+                      disabled={!onOpenTask}
+                      title={t("openTaskAria", { title: child.title })}
+                    >
+                      {child.title}
+                    </button>
+                    <div className="childtask__ctrls">
+                      <div className="childtask__anchor">
+                        <button
+                          type="button"
+                          className="childtask__ctrl childtask__ctrl--status"
+                          style={{ "--col-c": statusColor(child.status) } as React.CSSProperties}
+                          onClick={() => canEdit && setSubPicker(subOpen("status") ? null : { taskId: child.id, field: "status" })}
+                          aria-haspopup="dialog"
+                          aria-expanded={subOpen("status")}
+                          aria-label={t("colStatus")}
+                          title={childStatusCol?.name ?? child.status}
+                        />
+                        <Popover open={subOpen("status")} onClose={() => setSubPicker(null)} label={t("colStatus")}>
+                          {columns.map((c: StatusColumn) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              className={`popover__item${c.id === child.status ? " is-selected" : ""}`}
+                              onClick={() => { setSubPicker(null); void applyToTask(child.id, { status: c.id }); }}
+                            >
+                              <span className="board-column__dot" style={{ "--col-c": statusColor(c.id) } as React.CSSProperties} />
+                              {c.name}
+                            </button>
+                          ))}
+                        </Popover>
+                      </div>
+                      <div className="childtask__anchor">
+                        <button
+                          type="button"
+                          className="childtask__ctrl childtask__ctrl--assignee"
+                          onClick={() => canEdit && setSubPicker(subOpen("assignee") ? null : { taskId: child.id, field: "assignee" })}
+                          aria-haspopup="dialog"
+                          aria-expanded={subOpen("assignee")}
+                          aria-label={t("colAssignee")}
+                          title={childAssignee?.name ?? t("unassigned")}
+                        >
+                          {childAssignee ? (
+                            <span className="avatar avatar--sm" style={{ background: childAssignee.avatarColor }}>
+                              {childAssignee.name.slice(0, 1)}
+                            </span>
+                          ) : (
+                            <Icon name="user" size={13} />
+                          )}
+                        </button>
+                        <Popover open={subOpen("assignee")} onClose={() => setSubPicker(null)} label={t("colAssignee")}>
+                          <button
+                            type="button"
+                            className="popover__item"
+                            onClick={() => { setSubPicker(null); void applyToTask(child.id, { assigneeId: null }); }}
+                          >
+                            <Icon name="close" size={14} />
+                            {t("clearAssignee")}
+                          </button>
+                          {users.filter((u) => u.active).map((u) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              className={`popover__item${u.id === child.assigneeId ? " is-selected" : ""}`}
+                              onClick={() => { setSubPicker(null); void applyToTask(child.id, { assigneeId: u.id }); }}
+                            >
+                              <span className="avatar avatar--sm" style={{ background: u.avatarColor }}>
+                                {u.name.slice(0, 1)}
+                              </span>
+                              {u.name}
+                            </button>
+                          ))}
+                        </Popover>
+                      </div>
+                      <div className="childtask__anchor">
+                        <button
+                          type="button"
+                          className={`childtask__ctrl childtask__ctrl--date${child.dueDate ? " has-date" : ""}`}
+                          onClick={() => canEdit && setSubPicker(subOpen("date") ? null : { taskId: child.id, field: "date" })}
+                          aria-haspopup="dialog"
+                          aria-expanded={subOpen("date")}
+                          aria-label={t("colDueDate")}
+                          title={child.dueDate
+                            ? `${t("colDueDate")}: ${formatDate(child.dueDate, locale)}`
+                            : t("dueNone")}
+                        >
+                          <Icon name="calendar" size={12} />
+                          {child.dueDate && (
+                            <span className="childtask__due">
+                              {formatDate(child.dueDate, locale)}
+                            </span>
+                          )}
+                        </button>
+                        <Popover open={subOpen("date")} onClose={() => setSubPicker(null)} label={t("colDueDate")}>
+                          <div className="childtask__dates">
+                            {(["startDate", "dueDate"] as const).map((key) => (
+                              <label key={key} className="childtask__date">
+                                <span>{t(key === "startDate" ? "colStart" : "colDueDate")}</span>
+                                <input
+                                  type="date"
+                                  className="input"
+                                  value={child[key] ? child[key].slice(0, 10) : ""}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    void applyToTask(child.id, {
+                                      [key]: v ? new Date(`${v}T00:00:00`).toISOString() : null,
+                                    });
+                                  }}
+                                  aria-label={t(key === "startDate" ? "colStart" : "colDueDate")}
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        </Popover>
+                      </div>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          className="icon-btn childtask__del"
+                          onClick={() => setConfirmSubDelete(child)}
+                          aria-label={t("deleteSubtaskAria", { title: child.title })}
+                        >
+                          <Icon name="close" size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {canEdit && !task.parentId && (
+              <form
+                className="childtask-add"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void createChildTask();
+                }}
+              >
+                <Icon name="cornerDownRight" size={14} />
+                <input
+                  value={subtaskDraft}
+                  onChange={(e) => setSubtaskDraft(e.target.value)}
+                  placeholder={t("addSubtask")}
+                  aria-label={t("addSubtask")}
+                  className="childtask-input"
+                />
+              </form>
+            )}
+          </section>
+
+          <section className="drawer__section" aria-label={t("checklist")}>
+            <h3 className="drawer__section-title">
+              {t("checklist")}
               {task.subtasks.length > 0 && (
-                <span className="subtask-progress">
-                  {t("subtaskProgress", {
+                <span className="drawer__progress">
+                  {t("checklistProgress", {
                     done: task.subtasks.filter((s) => s.done).length,
                     total: task.subtasks.length,
                   })}
                 </span>
               )}
             </h3>
-            <ul className="subtask-list">
+            <ul className="checklist">
               {task.subtasks.map((st) => (
-                <li key={st.id} className="subtask">
+                <li key={st.id} className="checklist-item">
                   <button
                     type="button"
                     className={`check${st.done ? " is-done" : ""}`}
-                    onClick={() => toggleSubtask(st)}
+                    onClick={() => toggleChecklistItem(st)}
                     disabled={!canEdit}
                     aria-label={st.title}
                     aria-pressed={st.done}
                   >
                     <Icon name="check" size={11} />
                   </button>
-                  <span className={`subtask__title${st.done ? " subtask__title--done" : ""}`}>{st.title}</span>
+                  <span className={`checklist-item__title${st.done ? " checklist-item__title--done" : ""}`}>{st.title}</span>
                   {canEdit && (
                     <button
                       type="button"
-                      className="icon-btn subtask__del"
-                      onClick={() => removeSubtask(st)}
-                      aria-label={t("deleteSubtaskAria")}
+                      className="icon-btn checklist-item__del"
+                      onClick={() => removeChecklistItem(st)}
+                      aria-label={t("deleteChecklistItemAria")}
                     >
                       <Icon name="close" size={13} />
                     </button>
@@ -839,19 +1099,19 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
             </ul>
             {canEdit && (
               <form
-                className="subtask-add"
+                className="checklist-add"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  addSubtask();
+                  addChecklistItem();
                 }}
               >
                 <Icon name="plus" size={14} />
                 <input
-                  value={subtaskDraft}
-                  onChange={(e) => setSubtaskDraft(e.target.value)}
-                  placeholder={t("addSubtask")}
-                  aria-label={t("addSubtask")}
-                  className="subtask-input"
+                  value={checklistDraft}
+                  onChange={(e) => setChecklistDraft(e.target.value)}
+                  placeholder={t("addChecklistItem")}
+                  aria-label={t("addChecklistItem")}
+                  className="checklist-input"
                 />
               </form>
             )}
@@ -907,6 +1167,16 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
             });
           }}
           onCancel={() => setPendingComplete(false)}
+        />
+        <ConfirmDialog
+          open={Boolean(confirmSubDelete)}
+          title={t("deleteSubtaskTitle")}
+          message={t("confirmDeleteSubtask", { title: confirmSubDelete?.title ?? "" })}
+          danger
+          onConfirm={() => {
+            if (confirmSubDelete) void deleteChildTask(confirmSubDelete);
+          }}
+          onCancel={() => setConfirmSubDelete(null)}
         />
       </aside>
     </>

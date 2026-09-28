@@ -23,6 +23,7 @@ async function seedTask(overrides: Partial<Task> = {}): Promise<Task> {
   const task: Task = {
     id: overrides.id ?? `t-${Math.random().toString(36).slice(2, 8)}`,
     projectId: project.id,
+    parentId: null,
     title: "任务",
     descriptionRich: null,
     status: C1.id,
@@ -38,7 +39,7 @@ async function seedTask(overrides: Partial<Task> = {}): Promise<Task> {
     archived: false,
     completedAt: null,
     deletedAt: null,
-    deletedByProjectId: null,
+    deletedByProjectId: null, deletedByParentTaskId: null,
     createdAt: now,
     updatedAt: now,
     version: 0,

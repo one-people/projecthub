@@ -13,10 +13,10 @@ async function seed() {
     ], customFields: [], ownerId: "u1", memberRoles: { u2: "guest", u3: "member", u4: "admin" }, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
   });
   await db.tasks.add({
-    id: "t1", projectId: "p1", title: "任务", descriptionRich: null, status: "c1",
+    id: "t1", projectId: "p1", parentId: null, title: "任务", descriptionRich: null, status: "c1",
     assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none",
     order: "a0", archived: false, completedAt: null,
-    deletedAt: null, deletedByProjectId: null,
+    deletedAt: null, deletedByProjectId: null, deletedByParentTaskId: null,
     createdAt: now, updatedAt: now, version: 0,
   });
   await db.comments.add({
@@ -95,10 +95,10 @@ describe("optimistic locking", () => {
 
   it("version 不匹配抛 VersionConflictError", async () => {
     await db.tasks.add({
-      id: "t9", projectId: "p1", title: "x", descriptionRich: null, status: "c1",
+      id: "t9", projectId: "p1", parentId: null, title: "x", descriptionRich: null, status: "c1",
       assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none",
       order: "a0", archived: false, completedAt: null,
-      deletedAt: null, deletedByProjectId: null,
+      deletedAt: null, deletedByProjectId: null, deletedByParentTaskId: null,
       createdAt: now, updatedAt: now, version: 3,
     });
     await expect(

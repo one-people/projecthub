@@ -66,6 +66,7 @@ export default function SettingsRoute() {
       return {
         id: uuid(),
         projectId: project.id,
+        parentId: null,
         title: `压测任务 ${i + 1}`,
         descriptionRich: null,
         status: firstColumn.id,
@@ -81,7 +82,7 @@ export default function SettingsRoute() {
         archived: false,
         completedAt: null,
         deletedAt: null,
-        deletedByProjectId: null,
+        deletedByProjectId: null, deletedByParentTaskId: null,
         createdAt: now,
         updatedAt: now,
         version: 0,

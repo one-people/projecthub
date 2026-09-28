@@ -17,10 +17,10 @@ async function seed() {
     ], customFields: [], ownerId: uid, memberRoles: { [uid]: "member" }, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
   });
   await db.tasks.bulkAdd([
-    { id: "t1", projectId: "p1", title: "待处理", descriptionRich: null, status: "c1", assigneeId: uid, startDate: null, dueDate: today, customValues: {}, priority: "high", labels: [], subtasks: [], recurrence: "none", order: "a0", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, createdAt: now, updatedAt: now, version: 0 },
-    { id: "t2", projectId: "p1", title: "已逾期", descriptionRich: null, status: "c1", assigneeId: uid, startDate: null, dueDate: overdue, customValues: {}, priority: "urgent", labels: [], subtasks: [], recurrence: "none", order: "a1", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, createdAt: now, updatedAt: now, version: 0 },
-    { id: "t3", projectId: "p1", title: "别人的", descriptionRich: null, status: "c1", assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none", order: "a2", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, createdAt: now, updatedAt: now, version: 0 },
-    { id: "t4", projectId: "p1", title: "已完成", descriptionRich: null, status: "c2", assigneeId: uid, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none", order: "a3", archived: false, completedAt: new Date().toISOString(), deletedAt: null, deletedByProjectId: null, createdAt: now, updatedAt: now, version: 0 },
+    { id: "t1", projectId: "p1", parentId: null, title: "待处理", descriptionRich: null, status: "c1", assigneeId: uid, startDate: null, dueDate: today, customValues: {}, priority: "high", labels: [], subtasks: [], recurrence: "none", order: "a0", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, deletedByParentTaskId: null, createdAt: now, updatedAt: now, version: 0 },
+    { id: "t2", projectId: "p1", parentId: null, title: "已逾期", descriptionRich: null, status: "c1", assigneeId: uid, startDate: null, dueDate: overdue, customValues: {}, priority: "urgent", labels: [], subtasks: [], recurrence: "none", order: "a1", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, deletedByParentTaskId: null, createdAt: now, updatedAt: now, version: 0 },
+    { id: "t3", projectId: "p1", parentId: null, title: "别人的", descriptionRich: null, status: "c1", assigneeId: null, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none", order: "a2", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, deletedByParentTaskId: null, createdAt: now, updatedAt: now, version: 0 },
+    { id: "t4", projectId: "p1", parentId: null, title: "已完成", descriptionRich: null, status: "c2", assigneeId: uid, startDate: null, dueDate: null, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none", order: "a3", archived: false, completedAt: new Date().toISOString(), deletedAt: null, deletedByProjectId: null, deletedByParentTaskId: null, createdAt: now, updatedAt: now, version: 0 },
   ]);
   return uid;
 }
@@ -55,9 +55,9 @@ describe("workbenchService.load", () => {
       ], customFields: [], ownerId: "u-other", memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
     });
     await db.tasks.add({
-      id: "t5", projectId: "p2", title: "分配给我的越权任务", descriptionRich: null, status: "c1", assigneeId: uid,
+      id: "t5", projectId: "p2", parentId: null, title: "分配给我的越权任务", descriptionRich: null, status: "c1", assigneeId: uid,
       startDate: null, dueDate: today, customValues: {}, priority: "none", labels: [], subtasks: [], recurrence: "none",
-      order: "a0", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, createdAt: now, updatedAt: now, version: 0,
+      order: "a0", archived: false, completedAt: null, deletedAt: null, deletedByProjectId: null, deletedByParentTaskId: null, createdAt: now, updatedAt: now, version: 0,
     });
     const data = await workbenchService.load(uid);
     expect(data.projects.map((p) => p.id)).toEqual(["p1"]);

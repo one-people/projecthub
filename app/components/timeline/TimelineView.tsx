@@ -23,6 +23,7 @@ export interface TimelineViewProps {
 const NAME_W = 232;
 const ROW_H = 36;
 const BAR_H = 18;
+const BAR_SUB_H = 12;
 const HEADER_H = 56;
 const MS_H = 30;
 const PX_PER_DAY: Record<TimelineZoom, number> = { day: 30, week: 120 / 7, month: 160 / 30.44 };
@@ -141,14 +142,40 @@ export function TimelineView({
     return { start, totalDays, px, totalWidth, xOf, top, bottom };
   }, [tasks, milestones, zoom, locale, todayKeyStr]);
 
-  const sorted = useMemo(() => {
-    return [...tasks].sort((a, b) => {
-      const ka = a.startDate ?? a.dueDate ?? "9999";
-      const kb = b.startDate ?? b.dueDate ?? "9999";
-      return ka === kb ? a.order.localeCompare(b.order) : ka < kb ? -1 : 1;
-    });
+  // 分组排序：父任务按起止日期排，其子任务紧随其后（缩进行展示）；父任务缺失的孤儿子任务按顶层兜底
+  const rows = useMemo(() => {
+    const byDate = (tk: Task) => tk.startDate ?? tk.dueDate ?? "9999";
+    const parents = tasks
+      .filter((tk) => !tk.parentId)
+      .sort((a, b) => {
+        const ka = byDate(a);
+        const kb = byDate(b);
+        return ka === kb ? a.order.localeCompare(b.order) : ka < kb ? -1 : 1;
+      });
+    const parentIds = new Set(parents.map((tk) => tk.id));
+    const childrenOf = new Map<string, Task[]>();
+    const orphans: Task[] = [];
+    for (const tk of tasks) {
+      if (!tk.parentId) continue;
+      if (!parentIds.has(tk.parentId)) orphans.push(tk);
+      else childrenOf.set(tk.parentId, [...(childrenOf.get(tk.parentId) ?? []), tk]);
+    }
+    const byDateCreated = (a: Task, b: Task) =>
+      byDate(a) === byDate(b)
+        ? a.createdAt.localeCompare(b.createdAt)
+        : byDate(a) < byDate(b) ? -1 : 1;
+    orphans.sort(byDateCreated);
+    const result: { task: Task; sub: boolean }[] = [];
+    for (const parent of parents) {
+      result.push({ task: parent, sub: false });
+      for (const child of (childrenOf.get(parent.id) ?? []).sort(byDateCreated)) {
+        result.push({ task: child, sub: true });
+      }
+    }
+    for (const tk of orphans) result.push({ task: tk, sub: false });
+    return result;
   }, [tasks]);
-  const rowIndexOf = new Map(sorted.map((tk, i) => [tk.id, i]));
+  const rowIndexOf = new Map(rows.map((r, i) => [r.task.id, i]));
 
   function barGeom(task: Task) {
     const startKey = isoToDateKey(task.startDate ?? task.dueDate!);
@@ -160,13 +187,13 @@ export function TimelineView({
 
   const todayX = layout.xOf(todayKeyStr);
   const msLaneH = milestones.length > 0 ? MS_H : 0;
-  const bodyH = sorted.length * ROW_H;
+  const bodyH = rows.length * ROW_H;
   const frameTop = HEADER_H + msLaneH;
   const deps = links
     .filter((l) => l.type === "blocks")
     .map((l) => {
-      const from = sorted.find((tk) => tk.id === l.fromTaskId);
-      const to = sorted.find((tk) => tk.id === l.toTaskId);
+      const from = rows.find((r) => r.task.id === l.fromTaskId)?.task;
+      const to = rows.find((r) => r.task.id === l.toTaskId)?.task;
       if (!from || !to) return null;
       if (!from.startDate && !from.dueDate) return null;
       if (!to.startDate && !to.dueDate) return null;
@@ -251,7 +278,8 @@ export function TimelineView({
               ))}
             </div>
 
-            {sorted.map((task, i) => {
+            {rows.map((row, i) => {
+              const task = row.task;
               const hasDates = Boolean(task.startDate || task.dueDate);
               const geom = hasDates ? barGeom(task) : null;
               const done = Boolean(task.completedAt);
@@ -261,7 +289,7 @@ export function TimelineView({
                 <div key={task.id} className="tl__row" style={{ top: i * ROW_H, height: ROW_H }}>
                   <button
                     type="button"
-                    className={`tl__name tl__sticky${done ? " is-done" : ""}`}
+                    className={`tl__name tl__sticky${done ? " is-done" : ""}${row.sub ? " tl__name--sub" : ""}`}
                     onClick={() => onOpenTask(task)}
                     title={task.title}
                   >
@@ -271,11 +299,11 @@ export function TimelineView({
                     {geom ? (
                       <button
                         type="button"
-                        className={`tl__bar${done ? " is-done" : ""}`}
+                        className={`tl__bar${done ? " is-done" : ""}${row.sub ? " tl__bar--sub" : ""}`}
                         style={{
                           left: geom.left,
                           width: geom.width,
-                          height: BAR_H,
+                          height: row.sub ? BAR_SUB_H : BAR_H,
                           "--bar-c": statusColor(task.status),
                         } as CSSProperties}
                         onClick={() => onOpenTask(task)}
@@ -296,7 +324,7 @@ export function TimelineView({
 
             <svg
               className="tl__deps"
-              style={{ left: NAME_W, width: layout.totalWidth, height: sorted.length * ROW_H }}
+              style={{ left: NAME_W, width: layout.totalWidth, height: rows.length * ROW_H }}
               aria-hidden
             >
               <defs>
