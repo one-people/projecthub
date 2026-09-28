@@ -1371,7 +1371,8 @@ select.input {
   position: fixed;
   inset: 0;
   z-index: 90;
-  background: rgb(15 23 42 / 32%);
+  background: rgb(15 23 42 / 38%);
+  backdrop-filter: blur(2px);
   animation: fade-in 150ms ease;
 }
 
@@ -1385,7 +1386,7 @@ select.input {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(560px, 100vw);
+  width: min(600px, 100vw);
   z-index: 95;
   display: flex;
   flex-direction: column;
@@ -1404,7 +1405,15 @@ select.input {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 14px var(--space-4) var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.drawer__head .check {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .drawer__title {
@@ -1418,8 +1427,9 @@ select.input {
   border-radius: var(--radius-sm);
   background: none;
   font: inherit;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
+  line-height: 1.35;
   color: var(--color-text);
   padding: var(--space-1) var(--space-2);
   margin: 0 -8px;
@@ -1433,18 +1443,35 @@ select.input {
 .drawer__title-input:focus {
   outline: none;
   background: var(--color-surface);
-  box-shadow: 0 0 0 2px var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft), 0 0 0 1px var(--color-primary);
 }
 .drawer__title-input--done { text-decoration: line-through; color: var(--color-text-muted); }
 
+/* 主体：浅底 + 内容卡片化，形成「属性 / 内容」两区 */
 .drawer__body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-1) var(--space-4) 20px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-bg);
+}
+
+/* 属性卡：两列网格收纳字段行 */
+.drawer__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+@media (width <= 520px) {
+  .drawer__fields { grid-template-columns: 1fr; }
 }
 
 /* 字段行（图标 + 标签 + 值，点击行内编辑） */
@@ -1452,10 +1479,13 @@ select.input {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: var(--space-1) 0;
-  min-height: 36px;
+  gap: var(--space-2);
+  min-height: 38px;
 }
+
+.field-row--wide { grid-column: 1 / -1; }
+
+.field-row__anchor { position: relative; }
 
 .field-row__icon {
   color: var(--color-text-muted);
@@ -1464,9 +1494,9 @@ select.input {
 }
 
 .field-row__label {
-  width: 62px;
+  width: 58px;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-muted);
 }
 
@@ -1493,21 +1523,31 @@ select.input {
   font-size: 13px;
 }
 
+/* 内容区卡片：描述 / 子任务 / 评论 */
 .drawer__section {
-  margin-top: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
+.drawer__section--grow { flex: 1; }
+
 .drawer__section-title {
-  margin: 0 0 var(--space-1);
+  margin: 0;
   font-size: 12px;
   font-weight: 700;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* 描述展示/空态占位（整宽，顶部对齐富文本） */
+.drawer__desc { width: 100%; min-height: 48px; align-items: flex-start; }
+.drawer__desc-rich { width: 100%; }
 
 /* 子任务清单 */
 .subtask-list {
@@ -2903,7 +2943,7 @@ select.input {
 
 /* 抽屉内：链接搜索/评论区间距；紧凑确认操作行 */
 .drawer__link-search { width: 100%; margin-bottom: 6px; }
-.drawer__comments { padding-top: var(--space-2); }
+.drawer__comments { padding-top: 0; }
 .confirm-actions--tight { margin-top: var(--space-2); }
 
 /* 全局搜索顶栏 / 错误兜底页 */

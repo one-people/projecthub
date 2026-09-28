@@ -315,8 +315,13 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
     await refreshComments();
   }
 
-  const fieldRow = (icon: IconName, label: string, children: React.ReactNode) => (
-    <div className="field-row">
+  const fieldRow = (
+    icon: IconName,
+    label: string,
+    children: React.ReactNode,
+    wide = false,
+  ) => (
+    <div className={`field-row${wide ? " field-row--wide" : ""}`}>
       <span className="field-row__icon"><Icon name={icon} size={15} /></span>
       <span className="field-row__label">{label}</span>
       {children}
@@ -388,8 +393,9 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
         </div>
 
         <div className="drawer__body">
+          <div className="drawer__fields">
           {fieldRow("user", t("colAssignee"), (
-            <div style={{ position: "relative" }}>
+            <div className="field-row__anchor">
               <button
                 type="button"
                 className={`field-row__value${canEdit ? " field-row__value--editable" : ""}${!task.assigneeId ? " field-row__value--empty" : ""}`}
@@ -488,7 +494,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           ))}
 
           {fieldRow("flag", t("colPriority"), (
-            <div style={{ position: "relative" }}>
+            <div className="field-row__anchor">
               <button
                 type="button"
                 className={`field-row__value${canEdit ? " field-row__value--editable" : ""}`}
@@ -517,7 +523,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           ))}
 
           {fieldRow("kanban", t("colStatus"), (
-            <div style={{ position: "relative" }}>
+            <div className="field-row__anchor">
               <button
                 type="button"
                 className={`field-row__value${canEdit ? " field-row__value--editable" : ""}`}
@@ -546,7 +552,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           ))}
 
           {fieldRow("repeat", t("fieldRepeat"), (
-            <div style={{ position: "relative" }}>
+            <div className="field-row__anchor">
               <button
                 type="button"
                 className={`field-row__value${canEdit ? " field-row__value--editable" : ""}${task.recurrence === "none" ? " field-row__value--empty" : ""}`}
@@ -575,7 +581,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           ))}
 
           {fieldRow("tag", t("fieldLabels"), (
-            <div style={{ position: "relative" }}>
+            <div className="field-row__anchor">
               <button
                 type="button"
                 className={`field-row__value${canEdit ? " field-row__value--editable" : ""}${task.labels.length === 0 ? " field-row__value--empty" : ""}`}
@@ -636,10 +642,10 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                 )}
               </Popover>
             </div>
-          ))}
+          ), true)}
 
           {fieldRow("link", t("fieldLinks"), (
-            <div className="field-row__value field-row__value--block" style={{ position: "relative" }}>
+            <div className="field-row__value field-row__value--block field-row__anchor">
               {predecessorLinks.length + successorLinks.length + relatedLinks.length === 0 ? (
                 canEdit ? (
                   <button
@@ -748,7 +754,8 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                 </div>
               </Popover>
             </div>
-          ))}
+          ), true)}
+          </div>
 
           <section className="drawer__section" aria-label={t("fieldDescription")}>
             <h3 className="drawer__section-title">{t("fieldDescription")}</h3>
@@ -776,14 +783,12 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
             ) : (
               <button
                 type="button"
-                className={`field-row__value${canEdit ? " field-row__value--editable" : ""}`}
-                style={{ width: "100%", minHeight: 44, alignItems: "flex-start" }}
+                className={`field-row__value${canEdit ? " field-row__value--editable" : ""} drawer__desc`}
                 onClick={() => { if (canEdit) { setDescDraft((task.descriptionRich as JSONContent | null) ?? null); setEditingDesc(true); } }}
               >
                 {task.descriptionRich ? (
                   <span
-                    style={{ width: "100%" }}
-                    className="comment-body__rich"
+                    className="comment-body__rich drawer__desc-rich"
                     dangerouslySetInnerHTML={{ __html: renderRichText(task.descriptionRich) }}
                   />
                 ) : (
@@ -797,7 +802,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
             <h3 className="drawer__section-title">
               {t("subtasks")}
               {task.subtasks.length > 0 && (
-                <span className="subtask-progress" style={{ textTransform: "none" }}>
+                <span className="subtask-progress">
                   {t("subtaskProgress", {
                     done: task.subtasks.filter((s) => s.done).length,
                     total: task.subtasks.length,
@@ -852,7 +857,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
             )}
           </section>
 
-          <section className="drawer__section" style={{ flex: 1 }} aria-label={t("tabComments")}>
+          <section className="drawer__section drawer__section--grow" aria-label={t("tabComments")}>
             <h3 className="drawer__section-title">{t("tabComments")}（{comments.length}）</h3>
             {actor ? (
               <div className="drawer__comments">
