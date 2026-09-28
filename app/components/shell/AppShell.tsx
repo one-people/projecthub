@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useMatches } from "@remix-run/react";
 import { AppRail } from "./AppRail";
-import { ContextPanel } from "./ContextPanel";
 import { ProjectPanel } from "./ProjectPanel";
 import { PanelOpenContext } from "./panel-context";
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -17,9 +16,6 @@ import {
 } from "~/lib/theme";
 
 const PANEL_KEY = "panelOpen";
-
-/** 独立页标记：与项目无关的路由（用户、设置），中间面板整块隐藏 */
-type SoloHandle = { solo?: boolean };
 
 function initialPanel(): boolean {
   if (typeof window === "undefined") return true;
@@ -39,10 +35,8 @@ export function AppShell() {
     resolveTheme(getThemeMode()),
   );
 
-  // 面板内容随路由分流：项目空间内显示本项目视图，其余显示项目列表
+  // 中间面板只在项目空间内存在（本项目视图导航）；项目列表由 /projects 页承担
   const projectId = matches.find((m) => m.params.projectId)?.params.projectId;
-  const soloPage = matches.some((m) => (m.handle as SoloHandle | undefined)?.solo === true);
-  const panelVisible = !soloPage;
 
   useEffect(() => {
     window.localStorage.setItem(PANEL_KEY, panelOpen ? "1" : "0");
@@ -73,15 +67,13 @@ export function AppShell() {
   }, []);
 
   return (
-    <PanelOpenContext.Provider value={panelVisible && panelOpen}>
+    <PanelOpenContext.Provider value={Boolean(projectId) && panelOpen}>
       <div className="shell">
         <AppRail onSearch={() => setSearchOpen(true)} />
-        {panelVisible &&
-          panelOpen &&
-          (projectId ? <ProjectPanel projectId={projectId} /> : <ContextPanel />)}
+        {projectId && panelOpen && <ProjectPanel projectId={projectId} />}
         <div className="shell__main">
           <header className="topbar">
-            {panelVisible && (
+            {projectId && (
               <button
                 className="icon-btn"
                 onClick={() => setPanelOpen((v) => !v)}

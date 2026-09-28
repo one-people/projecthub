@@ -195,8 +195,6 @@ export const zhCN = {
   breadcrumbs: "面包屑",
   togglePanel: "切换项目面板",
   newProject: "新建项目",
-  filterProjects: "筛选项目…",
-  noProjectsMatch: "没有匹配的项目",
   roleOwner: "所有者",
   roleAdmin: "管理员",
   roleMember: "成员",

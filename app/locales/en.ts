@@ -197,8 +197,6 @@ export const en: Dict = {
   breadcrumbs: "Breadcrumbs",
   togglePanel: "Toggle project panel",
   newProject: "New project",
-  filterProjects: "Filter projects…",
-  noProjectsMatch: "No matching projects",
   roleOwner: "Owner",
   roleAdmin: "Admin",
   roleMember: "Member",

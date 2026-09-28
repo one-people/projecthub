@@ -6,7 +6,7 @@ import { generateKeyBetween } from "~/lib/fractional-index";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { setThemeMode, type ThemeMode } from "~/lib/theme";
 
-export const handle = { crumb: () => ({ label: translate("settings") }), solo: true };
+export const handle = { crumb: () => ({ label: translate("settings") }) };
 import { Icon } from "~/components/ui/Icon";
 
 export default function SettingsRoute() {
@@ -161,7 +161,7 @@ export default function SettingsRoute() {
               ref={fileRef}
               type="file"
               accept="application/json"
-              onChange={onImport}
+              onChange={(e) => void onImport(e)}
               style={{ display: "none" }}
               aria-label={t("backupFileAria")}
             />
@@ -178,7 +178,7 @@ export default function SettingsRoute() {
             <Icon name="zap" size={16} />
             {t("devTools")}
           </h2>
-          <button className="btn" onClick={seedStressTasks} disabled={!hasProject}>
+          <button className="btn" onClick={() => void seedStressTasks()} disabled={!hasProject}>
             {t("stressTasks")}
           </button>
         </section>
