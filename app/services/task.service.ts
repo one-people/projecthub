@@ -13,6 +13,7 @@ export interface TaskUpdatePatch {
   priority?: Task["priority"];
   descriptionRich?: unknown;
   subtasks?: Task["subtasks"];
+  labels?: string[];
   status?: string;
   /** true=完成（若有完成列则同时流转状态）；false=取消完成 */
   completed?: boolean;
@@ -148,6 +149,10 @@ export const taskService = {
     if (patch.subtasks !== undefined && patch.subtasks !== current.subtasks) {
       rest.subtasks = patch.subtasks;
       changed.push("子任务");
+    }
+    if (patch.labels !== undefined && patch.labels.join("\u0000") !== current.labels.join("\u0000")) {
+      rest.labels = patch.labels;
+      changed.push("标签");
     }
     if (Object.keys(rest).length > 0) {
       current = await taskRepository.update(taskId, rest, current.version);

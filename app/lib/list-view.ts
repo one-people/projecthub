@@ -9,6 +9,7 @@ export interface Filters {
   due: DueFilter;
   priority: Priority | "all";
   status: StatusFilter;
+  labelId: string; // "all" = 全部
 }
 
 export const EMPTY_FILTERS: Filters = {
@@ -16,6 +17,7 @@ export const EMPTY_FILTERS: Filters = {
   due: "all",
   priority: "all",
   status: "all",
+  labelId: "all",
 };
 
 export const PALETTE = [
@@ -47,7 +49,7 @@ const PRIORITY_LABEL: Record<string, keyof Dict> = {
 const STATUS_LABEL: Record<string, keyof Dict> = { open: "statusOpen", done: "statusDone" };
 
 export interface FilterChip {
-  key: "assigneeId" | "due" | "priority" | "status";
+  key: "assigneeId" | "due" | "priority" | "status" | "labelId";
   labelKey: keyof Dict;
   /** 直接展示的原始值（负责人姓名，或未知枚举的原始字符串） */
   value: string;
@@ -58,6 +60,7 @@ export interface FilterChip {
 export function activeFilterChips(
   filters: Filters,
   assigneeOptions: { id: string; name: string }[],
+  labelOptions: { id: string; name: string }[] = [],
 ): FilterChip[] {
   const chips: FilterChip[] = [];
   if (filters.assigneeId !== "all" && filters.assigneeId !== "") {
@@ -91,6 +94,14 @@ export function activeFilterChips(
       labelKey: "colStatus",
       value: filters.status,
       valueKey: STATUS_LABEL[filters.status],
+    });
+  }
+  if (filters.labelId !== "all") {
+    const name = labelOptions.find((l) => l.id === filters.labelId)?.name;
+    chips.push({
+      key: "labelId",
+      labelKey: "fieldLabels",
+      value: name ?? filters.labelId,
     });
   }
   return chips;

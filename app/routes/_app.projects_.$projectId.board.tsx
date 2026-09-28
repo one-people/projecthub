@@ -10,6 +10,7 @@ import { uuid } from "~/lib/id";
 import { t } from "~/lib/i18n";
 import { useToast } from "~/components/ui/Toast";
 import type { Task } from "~/models/task";
+import type { Label } from "~/models/label";
 import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: t("board") }) };
@@ -18,12 +19,20 @@ export default function BoardRoute() {
   const { project, role, actorId, users } = useOutletContext<ProjectOutletContext>();
   const toast = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     const sub = liveQuery(() =>
       db.tasks.where("projectId").equals(project.id).toArray(),
     ).subscribe((rows) => setTasks(rows));
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.labels.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => setLabels(rows));
     return () => sub.unsubscribe();
   }, [project.id]);
 
@@ -92,6 +101,7 @@ export default function BoardRoute() {
         columns={project.statusColumns}
         tasks={tasks}
         users={users}
+        labels={labels}
         canCreate={canCreate}
         canToggle={canToggle}
         onMove={handleMove}

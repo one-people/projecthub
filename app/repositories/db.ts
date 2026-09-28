@@ -3,6 +3,12 @@ import type { Project } from "~/models/project";
 import type { Task } from "~/models/task";
 import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
+import type { Label } from "~/models/label";
+import type { TaskLink } from "~/models/taskLink";
+import type { Milestone } from "~/models/milestone";
+import type { Automation } from "~/models/automation";
+import type { ProjectTemplate } from "~/models/projectTemplate";
+import type { TaskTemplate } from "~/models/taskTemplate";
 
 export interface Preference {
   key: string;
@@ -15,6 +21,12 @@ class ProjectHubDB extends Dexie {
   comments!: EntityTable<Comment, "id">;
   users!: EntityTable<User, "id">;
   preferences!: EntityTable<Preference, "key">;
+  labels!: EntityTable<Label, "id">;
+  taskLinks!: EntityTable<TaskLink, "id">;
+  milestones!: EntityTable<Milestone, "id">;
+  automations!: EntityTable<Automation, "id">;
+  projectTemplates!: EntityTable<ProjectTemplate, "id">;
+  taskTemplates!: EntityTable<TaskTemplate, "id">;
 
   constructor() {
     super("projecthub");
@@ -47,6 +59,15 @@ class ProjectHubDB extends Dexie {
     this.version(3).stores({
       notifications: null,
       auditLogs: null,
+    });
+    // v4：标签 / 任务关联 / 里程碑 / 自动化 / 模板
+    this.version(4).stores({
+      labels: "id, projectId",
+      taskLinks: "id, fromTaskId, toTaskId",
+      milestones: "id, projectId",
+      automations: "id, projectId",
+      projectTemplates: "id",
+      taskTemplates: "id, projectId",
     });
   }
 }

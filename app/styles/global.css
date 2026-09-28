@@ -679,6 +679,61 @@ select.input {
   font-weight: 600;
 }
 
+/* ---------- 标签 chip（卡片/列表/抽屉共用） ---------- */
+.label-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 120px;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--chip-c, var(--color-text));
+  background: color-mix(in srgb, var(--chip-c, var(--color-primary)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-c, var(--color-primary)) 32%, transparent);
+}
+.label-chip--more {
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+}
+.task-card__labels {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.db-row__labels {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.drawer__label-list {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.popover__form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px;
+  border-top: 1px solid var(--color-border);
+  margin-top: 4px;
+}
+.label-color-picker {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.label-color-picker .color-dot { width: 18px; height: 18px; }
+
 /* 通用次要文本（TaskCard / TaskDialog / 通知页共用） */
 .data-muted {
   color: var(--color-text-muted);

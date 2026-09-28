@@ -4,8 +4,9 @@ import { taskSchema } from "~/models/task";
 import { projectSchema } from "~/models/project";
 import { commentSchema } from "~/models/comment";
 import { userSchema } from "~/models/user";
+import { labelSchema } from "~/models/label";
 
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 
 const backupSchema = z.object({
   app: z.literal("projecthub"),
@@ -16,6 +17,7 @@ const backupSchema = z.object({
     tasks: z.array(taskSchema),
     comments: z.array(commentSchema),
     users: z.array(userSchema),
+    labels: z.array(labelSchema).default([]),
   }),
 });
 
@@ -23,18 +25,19 @@ export type Backup = z.infer<typeof backupSchema>;
 
 export const backupService = {
   async exportAll(): Promise<string> {
-    const [projects, tasks, comments, users] = await Promise.all([
+    const [projects, tasks, comments, users, labels] = await Promise.all([
       db.projects.toArray(),
       db.tasks.toArray(),
       db.comments.toArray(),
       db.users.toArray(),
+      db.labels.toArray(),
     ]);
     return JSON.stringify(
       {
         app: "projecthub",
         schemaVersion: BACKUP_VERSION,
         exportedAt: new Date().toISOString(),
-        tables: { projects, tasks, comments, users },
+        tables: { projects, tasks, comments, users, labels },
       } satisfies Backup,
       null,
       2,
@@ -51,14 +54,15 @@ export const backupService = {
       delete tables.auditLogs;
     }
     const parsed = backupSchema.parse(raw);
-    const { projects, tasks, comments, users } = parsed.tables;
-    const count = projects.length + tasks.length + comments.length + users.length;
+    const { projects, tasks, comments, users, labels } = parsed.tables;
+    const count = projects.length + tasks.length + comments.length + users.length + labels.length;
     if (count > 100_000) throw new Error("备份记录数超出上限（100000）");
-    await db.transaction("rw", [db.projects, db.tasks, db.comments, db.users], async () => {
+    await db.transaction("rw", [db.projects, db.tasks, db.comments, db.users, db.labels], async () => {
       await db.projects.bulkPut(projects);
       await db.tasks.bulkPut(tasks);
       await db.comments.bulkPut(comments);
       await db.users.bulkPut(users);
+      await db.labels.bulkPut(labels);
     });
     return { imported: count };
   },

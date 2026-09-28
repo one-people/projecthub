@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "@remix-run/react";
+import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
 import { can, type RoleId } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
+import { labelService } from "~/services/label.service";
+import { LABEL_COLORS, type Label } from "~/models/label";
 import { uuid } from "~/lib/id";
 import { useI18n, t as translate } from "~/lib/i18n";
 import type { Dict } from "~/locales/zh-CN";
@@ -14,13 +17,14 @@ import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: translate("projectSettings") }) };
 
-type Tab = "basic" | "members" | "columns" | "danger";
+type Tab = "basic" | "members" | "columns" | "labels" | "danger";
 const ROLE_OPTIONS: RoleId[] = ["admin", "projectAdmin", "member", "guest"];
 
 const TAB_KEY: Record<Tab, keyof Dict> = {
   basic: "tabBasic",
   members: "tabMembers",
   columns: "tabColumns",
+  labels: "tabLabels",
   danger: "tabDanger",
 };
 
@@ -36,11 +40,21 @@ export default function ProjectSettingsRoute() {
   const [confirmText, setConfirmText] = useState("");
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
   const [newColumnName, setNewColumnName] = useState("");
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [newLabelName, setNewLabelName] = useState("");
+  const [pendingDeleteLabel, setPendingDeleteLabel] = useState<Label | null>(null);
 
   useEffect(() => {
     setName((prev) => (prev ? prev : project.name));
     setDesc((prev) => (prev ? prev : project.description));
   }, [project.id, project.name, project.description]);
+
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.labels.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => setLabels(rows));
+    return () => sub.unsubscribe();
+  }, [project.id]);
 
   const canManage = can(role, "project:update");
   const current = project;
@@ -106,6 +120,33 @@ export default function ProjectSettingsRoute() {
     await db.projects.update(current.id, { statusColumns, updatedAt: new Date().toISOString() });
   }
 
+  async function addLabel() {
+    const trimmed = newLabelName.trim();
+    if (!trimmed) return;
+    try {
+      await labelService.create(project.id, trimmed);
+      setNewLabelName("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function renameLabel(label: Label, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === label.name) return;
+    try {
+      await labelService.update(label.id, { name: trimmed });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function deleteLabel(label: Label) {
+    setPendingDeleteLabel(null);
+    await labelService.remove(label.id);
+    toast.success(t("deleted"));
+  }
+
   async function deleteProject() {
     if (confirmText !== current.name) return;
     await trashService.deleteProject(actorId, role, current.id);
@@ -124,7 +165,7 @@ export default function ProjectSettingsRoute() {
   return (
     <div className="page-pad">
       <nav className="tabs settings-tabs" aria-label={t("projectSettings")}>
-        {(["basic", "members", "columns", "danger"] as Tab[]).map((k) => (
+        {(["basic", "members", "columns", "labels", "danger"] as Tab[]).map((k) => (
           <button
             key={k}
             type="button"
@@ -249,6 +290,64 @@ export default function ProjectSettingsRoute() {
         </section>
       )}
 
+      {tab === "labels" && (
+        <section className="card">
+          <ul className="user-list">
+            {labels.map((l) => (
+              <li key={l.id} className="user-row">
+                <input
+                  className="input"
+                  style={{ maxWidth: 180 }}
+                  defaultValue={l.name}
+                  disabled={!canManage}
+                  onBlur={(e) => void renameLabel(l, e.target.value)}
+                  aria-label={t("labelName")}
+                />
+                <span className="label-color-picker" role="group" aria-label={t("labelColorAria", { color: l.color })}>
+                  {LABEL_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`color-dot${l.color === c ? " is-selected" : ""}`}
+                      style={{ background: c }}
+                      disabled={!canManage}
+                      onClick={() => void labelService.update(l.id, { color: c })}
+                      aria-label={t("pickColorAria", { color: c })}
+                    />
+                  ))}
+                </span>
+                <span style={{ flex: 1 }} />
+                <button
+                  className="btn btn--danger"
+                  disabled={!canManage}
+                  onClick={() => setPendingDeleteLabel(l)}
+                  aria-label={t("deleteLabelAria", { name: l.name })}
+                >
+                  <Icon name="trash" size={14} />{t("actionDelete")}
+                </button>
+              </li>
+            ))}
+            {labels.length === 0 && <p className="empty">{t("noLabels")}</p>}
+          </ul>
+          {canManage && (
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <input
+                className="input"
+                style={{ maxWidth: 220 }}
+                value={newLabelName}
+                onChange={(e) => setNewLabelName(e.target.value)}
+                placeholder={t("addLabel")}
+                aria-label={t("labelName")}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addLabel(); } }}
+              />
+              <button className="btn" disabled={!newLabelName.trim()} onClick={() => void addLabel()}>
+                <Icon name="plus" size={15} />{t("add")}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
       {tab === "danger" && (
         <section className="danger-zone card">
           <h2 className="section-title" style={{ color: "var(--color-danger)" }}>{t("dangerZone")}</h2>
@@ -282,6 +381,14 @@ export default function ProjectSettingsRoute() {
         danger
         onConfirm={() => pendingRemove && void removeMember(pendingRemove)}
         onCancel={() => setPendingRemove(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(pendingDeleteLabel)}
+        title={t("deleteLabelAria", { name: pendingDeleteLabel?.name ?? "" })}
+        message={t("confirmDeleteLabel")}
+        danger
+        onConfirm={() => pendingDeleteLabel && void deleteLabel(pendingDeleteLabel)}
+        onCancel={() => setPendingDeleteLabel(null)}
       />
     </div>
   );

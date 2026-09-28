@@ -206,4 +206,16 @@ export const en: Dict = {
   backupFileAria: "Choose a backup file",
   stressDone: "Generated {count} stress tasks. Open the list view to try virtual scrolling",
   pickColorAria: "Pick color {color}",
+
+  /* ===== Labels ===== */
+  fieldLabels: "Labels",
+  tabLabels: "Labels",
+  addLabel: "New label…",
+  labelName: "Label name",
+  noLabels: "No labels",
+  add: "Add",
+  deleteLabelAria: "Delete label {name}",
+  confirmDeleteLabel: "Deleting a label removes it from all tasks. Continue?",
+  labelColorAria: "Label color {color}",
+  errLabelExists: "A label with this name already exists",
 };

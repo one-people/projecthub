@@ -1,6 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { CSSProperties } from "react";
 import type { Task } from "~/models/task";
+import type { Label } from "~/models/label";
 import { Icon } from "~/components/ui/Icon";
 import { PRIORITY_META, PRIORITY_LABEL_KEY } from "~/lib/priority";
 import { avatarColor } from "~/lib/list-view";
@@ -10,6 +12,7 @@ import { isOverdue } from "~/lib/date";
 export interface TaskCardProps {
   task: Task;
   assigneeName: string | null;
+  labels: Label[];
   canToggle: boolean;
   onOpen: (task: Task) => void;
   onToggleDone: (task: Task, done: boolean) => void;
@@ -21,13 +24,14 @@ function isSameDay(a: Date, b: Date): boolean {
     && a.getDate() === b.getDate();
 }
 
-export function TaskCard({ task, assigneeName, canToggle, onOpen, onToggleDone }: TaskCardProps) {
+export function TaskCard({ task, assigneeName, labels, canToggle, onOpen, onToggleDone }: TaskCardProps) {
   const { locale } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id, data: { type: "task", status: task.status } });
 
   const prio = PRIORITY_META[task.priority];
   const done = Boolean(task.completedAt);
+  const cardLabels = labels.filter((l) => task.labels.includes(l.id));
   const overdue = task.dueDate ? isOverdue(task.dueDate) && !done : false;
   const dueToday = task.dueDate ? isSameDay(new Date(task.dueDate), new Date()) : false;
   const doneSubtasks = task.subtasks.filter((s) => s.done).length;
@@ -72,6 +76,18 @@ export function TaskCard({ task, assigneeName, canToggle, onOpen, onToggleDone }
         <p className={`task-card__title${done ? " task-card__title--done" : ""}`}>
           {task.title}
         </p>
+        {cardLabels.length > 0 && (
+          <div className="task-card__labels">
+            {cardLabels.slice(0, 3).map((l) => (
+              <span key={l.id} className="label-chip" style={{ "--chip-c": l.color } as CSSProperties}>
+                {l.name}
+              </span>
+            ))}
+            {cardLabels.length > 3 && (
+              <span className="label-chip label-chip--more">+{cardLabels.length - 3}</span>
+            )}
+          </div>
+        )}
         <div className="task-card__foot">
           <span
             className="prio__dot"

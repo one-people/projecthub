@@ -204,6 +204,18 @@ export const zhCN = {
   backupFileAria: "选择备份文件",
   stressDone: "已生成 {count} 条压测任务，可到列表视图体验虚拟滚动",
   pickColorAria: "选择颜色 {color}",
+
+  /* ===== 标签系统 ===== */
+  fieldLabels: "标签",
+  tabLabels: "标签",
+  addLabel: "新建标签…",
+  labelName: "标签名称",
+  noLabels: "无标签",
+  add: "添加",
+  deleteLabelAria: "删除标签 {name}",
+  confirmDeleteLabel: "删除标签后会从所有任务上移除该标签，确定继续？",
+  labelColorAria: "标签颜色 {color}",
+  errLabelExists: "同名标签已存在",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;

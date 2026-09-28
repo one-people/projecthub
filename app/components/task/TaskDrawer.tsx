@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { JSONContent } from "@tiptap/react";
+import { liveQuery } from "dexie";
 import type { Project, StatusColumn } from "~/models/project";
 import type { Task, Priority, Subtask } from "~/models/task";
 import type { Comment } from "~/models/comment";
 import type { User } from "~/models/user";
+import type { Label } from "~/models/label";
 import type { RoleId } from "~/auth/rbac";
 import { can } from "~/auth/rbac";
 import { db } from "~/repositories/db";
 import { session } from "~/auth/session";
 import { taskService, PermissionError, type TaskUpdatePatch } from "~/services/task.service";
+import { labelService } from "~/services/label.service";
 import { commentService } from "~/services/comment.service";
 import { trashService } from "~/services/trash.service";
 import { RichTextEditor, renderRichText } from "~/components/editor/RichTextEditor";
@@ -28,7 +31,7 @@ export interface TaskDrawerProps {
   onClose: () => void;
 }
 
-type Picker = "assignee" | "priority" | "status" | null;
+type Picker = "assignee" | "priority" | "status" | "labels" | null;
 
 const PRIORITIES: Priority[] = ["urgent", "high", "medium", "low", "none"];
 
@@ -41,6 +44,8 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
 
   const [project, setProject] = useState<Project | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [newLabelName, setNewLabelName] = useState("");
   const [actor, setActor] = useState<{ id: string; role: RoleId } | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [picker, setPicker] = useState<Picker>(null);
@@ -77,6 +82,15 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
     })();
   }, [task?.projectId, taskId]);
 
+  // 项目标签随任务加载（liveQuery：设置里增删标签时抽屉同步）
+  useEffect(() => {
+    if (!taskId) return;
+    const sub = liveQuery(() =>
+      db.labels.where("projectId").equals(task!.projectId).toArray(),
+    ).subscribe((rows) => setLabels(rows));
+    return () => sub.unsubscribe();
+  }, [taskId, task?.projectId]);
+
   // 关闭时还原焦点
   useEffect(() => {
     return () => restoreRef.current?.focus?.();
@@ -92,8 +106,13 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
     setTitleDraft(task?.title ?? "");
     setEditingDesc(false);
     setDueEditing(false);
-    setPicker(null);
   }, [taskId, task, refreshComments]);
+
+  // 仅在切换任务时收起弹层/清空草稿——标签多选弹层在勾选后需保持展开
+  useEffect(() => {
+    setPicker(null);
+    setNewLabelName("");
+  }, [taskId]);
 
   // Escape：优先关弹层 → 退出编辑 → 关抽屉
   useEffect(() => {
@@ -146,6 +165,28 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
   function removeSubtask(st: Subtask) {
     if (!task) return;
     void apply({ subtasks: task.subtasks.filter((s) => s.id !== st.id) });
+  }
+
+  function toggleLabel(labelId: string) {
+    if (!task) return;
+    void apply({
+      labels: task.labels.includes(labelId)
+        ? task.labels.filter((l) => l !== labelId)
+        : [...task.labels, labelId],
+    });
+  }
+
+  async function createLabel() {
+    if (!task || !project) return;
+    const name = newLabelName.trim();
+    if (!name) return;
+    try {
+      const created = await labelService.create(project.id, name);
+      setNewLabelName("");
+      void apply({ labels: [...task.labels, created.id] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   function addSubtask() {
@@ -357,6 +398,70 @@ export function TaskDrawer({ task, onClose }: TaskDrawerProps) {
                     {c.name}
                   </button>
                 ))}
+              </Popover>
+            </div>
+          ))}
+
+          {fieldRow("tag", t("fieldLabels"), (
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                className={`field-row__value${canEdit ? " field-row__value--editable" : ""}${task.labels.length === 0 ? " field-row__value--empty" : ""}`}
+                onClick={() => canEdit && setPicker(picker === "labels" ? null : "labels")}
+                aria-haspopup="dialog"
+                aria-expanded={picker === "labels"}
+              >
+                {task.labels.length === 0 ? (
+                  t("noLabels")
+                ) : (
+                  <span className="drawer__label-list">
+                    {task.labels.map((id) => {
+                      const l = labels.find((x) => x.id === id);
+                      if (!l) return null;
+                      return (
+                        <span key={id} className="label-chip" style={{ "--chip-c": l.color } as React.CSSProperties}>
+                          {l.name}
+                        </span>
+                      );
+                    })}
+                  </span>
+                )}
+                {canEdit && <Icon name="chevronDown" size={13} />}
+              </button>
+              <Popover open={picker === "labels"} onClose={() => setPicker(null)} label={t("fieldLabels")}>
+                {labels.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    className={`popover__item${task.labels.includes(l.id) ? " is-selected" : ""}`}
+                    onClick={() => toggleLabel(l.id)}
+                  >
+                    <span className="prio__dot" style={{ background: l.color }} />
+                    {l.name}
+                    {task.labels.includes(l.id) && <Icon name="check" size={13} />}
+                  </button>
+                ))}
+                {canEdit && (
+                  <form
+                    className="popover__form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void createLabel();
+                    }}
+                  >
+                    <input
+                      className="input"
+                      value={newLabelName}
+                      onChange={(e) => setNewLabelName(e.target.value)}
+                      placeholder={t("addLabel")}
+                      aria-label={t("labelName")}
+                      style={{ flex: 1, minWidth: 120 }}
+                    />
+                    <button type="submit" className="btn btn--primary" disabled={!newLabelName.trim()}>
+                      {t("add")}
+                    </button>
+                  </form>
+                )}
               </Popover>
             </div>
           ))}

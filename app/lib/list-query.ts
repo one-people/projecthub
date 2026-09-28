@@ -17,6 +17,7 @@ export function applyFilters(tasks: Task[], filters: Filters): Task[] {
     if (filters.priority !== "all" && t.priority !== filters.priority) return false;
     if (filters.status === "done" && !t.completedAt) return false;
     if (filters.status === "open" && t.completedAt) return false;
+    if (filters.labelId !== "all" && !t.labels.includes(filters.labelId)) return false;
 
     const due = t.dueDate ? new Date(t.dueDate).getTime() : null;
     switch (filters.due) {

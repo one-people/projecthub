@@ -3,6 +3,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
+import type { Label } from "~/models/label";
 import { statusColor } from "~/lib/list-view";
 import { t } from "~/lib/i18n";
 import { Icon } from "~/components/ui/Icon";
@@ -12,6 +13,7 @@ export interface ColumnProps {
   column: StatusColumn;
   tasks: Task[];
   assigneeNames: Record<string, string>;
+  labels: Label[];
   canCreate: boolean;
   canToggle: boolean;
   onOpenTask: (task: Task) => void;
@@ -21,7 +23,7 @@ export interface ColumnProps {
 
 /** 看板列：色点列头 + 计数 + 列内快捷创建 */
 export function Column({
-  column, tasks, assigneeNames, canCreate, canToggle, onOpenTask, onToggleDone, onCreate,
+  column, tasks, assigneeNames, labels, canCreate, canToggle, onOpenTask, onToggleDone, onCreate,
 }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${column.id}`,
@@ -65,6 +67,7 @@ export function Column({
               key={task.id}
               task={task}
               assigneeName={task.assigneeId ? assigneeNames[task.assigneeId] ?? null : null}
+              labels={labels}
               canToggle={canToggle}
               onOpen={onOpenTask}
               onToggleDone={onToggleDone}

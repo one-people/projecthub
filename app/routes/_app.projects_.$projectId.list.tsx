@@ -12,6 +12,7 @@ import { db } from "~/repositories/db";
 import { applyFilters, applySort } from "~/lib/list-query";
 import { uuid } from "~/lib/id";
 import type { Task } from "~/models/task";
+import type { Label } from "~/models/label";
 import { t as translate, useI18n } from "~/lib/i18n";
 import { can } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
@@ -29,6 +30,7 @@ export default function ListRoute() {
   const toast = useToast();
   const { t } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortRule>({ field: "updatedAt", direction: "desc" });
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
@@ -50,6 +52,13 @@ export default function ListRoute() {
     const sub = liveQuery(() =>
       db.tasks.where("projectId").equals(project.id).toArray(),
     ).subscribe((rows) => setTasks(rows));
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.labels.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => setLabels(rows));
     return () => sub.unsubscribe();
   }, [project.id]);
 
@@ -89,6 +98,7 @@ export default function ListRoute() {
           filters={filters}
           onChange={(f) => updatePrefs({ filters: f })}
           assigneeOptions={Object.entries(assigneeNames).map(([id, name]) => ({ id, name }))}
+          labelOptions={labels.map((l) => ({ id: l.id, name: l.name }))}
         />
         <span className="db-toolbar__spacer" />
         <span className="db-toolbar__count">{t("taskCountLabel", { count: visible.length })}</span>
@@ -98,6 +108,7 @@ export default function ListRoute() {
           tasks={visible}
           columns={project.statusColumns}
           assigneeNames={assigneeNames}
+          labelDefs={labels}
           onOpenTask={(task) => setOpenTaskId(task.id)}
           sort={sort}
           onSortChange={(s) => updatePrefs({ sort: s })}

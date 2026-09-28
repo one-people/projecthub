@@ -10,11 +10,12 @@ export interface FilterChipsProps {
   filters: Filters;
   onChange: (filters: Filters) => void;
   assigneeOptions: { id: string; name: string }[];
+  labelOptions?: { id: string; name: string }[];
 }
 
-type PopoverKind = "add" | "assigneeId" | "due" | "priority" | "status" | null;
+type PopoverKind = "add" | "assigneeId" | "due" | "priority" | "status" | "labelId" | null;
 
-export function FilterChips({ filters, onChange, assigneeOptions }: FilterChipsProps) {
+export function FilterChips({ filters, onChange, assigneeOptions, labelOptions = [] }: FilterChipsProps) {
   const { t } = useI18n();
   const [popover, setPopover] = useState<PopoverKind>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -28,7 +29,7 @@ export function FilterChips({ filters, onChange, assigneeOptions }: FilterChipsP
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [popover]);
 
-  const chips = activeFilterChips(filters, assigneeOptions);
+  const chips = activeFilterChips(filters, assigneeOptions, labelOptions);
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
 
   return (
@@ -64,7 +65,7 @@ export function FilterChips({ filters, onChange, assigneeOptions }: FilterChipsP
           </button>
           {popover === chip.key && (
             <span className="db-popover" role="dialog">
-              {renderEditor(chip.key, filters, set, assigneeOptions, t)}
+              {renderEditor(chip.key, filters, set, assigneeOptions, labelOptions, t)}
             </span>
           )}
         </span>
@@ -81,10 +82,11 @@ export function FilterChips({ filters, onChange, assigneeOptions }: FilterChipsP
         </button>
         {popover === "add" && (
           <span className="db-popover" role="dialog">
-            {renderEditor("assigneeId", filters, set, assigneeOptions, t)}
-            {renderEditor("due", filters, set, assigneeOptions, t)}
-            {renderEditor("priority", filters, set, assigneeOptions, t)}
-            {renderEditor("status", filters, set, assigneeOptions, t)}
+            {renderEditor("assigneeId", filters, set, assigneeOptions, labelOptions, t)}
+            {renderEditor("due", filters, set, assigneeOptions, labelOptions, t)}
+            {renderEditor("priority", filters, set, assigneeOptions, labelOptions, t)}
+            {renderEditor("status", filters, set, assigneeOptions, labelOptions, t)}
+            {labelOptions.length > 0 && renderEditor("labelId", filters, set, assigneeOptions, labelOptions, t)}
             <button className="btn btn--ghost" onClick={() => onChange(EMPTY_FILTERS)}>
               {t("resetAll")}
             </button>
@@ -100,6 +102,7 @@ function renderEditor(
   filters: Filters,
   set: (patch: Partial<Filters>) => void,
   assigneeOptions: { id: string; name: string }[],
+  labelOptions: { id: string; name: string }[],
   t: ReturnType<typeof useI18n>["t"],
 ) {
   if (key === "assigneeId") {
@@ -140,6 +143,19 @@ function renderEditor(
           <option value="medium">{t("prioMedium")}</option>
           <option value="low">{t("prioLow")}</option>
           <option value="none">{t("prioNone")}</option>
+        </select>
+      </label>
+    );
+  }
+  if (key === "labelId") {
+    return (
+      <label className="field-label">
+        {t("fieldLabels")}
+        <select className="input" value={filters.labelId} onChange={(e) => set({ labelId: e.target.value })}>
+          <option value="all">{t("all")}</option>
+          {labelOptions.map((l) => (
+            <option key={l.id} value={l.id}>{l.name}</option>
+          ))}
         </select>
       </label>
     );

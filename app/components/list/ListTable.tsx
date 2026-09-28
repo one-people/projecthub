@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
+import type { Label } from "~/models/label";
 import { formatDate, formatRelative, isOverdue } from "~/lib/date";
 import { t, useI18n } from "~/lib/i18n";
 import { PRIORITY_META } from "~/lib/priority";
@@ -13,6 +14,7 @@ export interface ListTableProps {
   tasks: Task[];
   columns: StatusColumn[];
   assigneeNames: Record<string, string>;
+  labelDefs?: Label[];
   onOpenTask: (task: Task) => void;
   sort?: SortRule;
   onSortChange?: (rule: SortRule) => void;
@@ -91,9 +93,10 @@ function PriorityPill({ task }: { task: Task }) {
 }
 
 function TaskCells({
-  task, columns, assigneeNames, onOpenTask, selection,
+  task, columns, assigneeNames, labelDefs = [], onOpenTask, selection,
 }: Omit<ListTableProps, "tasks" | "sort" | "onSortChange"> & { task: Task }) {
   const done = Boolean(task.completedAt);
+  const taskLabels = labelDefs.filter((l) => task.labels.includes(l.id));
   return (
     <div
       className="db-grid db-row"
@@ -116,6 +119,15 @@ function TaskCells({
       </span>
       <span className={done ? "db-row__title db-row__title--done" : "db-row__title"}>
         {task.title}
+        {taskLabels.length > 0 && (
+          <span className="db-row__labels">
+            {taskLabels.map((l) => (
+              <span key={l.id} className="label-chip" style={{ "--chip-c": l.color } as CSSProperties}>
+                {l.name}
+              </span>
+            ))}
+          </span>
+        )}
       </span>
       <span><StatusBadge task={task} columns={columns} /></span>
       <span><AssigneeCell task={task} assigneeNames={assigneeNames} /></span>
@@ -126,7 +138,7 @@ function TaskCells({
   );
 }
 
-export function ListTable({ tasks, columns, assigneeNames, onOpenTask, sort, onSortChange, selection }: ListTableProps) {
+export function ListTable({ tasks, columns, assigneeNames, labelDefs, onOpenTask, sort, onSortChange, selection }: ListTableProps) {
   useI18n(); // 语言切换时重渲染
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
@@ -191,6 +203,7 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask, sort, onS
             task={task}
             columns={columns}
             assigneeNames={assigneeNames}
+            labelDefs={labelDefs}
             onOpenTask={onOpenTask}
             selection={selection}
           />
@@ -220,6 +233,7 @@ export function ListTable({ tasks, columns, assigneeNames, onOpenTask, sort, onS
                 task={tasks[vi.index]!}
                 columns={columns}
                 assigneeNames={assigneeNames}
+                labelDefs={labelDefs}
                 onOpenTask={onOpenTask}
                 selection={selection}
               />

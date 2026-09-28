@@ -13,6 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { StatusColumn } from "~/models/project";
 import type { Task } from "~/models/task";
+import type { Label } from "~/models/label";
 import { t } from "~/lib/i18n";
 import { Column } from "./Column";
 import { TaskCard } from "./TaskCard";
@@ -28,6 +29,7 @@ export interface BoardProps {
   columns: StatusColumn[];
   tasks: Task[];
   users: { id: string; name: string }[];
+  labels: Label[];
   canCreate: boolean;
   canToggle: boolean;
   onMove: (intent: MoveIntent) => void;
@@ -37,7 +39,7 @@ export interface BoardProps {
 }
 
 export function Board({
-  columns, tasks, users, canCreate, canToggle, onMove, onOpenTask, onToggleDone, onCreate,
+  columns, tasks, users, labels, canCreate, canToggle, onMove, onOpenTask, onToggleDone, onCreate,
 }: BoardProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -115,6 +117,7 @@ export function Board({
               column={column}
               tasks={tasksIn(column.id)}
               assigneeNames={assigneeNames}
+              labels={labels}
               canCreate={canCreate}
               canToggle={canToggle}
               onOpenTask={onOpenTask}
