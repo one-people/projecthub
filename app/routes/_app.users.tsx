@@ -9,7 +9,7 @@ import { Icon } from "~/components/ui/Icon";
 import type { User } from "~/models/user";
 import type { Project } from "~/models/project";
 
-export const handle = { crumb: () => ({ label: translate("usersMenu") }) };
+export const handle = { crumb: () => ({ label: translate("usersMenu") }), solo: true };
 
 /** 用户管理：左列用户清单（筛选/批量删除），右列新建用户（身份切换入口在左下角头像） */
 export default function UsersRoute() {

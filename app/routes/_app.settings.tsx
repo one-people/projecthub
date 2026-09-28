@@ -6,7 +6,7 @@ import { generateKeyBetween } from "~/lib/fractional-index";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { setThemeMode, type ThemeMode } from "~/lib/theme";
 
-export const handle = { crumb: () => ({ label: translate("settings") }) };
+export const handle = { crumb: () => ({ label: translate("settings") }), solo: true };
 import { Icon } from "~/components/ui/Icon";
 
 export default function SettingsRoute() {
