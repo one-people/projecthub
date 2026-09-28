@@ -608,6 +608,79 @@ select.input {
   border-color: var(--color-primary);
 }
 
+/* ---------- 新建项目 · 模板选择 ---------- */
+
+.tpl-grid__hint {
+  margin: 14px 0 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.tpl-card {
+  position: relative;
+}
+.tpl-card__main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.tpl-card__main:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+.tpl-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-primary);
+  margin-bottom: 2px;
+}
+.tpl-card__name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.tpl-card__desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+.tpl-card__meta {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.tpl-card__del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.tpl-card:hover .tpl-card__del,
+.tpl-card__del:focus-visible {
+  opacity: 1;
+}
+
 .task-card {
   position: relative;
   display: flex;

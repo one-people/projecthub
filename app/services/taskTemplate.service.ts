@@ -40,6 +40,12 @@ export const taskTemplateService = {
     await db.taskTemplates.delete(id);
   },
 
+  async rename(id: string, name: string): Promise<void> {
+    const trimmed = name.trim().slice(0, 100);
+    if (!trimmed) throw new Error("模板名称不能为空");
+    await db.taskTemplates.update(id, { name: trimmed });
+  },
+
   /** 由模板构造新任务输入（不携带日期/负责人，子任务全部未完成） */
   buildTaskInput(tpl: TaskTemplate, projectId: string, status: string): Omit<TaskInput, "createdAt" | "updatedAt" | "version"> {
     return {

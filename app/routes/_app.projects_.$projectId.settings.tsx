@@ -6,8 +6,11 @@ import { can, type RoleId } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
 import { labelService } from "~/services/label.service";
 import { milestoneService } from "~/services/milestone.service";
+import { taskTemplateService } from "~/services/taskTemplate.service";
+import { projectTemplateService } from "~/services/projectTemplate.service";
 import { LABEL_COLORS, type Label } from "~/models/label";
 import type { Milestone } from "~/models/milestone";
+import type { TaskTemplate } from "~/models/taskTemplate";
 import { uuid } from "~/lib/id";
 import { useI18n, t as translate } from "~/lib/i18n";
 import type { Dict } from "~/locales/zh-CN";
@@ -19,7 +22,7 @@ import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: translate("projectSettings") }) };
 
-type Tab = "basic" | "members" | "columns" | "labels" | "milestones" | "danger";
+type Tab = "basic" | "members" | "columns" | "labels" | "milestones" | "templates" | "danger";
 const ROLE_OPTIONS: RoleId[] = ["admin", "projectAdmin", "member", "guest"];
 
 const TAB_KEY: Record<Tab, keyof Dict> = {
@@ -28,6 +31,7 @@ const TAB_KEY: Record<Tab, keyof Dict> = {
   columns: "tabColumns",
   labels: "tabLabels",
   milestones: "tabMilestones",
+  templates: "tabTemplates",
   danger: "tabDanger",
 };
 
@@ -50,6 +54,9 @@ export default function ProjectSettingsRoute() {
   const [msTitle, setMsTitle] = useState("");
   const [msDate, setMsDate] = useState("");
   const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<Milestone | null>(null);
+  const [taskTpls, setTaskTpls] = useState<TaskTemplate[]>([]);
+  const [ptName, setPtName] = useState("");
+  const [pendingDeleteTaskTpl, setPendingDeleteTaskTpl] = useState<TaskTemplate | null>(null);
 
   useEffect(() => {
     setName((prev) => (prev ? prev : project.name));
@@ -69,6 +76,16 @@ export default function ProjectSettingsRoute() {
     ).subscribe((rows) => {
       rows.sort((a, b) => (a.date === b.date ? a.createdAt.localeCompare(b.createdAt) : a.date < b.date ? -1 : 1));
       setMilestones(rows);
+    });
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.taskTemplates.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => {
+      rows.sort((a, b) => a.name.localeCompare(b.name));
+      setTaskTpls(rows);
     });
     return () => sub.unsubscribe();
   }, [project.id]);
@@ -201,6 +218,29 @@ export default function ProjectSettingsRoute() {
     toast.success(t("deleted"));
   }
 
+  async function renameTaskTemplate(tpl: TaskTemplate, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === tpl.name) return;
+    await taskTemplateService.rename(tpl.id, trimmed);
+  }
+
+  async function deleteTaskTemplate() {
+    if (!pendingDeleteTaskTpl) return;
+    await taskTemplateService.remove(pendingDeleteTaskTpl.id);
+    setPendingDeleteTaskTpl(null);
+    toast.success(t("deleted"));
+  }
+
+  async function saveProjectAsTemplate() {
+    try {
+      await projectTemplateService.createFromProject(project, ptName);
+      setPtName("");
+      toast.success(t("projectTemplateSaved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
   async function deleteProject() {
     if (confirmText !== current.name) return;
     await trashService.deleteProject(actorId, role, current.id);
@@ -219,7 +259,7 @@ export default function ProjectSettingsRoute() {
   return (
     <div className="page-pad">
       <nav className="tabs settings-tabs" aria-label={t("projectSettings")}>
-        {(["basic", "members", "columns", "labels", "milestones", "danger"] as Tab[]).map((k) => (
+        {(["basic", "members", "columns", "labels", "milestones", "templates", "danger"] as Tab[]).map((k) => (
           <button
             key={k}
             type="button"
@@ -476,6 +516,69 @@ export default function ProjectSettingsRoute() {
         </section>
       )}
 
+      {tab === "templates" && (
+        <div className="stack">
+          <section className="card">
+            <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <Icon name="repeat" size={16} />
+              {t("taskTemplateLib")}
+            </h2>
+            <p className="hint">{t("taskTemplateLibHint")}</p>
+            <ul className="user-list">
+              {taskTpls.map((tpl) => (
+                <li key={tpl.id} className="user-row">
+                  <Icon name="copy" size={15} />
+                  <input
+                    className="input"
+                    style={{ maxWidth: 260 }}
+                    defaultValue={tpl.name}
+                    disabled={!canManage}
+                    onBlur={(e) => void renameTaskTemplate(tpl, e.target.value)}
+                    aria-label={t("templateNameAria", { name: tpl.name })}
+                  />
+                  <span className="hint" style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {tpl.title}
+                    {tpl.subtasks.length > 0 && ` · ${tpl.subtasks.length}`}
+                  </span>
+                  <button
+                    className="btn btn--danger"
+                    disabled={!canManage}
+                    onClick={() => setPendingDeleteTaskTpl(tpl)}
+                    aria-label={t("deleteTemplateAria", { name: tpl.name })}
+                  >
+                    <Icon name="trash" size={14} />{t("actionDelete")}
+                  </button>
+                </li>
+              ))}
+              {taskTpls.length === 0 && <p className="empty">{t("noTaskTemplates")}</p>}
+            </ul>
+          </section>
+
+          <section className="card">
+            <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <Icon name="kanban" size={16} />
+              {t("saveProjectAsTemplate")}
+            </h2>
+            <p className="hint">{t("projectTemplateHint")}</p>
+            {canManage && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  className="input"
+                  style={{ maxWidth: 280 }}
+                  value={ptName}
+                  onChange={(e) => setPtName(e.target.value)}
+                  placeholder={project.name}
+                  aria-label={t("projectTemplateName")}
+                />
+                <button className="btn" onClick={() => void saveProjectAsTemplate()}>
+                  <Icon name="download" size={15} />{t("saveAsTemplate")}
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
       {tab === "danger" && (
         <section className="danger-zone card">
           <h2 className="section-title" style={{ color: "var(--color-danger)" }}>{t("dangerZone")}</h2>
@@ -525,6 +628,14 @@ export default function ProjectSettingsRoute() {
         danger
         onConfirm={() => void deleteMilestone()}
         onCancel={() => setPendingDeleteMilestone(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(pendingDeleteTaskTpl)}
+        title={t("deleteTemplateAria", { name: pendingDeleteTaskTpl?.name ?? "" })}
+        message={t("confirmDeleteTaskTemplate")}
+        danger
+        onConfirm={() => void deleteTaskTemplate()}
+        onCancel={() => setPendingDeleteTaskTpl(null)}
       />
     </div>
   );

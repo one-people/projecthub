@@ -294,6 +294,26 @@ export const zhCN = {
   saveAsTemplate: "保存为模板",
   templateSaved: "已保存为模板",
   fromTemplate: "从模板创建",
+
+  /* ===== 项目模板 ===== */
+  projectCreated: "项目 {name} 已创建",
+  projectNamePlaceholder: "项目名称（留空则用模板名）",
+  useTemplateAria: "使用 {name} 创建",
+  templateColumnsUnit: "列",
+  templateTasksUnit: "个任务模板",
+  deleteTemplateAria: "删除模板 {name}",
+  deleteTemplateTitle: "删除模板",
+  confirmDeleteProjectTemplate: "删除后不可恢复，确定删除模板 {name}？",
+  tabTemplates: "模板",
+  taskTemplateLib: "任务模板",
+  taskTemplateLibHint: "在任务详情抽屉保存；看板快捷添加时可从模板创建任务",
+  templateNameAria: "模板名称 {name}",
+  noTaskTemplates: "还没有任务模板，可在任务详情抽屉里另存",
+  confirmDeleteTaskTemplate: "删除后不可恢复，确定删除该任务模板？",
+  saveProjectAsTemplate: "项目另存为模板",
+  projectTemplateHint: "把当前项目的列、标签、自定义字段与任务模板存为模板，供以后新建项目使用",
+  projectTemplateName: "模板名称",
+  projectTemplateSaved: "项目已保存为模板",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;
