@@ -28,9 +28,10 @@ export default function CalendarRoute() {
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
   useEffect(() => {
+    // 过滤软删除：删除打 deletedAt 标记后日历即时少一条（liveQuery 触发重订阅回调）
     const sub = liveQuery(() =>
       db.tasks.where("projectId").equals(project.id).toArray(),
-    ).subscribe((rows) => setTasks(rows));
+    ).subscribe((rows) => setTasks(rows.filter((r) => r.deletedAt === null)));
     return () => sub.unsubscribe();
   }, [project.id]);
 

@@ -48,9 +48,10 @@ export default function TableRoute() {
   }, [projectId]);
 
   useEffect(() => {
+    // 过滤软删除：删除打 deletedAt 标记后表格即时少一行（liveQuery 触发重订阅回调）
     const sub = liveQuery(() =>
       db.tasks.where("projectId").equals(project.id).toArray(),
-    ).subscribe((rows) => setTasks(rows));
+    ).subscribe((rows) => setTasks(rows.filter((r) => r.deletedAt === null)));
     return () => sub.unsubscribe();
   }, [project.id]);
 

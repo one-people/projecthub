@@ -26,9 +26,10 @@ export default function BoardRoute() {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   useEffect(() => {
+    // 过滤软删除：删除打 deletedAt 标记后看板即时少一张卡（liveQuery 触发重订阅回调）
     const sub = liveQuery(() =>
       db.tasks.where("projectId").equals(project.id).toArray(),
-    ).subscribe((rows) => setTasks(rows));
+    ).subscribe((rows) => setTasks(rows.filter((r) => r.deletedAt === null)));
     return () => sub.unsubscribe();
   }, [project.id]);
 
