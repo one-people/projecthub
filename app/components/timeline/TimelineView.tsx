@@ -14,6 +14,7 @@ export interface TimelineViewProps {
   links: TaskLink[];
   milestones: Milestone[];
   zoom: TimelineZoom;
+  users: { id: string; name: string }[];
   canManageMilestones?: boolean;
   onOpenTask: (task: Task) => void;
   onToggleMilestone?: (ms: Milestone) => void;
@@ -46,10 +47,16 @@ interface Span {
 
 /** 甘特/时间线：startDate→dueDate 条带 + 依赖箭头 + 里程碑菱形（纯 CSS/SVG，零依赖） */
 export function TimelineView({
-  tasks, links, milestones, zoom, canManageMilestones, onOpenTask, onToggleMilestone,
+  tasks, links, milestones, zoom, users, canManageMilestones, onOpenTask, onToggleMilestone,
 }: TimelineViewProps) {
   const { t, locale } = useI18n();
   const todayKeyStr = dateKey(new Date());
+
+  const assigneeNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const u of users) map[u.id] = u.name;
+    return map;
+  }, [users]);
 
   const layout = useMemo(() => {
     const today = new Date(`${todayKeyStr}T00:00:00`);
@@ -248,6 +255,8 @@ export function TimelineView({
               const hasDates = Boolean(task.startDate || task.dueDate);
               const geom = hasDates ? barGeom(task) : null;
               const done = Boolean(task.completedAt);
+              // 负责人名居中标在条带中间；条带过窄（<32px）时放下不显示
+              const assignee = task.assigneeId ? assigneeNames[task.assigneeId] : undefined;
               return (
                 <div key={task.id} className="tl__row" style={{ top: i * ROW_H, height: ROW_H }}>
                   <button
@@ -272,7 +281,11 @@ export function TimelineView({
                         onClick={() => onOpenTask(task)}
                         title={`${task.title}${task.dueDate ? ` · ${task.dueDate.slice(0, 10)}` : ""}`}
                         aria-label={task.title}
-                      />
+                      >
+                        {assignee && geom.width >= 32 && (
+                          <span className="tl__bar-label">{assignee}</span>
+                        )}
+                      </button>
                     ) : (
                       <span className="tl__nodate">{t("tlNoDates")}</span>
                     )}

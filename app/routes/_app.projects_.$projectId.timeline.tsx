@@ -18,7 +18,7 @@ const ZOOMS: TimelineZoom[] = ["day", "week", "month"];
 const ZOOM_KEY = { day: "zoomDay", week: "zoomWeek", month: "zoomMonth" } as const;
 
 export default function TimelineRoute() {
-  const { project, role, actorId } = useOutletContext<ProjectOutletContext>();
+  const { project, role, actorId, users } = useOutletContext<ProjectOutletContext>();
   const { t } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [links, setLinks] = useState<TaskLink[]>([]);
@@ -94,6 +94,7 @@ export default function TimelineRoute() {
         links={links}
         milestones={milestones}
         zoom={zoom}
+        users={users}
         canManageMilestones={canManageMilestones}
         onOpenTask={(tk) => setOpenTaskId(tk.id)}
         onToggleMilestone={(ms) => void toggleMilestone(ms)}

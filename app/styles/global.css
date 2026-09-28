@@ -2784,6 +2784,9 @@ select.input {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   border-radius: 5px;
   background: color-mix(in srgb, var(--bar-c) 72%, transparent);
@@ -2794,6 +2797,27 @@ select.input {
 }
 .tl__bar:hover { filter: brightness(1.12); }
 .tl__bar.is-done { background: color-mix(in srgb, var(--bar-c) 30%, transparent); }
+
+/* 条带内居中的负责人名 */
+.tl__bar-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--space-1);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-on-fill);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 30%);
+  pointer-events: none;
+}
+
+/* 完成态条带为淡色填充，白字对比不足 → 换用状态色文字 */
+.tl__bar.is-done .tl__bar-label {
+  color: var(--bar-c);
+  text-shadow: none;
+}
 
 .tl__nodate {
   position: absolute;
