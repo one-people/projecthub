@@ -857,6 +857,10 @@ select.input {
   border-radius: var(--radius-md);
   padding: 10px var(--space-3);
   cursor: grab;
+
+  /* dnd-kit 指针拖拽前置条件：触摸/触笔下浏览器不得把手势抢占为滚动或选中文本 */
+  touch-action: none;
+  user-select: none;
   box-shadow: var(--shadow-sm);
   transition: border-color var(--transition), opacity var(--transition),
     box-shadow var(--transition);
@@ -869,6 +873,11 @@ select.input {
 
 .task-card.is-dragging {
   opacity: 0.45;
+  box-shadow: var(--shadow-lg);
+}
+
+/* DragOverlay 跟随指针的拖拽影（源卡留在原地，由 is-dragging 压暗） */
+.task-card--overlay {
   box-shadow: var(--shadow-lg);
 }
 

@@ -70,8 +70,10 @@ export function Board({
 
   function handleDragEnd(event: DragEndEvent) {
     setDragging(null);
-    const { active, over } = event;
+    const { active, over, delta } = event;
     if (!over) return;
+    // 放回自身：无操作（否则落入“落到列上”分支被追加到列尾）
+    if (over.id === active.id) return;
     const task = tasks.find((t) => t.id === active.id);
     if (!task) return;
 
@@ -83,16 +85,21 @@ export function Board({
     if (!targetStatus) return;
 
     const columnTasks = tasksIn(targetStatus).filter((t) => t.id !== task.id);
-    const overTaskId =
-      overData?.type === "task" && over.id !== task.id ? String(over.id) : null;
+    const overTaskId = overData?.type === "task" ? String(over.id) : null;
 
     let prevOrder: string | null = null;
     let nextOrder: string | null = null;
     if (overTaskId) {
       const idx = columnTasks.findIndex((t) => t.id === overTaskId);
       if (idx >= 0) {
-        prevOrder = columnTasks[idx - 1]?.order ?? null;
-        nextOrder = columnTasks[idx]?.order ?? null;
+        // 拖拽影中心落在目标卡下半 → 插其后，上半 → 插其前；
+        // DragOverlay 下源卡不位移，用 initial 中心 + delta 还原实际位置
+        const initial = active.rect.current.initial;
+        const centerY = initial ? initial.top + initial.height / 2 + delta.y : null;
+        const after = centerY != null && centerY > over.rect.top + over.rect.height / 2;
+        const at = after ? idx + 1 : idx;
+        prevOrder = columnTasks[at - 1]?.order ?? null;
+        nextOrder = columnTasks[at]?.order ?? null;
       }
     } else if (columnTasks.length > 0) {
       prevOrder = columnTasks[columnTasks.length - 1]?.order ?? null;
@@ -133,7 +140,7 @@ export function Board({
       </div>
       <DragOverlay dropAnimation={null}>
         {dragging && (
-          <div className="task-card is-dragging">
+          <div className="task-card task-card--overlay">
             <p className="task-card__title">{dragging.title}</p>
           </div>
         )}
