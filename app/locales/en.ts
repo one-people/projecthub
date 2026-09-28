@@ -341,4 +341,18 @@ export const en: Dict = {
   automationToggleAria: "Toggle rule {name}",
   deleteAutomationAria: "Delete rule {name}",
   confirmDeleteAutomation: "This cannot be undone. Delete this automation rule?",
+
+  /* ===== Statistics ===== */
+  statsView: "Stats",
+  statsTotal: "Total tasks",
+  statsDone: "Completed",
+  statsOverdue: "Overdue",
+  statsCompletion: "Completion",
+  statsBurndown: "Burndown (remaining)",
+  statsWorkload: "Workload (open/total)",
+  statsTrend: "Completion trend (last 8 weeks)",
+  statsStatusDist: "Status distribution",
+  statsPriorityDist: "Priority distribution",
+  statsNoData: "No data yet",
+  statsWorkloadAria: "{name}: {open} open, {done} total",
 };

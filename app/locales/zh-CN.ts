@@ -339,6 +339,20 @@ export const zhCN = {
   automationToggleAria: "启用/停用规则 {name}",
   deleteAutomationAria: "删除规则 {name}",
   confirmDeleteAutomation: "删除后不可恢复，确定删除该自动化规则？",
+
+  /* ===== 统计报表 ===== */
+  statsView: "统计",
+  statsTotal: "任务总数",
+  statsDone: "已完成",
+  statsOverdue: "已逾期",
+  statsCompletion: "完成率",
+  statsBurndown: "燃尽图（剩余任务）",
+  statsWorkload: "成员负载（未完成/累计）",
+  statsTrend: "完成趋势（最近 8 周）",
+  statsStatusDist: "状态分布",
+  statsPriorityDist: "优先级分布",
+  statsNoData: "暂无数据",
+  statsWorkloadAria: "{name}：未完成 {open}，累计 {done}",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;

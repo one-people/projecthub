@@ -84,7 +84,8 @@ export const projectRepository = {
         recurrence: "none",
         order,
         archived: false,
-        completedAt: null,
+        // 落在完成列的演示任务带完成时间，统计口径一致
+        completedAt: col === 3 ? now : null,
         deletedAt: null,
         deletedByProjectId: null,
         createdAt: now,
