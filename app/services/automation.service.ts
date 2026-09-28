@@ -1,6 +1,7 @@
 import { db } from "~/repositories/db";
 import { taskRepository } from "~/repositories/task.repository";
 import { uuid } from "~/lib/id";
+import { assertProjectPermission } from "~/auth/assert";
 import { automationSchema, type Automation } from "~/models/automation";
 import type { Task } from "~/models/task";
 
@@ -42,7 +43,8 @@ export const automationService = {
     return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   },
 
-  async create(projectId: string, input: AutomationInput): Promise<Automation> {
+  async create(actorId: string, projectId: string, input: AutomationInput): Promise<Automation> {
+    await assertProjectPermission(projectId, actorId, "automation:manage");
     const clean = validate(input);
     const row = automationSchema.parse({
       id: uuid(),
@@ -57,7 +59,10 @@ export const automationService = {
     return row;
   },
 
-  async update(id: string, patch: Partial<Pick<Automation, "name" | "enabled">>): Promise<void> {
+  async update(actorId: string, id: string, patch: Partial<Pick<Automation, "name" | "enabled">>): Promise<void> {
+    const row = await db.automations.get(id);
+    if (!row) return;
+    await assertProjectPermission(row.projectId, actorId, "automation:manage");
     const body: Record<string, unknown> = {};
     if (patch.name !== undefined) {
       const name = patch.name.trim().slice(0, 100);
@@ -68,7 +73,10 @@ export const automationService = {
     await db.automations.update(id, body);
   },
 
-  async remove(id: string): Promise<void> {
+  async remove(actorId: string, id: string): Promise<void> {
+    const row = await db.automations.get(id);
+    if (!row) return;
+    await assertProjectPermission(row.projectId, actorId, "automation:manage");
     await db.automations.delete(id);
   },
 

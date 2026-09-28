@@ -214,7 +214,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           ? { fromTaskId: task.id, toTaskId: target.id, type: "blocks" as const }
           : { fromTaskId: task.id, toTaskId: target.id, type: "relates" as const };
     try {
-      await taskLinkService.add({ projectId: task.projectId, ...input });
+      await taskLinkService.add(actor.id, { projectId: task.projectId, ...input });
     } catch (e) {
       if (e instanceof LinkError) {
         toast.error(t(e.code === "self" ? "linkSelfError" : e.code === "exists" ? "linkExistsError" : "linkCycleError"));
@@ -227,7 +227,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   async function apply(patch: TaskUpdatePatch) {
     if (!actor?.role || !task) return;
     try {
-      await taskService.updateTask(actor.id, actor.role, task.id, patch);
+      await taskService.updateTask(actor.id, task.id, patch);
     } catch (e) {
       toast.error(e instanceof PermissionError ? e.message : t("updateFailed"));
     }
@@ -246,7 +246,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   async function saveAsTemplate() {
     if (!task || !actor) return;
     try {
-      await taskTemplateService.createFromTask(task);
+      await taskTemplateService.createFromTask(actor.id, task);
       toast.success(t("templateSaved"));
     } catch {
       toast.error(t("updateFailed"));
@@ -275,11 +275,11 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
   }
 
   async function createLabel() {
-    if (!task || !project) return;
+    if (!task || !project || !actor) return;
     const name = newLabelName.trim();
     if (!name) return;
     try {
-      const created = await labelService.create(project.id, name);
+      const created = await labelService.create(actor.id, project.id, name);
       setNewLabelName("");
       void apply({ labels: [...task.labels, created.id] });
     } catch (e) {
@@ -297,7 +297,7 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
 
   async function addComment(json: unknown) {
     if (!task || !actor?.role) return;
-    await commentService.create(actor.id, actor.role, {
+    await commentService.create(actor.id, {
       id: uuid(),
       taskId: task.id,
       authorId: actor.id,
@@ -672,7 +672,9 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
                                 <button
                                   type="button"
                                   className="drawer__link-remove"
-                                  onClick={() => void taskLinkService.remove(link.id)}
+                                  onClick={() => {
+                                    if (actor) void taskLinkService.remove(actor.id, link.id);
+                                  }}
                                   aria-label={t("removeLinkAria", { title: other.title })}
                                 >
                                   <Icon name="close" size={11} />
@@ -865,14 +867,13 @@ export function TaskDrawer({ task, onClose, onOpenTask }: TaskDrawerProps) {
           message={t("confirmDeleteTask")}
           danger
           onConfirm={async () => {
-            if (!task || !actor?.role) return;
-            const role = actor.role;
+            if (!task || !actor) return;
             try {
-              await trashService.deleteTask(actor.id, role, task.id);
+              await trashService.deleteTask(actor.id, task.id);
               setConfirmDelete(false);
               onClose();
               toast.success(t("deleted"), {
-                undo: () => trashService.restoreTask(actor.id, role, task.id),
+                undo: () => trashService.restoreTask(actor.id, task.id),
               });
             } catch (err) {
               toast.error(err instanceof Error ? err.message : t("updateFailed"));

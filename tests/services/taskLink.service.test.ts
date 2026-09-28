@@ -4,14 +4,26 @@ import { db } from "~/repositories/db";
 import { taskLinkService, LinkError } from "~/services/taskLink.service";
 
 const P = "p1";
+const U = "u1";
+
+async function seedProject() {
+  await db.projects.clear();
+  await db.projects.add({
+    id: P, name: "项目", description: "",
+    statusColumns: [{ id: "c1", name: "待办", isDone: false, order: 0 }],
+    customFields: [], ownerId: U, memberRoles: {},
+    deletedAt: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), version: 0,
+  });
+}
 
 async function addLink(from: string, to: string, type: "blocks" | "relates" = "blocks") {
-  return taskLinkService.add({ projectId: P, fromTaskId: from, toTaskId: to, type });
+  return taskLinkService.add(U, { projectId: P, fromTaskId: from, toTaskId: to, type });
 }
 
 describe("taskLinkService", () => {
   beforeEach(async () => {
     await db.taskLinks.clear();
+    await seedProject();
   });
 
   it("创建并列出关联", async () => {
@@ -55,7 +67,7 @@ describe("taskLinkService", () => {
   it("remove 删除关联；stripTask 清掉触及任务的所有关联", async () => {
     const l1 = await addLink("a", "b");
     await addLink("b", "c");
-    await taskLinkService.remove(l1.id);
+    await taskLinkService.remove(U, l1.id);
     expect(await taskLinkService.list(P)).toHaveLength(1);
     await taskLinkService.stripTask("b");
     expect(await taskLinkService.list(P)).toHaveLength(0);

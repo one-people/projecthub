@@ -1,22 +1,17 @@
 import { db } from "~/repositories/db";
 import { taskRepository } from "~/repositories/task.repository";
-import { can, type RoleId } from "~/auth/rbac";
-
-class PermissionError extends Error {}
-
-function assert(role: RoleId, permission: Parameters<typeof can>[1]) {
-  if (!can(role, permission)) throw new PermissionError(`角色 ${role} 无 ${permission} 权限`);
-}
+import { assertProjectPermission } from "~/auth/assert";
 
 /**
  * 软删除机制（回收站页面已移除）：
  * 删除 = 打 deletedAt 标记 + toast 撤销；30 天后由 purgeExpired 自动彻底清理。
+ * 权限在服务内解析：任务删除 task:delete，项目删除/恢复 project:delete（仅所有者）。
  */
 export const trashService = {
-  async deleteTask(_actorId: string, actorRole: RoleId, taskId: string): Promise<void> {
-    assert(actorRole, "task:delete");
+  async deleteTask(actorId: string, taskId: string): Promise<void> {
     const task = await db.tasks.get(taskId);
     if (!task || task.deletedAt) return;
+    await assertProjectPermission(task.projectId, actorId, "task:delete");
     const now = new Date().toISOString();
     await db.transaction("rw", db.tasks, db.comments, async () => {
       await db.tasks.update(taskId, { deletedAt: now, deletedByProjectId: null });
@@ -24,10 +19,10 @@ export const trashService = {
     });
   },
 
-  async restoreTask(_actorId: string, actorRole: RoleId, taskId: string): Promise<void> {
-    assert(actorRole, "task:delete");
+  async restoreTask(actorId: string, taskId: string): Promise<void> {
     const task = await db.tasks.get(taskId);
     if (!task) return;
+    await assertProjectPermission(task.projectId, actorId, "task:delete");
     if (task.deletedByProjectId) {
       throw new Error("该任务随所属项目删除，无法单独恢复");
     }
@@ -41,10 +36,10 @@ export const trashService = {
     await taskRepository.purge(taskId);
   },
 
-  async deleteProject(_actorId: string, actorRole: RoleId, projectId: string): Promise<void> {
-    assert(actorRole, "project:delete");
+  async deleteProject(actorId: string, projectId: string): Promise<void> {
     const project = await db.projects.get(projectId);
     if (!project || project.deletedAt) return;
+    await assertProjectPermission(projectId, actorId, "project:delete");
     const now = new Date().toISOString();
     await db.transaction("rw", db.projects, db.tasks, db.comments, async () => {
       await db.projects.update(projectId, { deletedAt: now });
@@ -57,10 +52,10 @@ export const trashService = {
     });
   },
 
-  async restoreProject(_actorId: string, actorRole: RoleId, projectId: string): Promise<void> {
-    assert(actorRole, "project:delete");
+  async restoreProject(actorId: string, projectId: string): Promise<void> {
     const project = await db.projects.get(projectId);
     if (!project?.deletedAt) return;
+    await assertProjectPermission(projectId, actorId, "project:delete");
     await db.transaction("rw", db.projects, db.tasks, db.comments, async () => {
       await db.projects.update(projectId, { deletedAt: null });
       const tasks = await db.tasks.where("projectId").equals(projectId).toArray();

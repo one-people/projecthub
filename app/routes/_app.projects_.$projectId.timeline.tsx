@@ -18,7 +18,7 @@ const ZOOMS: TimelineZoom[] = ["day", "week", "month"];
 const ZOOM_KEY = { day: "zoomDay", week: "zoomWeek", month: "zoomMonth" } as const;
 
 export default function TimelineRoute() {
-  const { project, role } = useOutletContext<ProjectOutletContext>();
+  const { project, role, actorId } = useOutletContext<ProjectOutletContext>();
   const { t } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [links, setLinks] = useState<TaskLink[]>([]);
@@ -67,7 +67,7 @@ export default function TimelineRoute() {
   }
 
   async function toggleMilestone(ms: Milestone) {
-    await milestoneService.update(ms.id, { doneAt: ms.doneAt ? null : new Date().toISOString() });
+    await milestoneService.update(actorId, ms.id, { doneAt: ms.doneAt ? null : new Date().toISOString() });
   }
 
   return (

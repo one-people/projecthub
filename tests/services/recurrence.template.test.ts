@@ -21,6 +21,7 @@ async function seedProject() {
       { id: COL_DOING, name: "进行中", isDone: false, order: 1 },
       { id: COL_DONE, name: "已完成", isDone: true, order: 2 },
     ],
+    ownerId: "u1",
     memberRoles: {},
     archivedAt: null,
     deletedAt: null,
@@ -30,7 +31,7 @@ async function seedProject() {
 }
 
 async function makeTask(overrides: Partial<Task> = {}): Promise<Task> {
-  return taskService.create("u1", "admin", {
+  return taskService.create("u1", {
     id: uuid(),
     projectId: P,
     title: "周报",
@@ -55,7 +56,7 @@ describe("重复任务", () => {
       subtasks: [{ id: uuid(), title: "收集数据", done: true }],
       status: COL_DOING,
     });
-    await taskService.updateTask("u1", "admin", task.id, { completed: true });
+    await taskService.updateTask("u1", task.id, { completed: true });
 
     const all = await db.tasks.toArray();
     expect(all).toHaveLength(2);
@@ -72,9 +73,9 @@ describe("重复任务", () => {
 
   it("每周/每月推进正确（月底收敛）", async () => {
     const weekly = await makeTask({ dueDate: "2026-09-28T00:00:00.000Z", recurrence: "weekly" });
-    await taskService.updateTask("u1", "admin", weekly.id, { completed: true });
+    await taskService.updateTask("u1", weekly.id, { completed: true });
     const monthly = await makeTask({ dueDate: "2026-01-31T00:00:00.000Z", recurrence: "monthly" });
-    await taskService.updateTask("u1", "admin", monthly.id, { completed: true });
+    await taskService.updateTask("u1", monthly.id, { completed: true });
 
     const all = await db.tasks.toArray();
     const nextWeekly = all.find((t) => t.title === "周报" && t.dueDate === "2026-10-05T00:00:00.000Z");
@@ -85,15 +86,15 @@ describe("重复任务", () => {
 
   it("非重复任务完成不生成下一期；取消完成也不生成", async () => {
     const task = await makeTask({ recurrence: "none" });
-    await taskService.updateTask("u1", "admin", task.id, { completed: true });
+    await taskService.updateTask("u1", task.id, { completed: true });
     expect(await db.tasks.count()).toBe(1);
-    await taskService.updateTask("u1", "admin", task.id, { completed: false });
+    await taskService.updateTask("u1", task.id, { completed: false });
     expect(await db.tasks.count()).toBe(1);
   });
 
   it("拖入完成列同样生成下一期", async () => {
     const task = await makeTask({ recurrence: "weekly", dueDate: "2026-09-28T00:00:00.000Z" });
-    await taskService.moveTask("u1", "admin", task.id, COL_DONE, null, null);
+    await taskService.moveTask("u1", task.id, COL_DONE, null, null);
     const all = await db.tasks.toArray();
     expect(all).toHaveLength(2);
     expect(all.find((t) => t.id !== task.id)!.dueDate).toBe("2026-10-05T00:00:00.000Z");
@@ -115,7 +116,7 @@ describe("任务模板", () => {
       labels: ["l1"],
       subtasks: [{ id: uuid(), title: "步骤一", done: true }],
     });
-    const tpl = await taskTemplateService.createFromTask(task, "周报模板");
+    const tpl = await taskTemplateService.createFromTask("u1", task, "周报模板");
     expect(tpl.name).toBe("周报模板");
     expect(tpl.title).toBe("周报");
     expect(tpl.priority).toBe("high");
@@ -127,7 +128,7 @@ describe("任务模板", () => {
 
   it("模板列表只含全局 + 本项目模板", async () => {
     const t1 = await makeTask();
-    await taskTemplateService.createFromTask(t1, "本项目的");
+    await taskTemplateService.createFromTask("u1", t1, "本项目的");
     await db.taskTemplates.put({
       id: uuid(), projectId: "other", name: "别的项目", title: "x", priority: "none",
       descriptionRich: null, subtasks: [], labels: [], recurrence: "none",
@@ -144,9 +145,9 @@ describe("任务模板", () => {
       assigneeId: "u1",
       subtasks: [{ id: uuid(), title: "步骤一", done: true }],
     });
-    const tpl = await taskTemplateService.createFromTask(task);
+    const tpl = await taskTemplateService.createFromTask("u1", task);
     const input = taskTemplateService.buildTaskInput(tpl, P, COL_DOING);
-    const created = await taskService.create("u1", "admin", input);
+    const created = await taskService.create("u1", input);
     expect(created.status).toBe(COL_DOING);
     expect(created.dueDate).toBeNull();
     expect(created.assigneeId).toBeNull();
@@ -156,8 +157,8 @@ describe("任务模板", () => {
 
   it("remove 删除模板", async () => {
     const task = await makeTask();
-    const tpl = await taskTemplateService.createFromTask(task);
-    await taskTemplateService.remove(tpl.id);
+    const tpl = await taskTemplateService.createFromTask("u1", task);
+    await taskTemplateService.remove("u1", tpl.id);
     expect(await db.taskTemplates.count()).toBe(0);
   });
 });

@@ -4,6 +4,7 @@ import { liveQuery } from "dexie";
 import { db } from "~/repositories/db";
 import { can, type MemberRole, type RoleId } from "~/auth/rbac";
 import { trashService } from "~/services/trash.service";
+import { projectService } from "~/services/project.service";
 import { labelService } from "~/services/label.service";
 import { milestoneService } from "~/services/milestone.service";
 import { taskTemplateService } from "~/services/taskTemplate.service";
@@ -11,6 +12,7 @@ import { projectTemplateService } from "~/services/projectTemplate.service";
 import { automationService } from "~/services/automation.service";
 import { LABEL_COLORS, type Label } from "~/models/label";
 import type { Milestone } from "~/models/milestone";
+import type { StatusColumn } from "~/models/project";
 import type { TaskTemplate } from "~/models/taskTemplate";
 import type { Automation } from "~/models/automation";
 import type { User } from "~/models/user";
@@ -127,48 +129,69 @@ export default function ProjectSettingsRoute() {
       return;
     }
     setNameError("");
-    await db.projects.update(current.id, { name: trimmed, description: desc.trim(), updatedAt: new Date().toISOString() });
-    toast.success(t("saved"));
+    try {
+      await projectService.updateBasic(current.id, actorId, { name: trimmed, description: desc });
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function changeMemberRole(userId: string, nextRole: MemberRole) {
-    const memberRoles: Record<string, MemberRole> = { ...current.memberRoles, [userId]: nextRole };
-    await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
-    toast.success(t("saved"));
+    try {
+      await projectService.setMemberRole(current.id, actorId, userId, nextRole);
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function removeMember(userId: string) {
-    const memberRoles: Record<string, MemberRole> = { ...current.memberRoles };
-    delete memberRoles[userId];
-    await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
-    toast.success(t("saved"));
+    try {
+      await projectService.removeMember(current.id, actorId, userId);
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+      return;
+    }
     setPendingRemove(null);
   }
 
   async function addMember(userId: string) {
-    const memberRoles: Record<string, MemberRole> = { ...current.memberRoles, [userId]: "member" };
-    await db.projects.update(current.id, { memberRoles, updatedAt: new Date().toISOString() });
-    toast.success(t("saved"));
+    try {
+      await projectService.addMember(current.id, actorId, userId);
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function saveColumns(statusColumns: StatusColumn[]) {
+    try {
+      await projectService.updateColumns(current.id, actorId, statusColumns);
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+      return false;
+    }
   }
 
   async function addColumn() {
     const trimmed = newColumnName.trim();
     if (!trimmed) return;
     const order = Math.max(...current.statusColumns.map((c) => c.order), -1) + 1;
-    const statusColumns = [...current.statusColumns, { id: uuid(), name: trimmed, isDone: false, order }];
-    await db.projects.update(current.id, { statusColumns, updatedAt: new Date().toISOString() });
+    const ok = await saveColumns([...current.statusColumns, { id: uuid(), name: trimmed, isDone: false, order }]);
+    if (!ok) return;
     setNewColumnName("");
     toast.success(t("saved"));
   }
 
   async function updateColumn(colId: string, patch: Partial<{ name: string; isDone: boolean }>) {
-    const statusColumns = current.statusColumns.map((c) => (c.id === colId ? { ...c, ...patch } : c));
-    await db.projects.update(current.id, { statusColumns, updatedAt: new Date().toISOString() });
+    await saveColumns(current.statusColumns.map((c) => (c.id === colId ? { ...c, ...patch } : c)));
   }
 
   async function deleteColumn(colId: string) {
-    const statusColumns = current.statusColumns.filter((c) => c.id !== colId);
-    await db.projects.update(current.id, { statusColumns, updatedAt: new Date().toISOString() });
+    if (!(await saveColumns(current.statusColumns.filter((c) => c.id !== colId)))) return;
     toast.success(t("saved"));
   }
 
@@ -177,15 +200,14 @@ export default function ProjectSettingsRoute() {
     const cols = [...current.statusColumns].sort((a, b) => a.order - b.order);
     if (target < 0 || target >= cols.length) return;
     [cols[index], cols[target]] = [cols[target]!, cols[index]!];
-    const statusColumns = cols.map((c, i) => ({ ...c, order: i }));
-    await db.projects.update(current.id, { statusColumns, updatedAt: new Date().toISOString() });
+    await saveColumns(cols.map((c, i) => ({ ...c, order: i })));
   }
 
   async function addLabel() {
     const trimmed = newLabelName.trim();
     if (!trimmed) return;
     try {
-      await labelService.create(project.id, trimmed);
+      await labelService.create(actorId, project.id, trimmed);
       setNewLabelName("");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("updateFailed"));
@@ -196,7 +218,15 @@ export default function ProjectSettingsRoute() {
     const trimmed = name.trim();
     if (!trimmed || trimmed === label.name) return;
     try {
-      await labelService.update(label.id, { name: trimmed });
+      await labelService.update(actorId, label.id, { name: trimmed });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function recolorLabel(label: Label, color: string) {
+    try {
+      await labelService.update(actorId, label.id, { color });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("updateFailed"));
     }
@@ -204,14 +234,18 @@ export default function ProjectSettingsRoute() {
 
   async function deleteLabel(label: Label) {
     setPendingDeleteLabel(null);
-    await labelService.remove(label.id);
-    toast.success(t("deleted"));
+    try {
+      await labelService.remove(actorId, label.id);
+      toast.success(t("deleted"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function addMilestone() {
     if (!msTitle.trim() || !msDate) return;
     try {
-      await milestoneService.create(project.id, msTitle, `${msDate}T00:00:00`);
+      await milestoneService.create(actorId, project.id, msTitle, `${msDate}T00:00:00`);
       setMsTitle("");
       setMsDate("");
     } catch (e) {
@@ -223,7 +257,7 @@ export default function ProjectSettingsRoute() {
     const trimmed = title.trim();
     if (!trimmed || trimmed === ms.title) return;
     try {
-      await milestoneService.update(ms.id, { title: trimmed });
+      await milestoneService.update(actorId, ms.id, { title: trimmed });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("updateFailed"));
     }
@@ -231,36 +265,56 @@ export default function ProjectSettingsRoute() {
 
   async function rescheduleMilestone(ms: Milestone, date: string) {
     if (!date || `${date}T00:00:00` === ms.date) return;
-    await milestoneService.update(ms.id, { date: `${date}T00:00:00` });
+    try {
+      await milestoneService.update(actorId, ms.id, { date: `${date}T00:00:00` });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function toggleMilestone(ms: Milestone, done: boolean) {
-    await milestoneService.update(ms.id, { doneAt: done ? new Date().toISOString() : null });
+    try {
+      await milestoneService.update(actorId, ms.id, { doneAt: done ? new Date().toISOString() : null });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function deleteMilestone() {
     if (!pendingDeleteMilestone) return;
-    await milestoneService.remove(pendingDeleteMilestone.id);
-    setPendingDeleteMilestone(null);
-    toast.success(t("deleted"));
+    try {
+      await milestoneService.remove(actorId, pendingDeleteMilestone.id);
+      setPendingDeleteMilestone(null);
+      toast.success(t("deleted"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function renameTaskTemplate(tpl: TaskTemplate, name: string) {
     const trimmed = name.trim();
     if (!trimmed || trimmed === tpl.name) return;
-    await taskTemplateService.rename(tpl.id, trimmed);
+    try {
+      await taskTemplateService.rename(actorId, tpl.id, trimmed);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function deleteTaskTemplate() {
     if (!pendingDeleteTaskTpl) return;
-    await taskTemplateService.remove(pendingDeleteTaskTpl.id);
-    setPendingDeleteTaskTpl(null);
-    toast.success(t("deleted"));
+    try {
+      await taskTemplateService.remove(actorId, pendingDeleteTaskTpl.id);
+      setPendingDeleteTaskTpl(null);
+      toast.success(t("deleted"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function saveProjectAsTemplate() {
     try {
-      await projectTemplateService.createFromProject(project, ptName);
+      await projectTemplateService.createFromProject(actorId, project, ptName);
       setPtName("");
       toast.success(t("projectTemplateSaved"));
     } catch (e) {
@@ -270,7 +324,7 @@ export default function ProjectSettingsRoute() {
 
   async function addAutomation() {
     try {
-      await automationService.create(project.id, {
+      await automationService.create(actorId, project.id, {
         name: auName,
         trigger: { type: auTrigger, columnId: auTrigger === "status_entered" ? auColumn : null },
         action: { type: auAction, value: auAction === "set_priority" ? auValue || "none" : auValue || null },
@@ -284,24 +338,41 @@ export default function ProjectSettingsRoute() {
   }
 
   async function toggleAutomation(rule: Automation, enabled: boolean) {
-    await automationService.update(rule.id, { enabled });
+    try {
+      await automationService.update(actorId, rule.id, { enabled });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function deleteAutomation() {
     if (!pendingDeleteAutomation) return;
-    await automationService.remove(pendingDeleteAutomation.id);
-    setPendingDeleteAutomation(null);
-    toast.success(t("deleted"));
+    try {
+      await automationService.remove(actorId, pendingDeleteAutomation.id);
+      setPendingDeleteAutomation(null);
+      toast.success(t("deleted"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
   }
 
   async function deleteProject() {
     if (confirmText !== current.name) return;
-    await trashService.deleteProject(actorId, role, current.id);
-    toast.success(t("deleted"), {
-      undo: async () => {
-        await trashService.restoreProject(actorId, "admin", current.id);
-      },
-    });
+    try {
+      await trashService.deleteProject(actorId, current.id);
+      toast.success(t("deleted"), {
+        undo: async () => {
+          try {
+            await trashService.restoreProject(actorId, current.id);
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : t("updateFailed"));
+          }
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+      return;
+    }
     navigate("/projects");
   }
 
@@ -458,7 +529,7 @@ export default function ProjectSettingsRoute() {
                       className={`color-dot${l.color === c ? " is-selected" : ""}`}
                       style={{ background: c }}
                       disabled={!canManage}
-                      onClick={() => void labelService.update(l.id, { color: c })}
+                      onClick={() => void recolorLabel(l, c)}
                       aria-label={t("pickColorAria", { color: c })}
                     />
                   ))}

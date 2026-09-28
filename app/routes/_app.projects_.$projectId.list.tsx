@@ -137,7 +137,7 @@ export default function ListRoute() {
               const firstColumn = project.statusColumns.find((c) => c.order === 0);
               if (!firstColumn) return;
               try {
-                await taskService.create(actorId, role, {
+                await taskService.create(actorId, {
                   id: uuid(),
                   projectId: project.id,
                   title,
@@ -192,14 +192,14 @@ export default function ListRoute() {
         onConfirm={async () => {
           const ids = [...selected];
           for (const id of ids) {
-            await trashService.deleteTask(actorId, role, id);
+            await trashService.deleteTask(actorId, id);
           }
           setSelected(new Set());
           setConfirmBatch(false);
           toast.success(`${t("deleted")}（${ids.length}）`, {
             undo: async () => {
               for (const id of ids) {
-                await trashService.restoreTask(actorId, role, id);
+                await trashService.restoreTask(actorId, id);
               }
             },
           });

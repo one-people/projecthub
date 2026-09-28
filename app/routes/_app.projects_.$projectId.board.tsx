@@ -78,7 +78,6 @@ export default function BoardRoute() {
     try {
       await taskService.moveTask(
         actorId,
-        role,
         intent.taskId,
         intent.targetStatus,
         intent.prevOrder,
@@ -92,7 +91,7 @@ export default function BoardRoute() {
 
   async function handleCreate(status: string, title: string) {
     try {
-      await taskService.create(actorId, role, {
+      await taskService.create(actorId, {
         id: uuid(),
         projectId: project.id,
         title,
@@ -105,7 +104,7 @@ export default function BoardRoute() {
 
   async function handleToggleDone(task: Task, done: boolean) {
     try {
-      await taskService.updateTask(actorId, role, task.id, { completed: done });
+      await taskService.updateTask(actorId, task.id, { completed: done });
       // 卡片勾选完成重复任务时与抽屉路径一样提示已生成下一期
       if (done && task.recurrence !== "none") toast.success(t("recurrenceSpawned"));
     } catch (e) {
@@ -115,7 +114,7 @@ export default function BoardRoute() {
 
   async function handleCreateFromTemplate(tpl: TaskTemplate, status: string) {
     try {
-      await taskService.create(actorId, role, taskTemplateService.buildTaskInput(tpl, project.id, status));
+      await taskService.create(actorId, taskTemplateService.buildTaskInput(tpl, project.id, status));
     } catch (e) {
       guard(e);
     }

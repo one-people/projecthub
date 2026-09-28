@@ -80,7 +80,7 @@ export default function CalendarRoute() {
 
   async function patchTask(taskId: string, patch: Record<string, unknown>) {
     try {
-      await taskService.updateTask(actorId, role, taskId, patch);
+      await taskService.updateTask(actorId, taskId, patch);
     } catch (e) {
       guard(e);
     }
@@ -90,7 +90,7 @@ export default function CalendarRoute() {
     const firstColumn = project.statusColumns.find((c) => c.order === 0);
     if (!firstColumn) return;
     try {
-      await taskService.create(actorId, role, {
+      await taskService.create(actorId, {
         id: uuid(),
         projectId: project.id,
         title,

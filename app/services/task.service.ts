@@ -1,11 +1,11 @@
 import { taskRepository } from "~/repositories/task.repository";
 import { db } from "~/repositories/db";
-import { can, type RoleId } from "~/auth/rbac";
+import { assertProjectPermission, PermissionError } from "~/auth/assert";
 import { uuid } from "~/lib/id";
 import { automationService, type AutomationEvent } from "~/services/automation.service";
 import type { Task, TaskInput } from "~/models/task";
 
-export class PermissionError extends Error {}
+export { PermissionError };
 
 /** 自动化规则失败不阻断任务主流程 */
 async function runAutomations(event: AutomationEvent): Promise<void> {
@@ -32,12 +32,6 @@ export interface TaskUpdatePatch {
   customValues?: Task["customValues"];
   /** true=完成（若有完成列则同时流转状态）；false=取消完成 */
   completed?: boolean;
-}
-
-function assertPermission(roleId: RoleId, permission: Parameters<typeof can>[1]) {
-  if (!can(roleId, permission)) {
-    throw new PermissionError(`角色 ${roleId} 无 ${permission} 权限`);
-  }
 }
 
 /** 按重复规则推进 ISO 日期（月底自动收敛到月末最后一天） */
@@ -88,10 +82,9 @@ export const taskService = {
 
   async create(
     actorId: string,
-    actorRole: RoleId,
     input: Omit<TaskInput, "createdAt" | "updatedAt" | "version">,
   ): Promise<Task> {
-    assertPermission(actorRole, "task:create");
+    await assertProjectPermission(input.projectId, actorId, "task:create");
     const task = await taskRepository.create(input);
     await runAutomations({ projectId: task.projectId, type: "task_created", taskId: task.id });
     return task;
@@ -99,15 +92,14 @@ export const taskService = {
 
   async moveTask(
     actorId: string,
-    actorRole: RoleId,
     taskId: string,
     targetStatus: string,
     prevOrder: string | null,
     nextOrder: string | null,
   ): Promise<Task> {
-    assertPermission(actorRole, "task:update");
     const original = await taskRepository.get(taskId);
     if (!original) throw new Error(`Task ${taskId} not found`);
+    await assertProjectPermission(original.projectId, actorId, "task:update");
     const project = await db.projects.get(original.projectId);
     const targetColumn = project?.statusColumns.find((c) => c.id === targetStatus);
     const task = await taskRepository.move(taskId, targetStatus, prevOrder, nextOrder);
@@ -130,13 +122,12 @@ export const taskService = {
 
   async updateTask(
     actorId: string,
-    actorRole: RoleId,
     taskId: string,
     patch: TaskUpdatePatch,
   ): Promise<Task> {
-    assertPermission(actorRole, "task:update");
     const original = await taskRepository.get(taskId);
     if (!original) throw new Error(`Task ${taskId} not found`);
+    await assertProjectPermission(original.projectId, actorId, "task:update");
     if (patch.title !== undefined && !patch.title.trim()) {
       throw new Error("任务标题不能为空");
     }

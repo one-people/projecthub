@@ -5,6 +5,7 @@ import { Icon } from "~/components/ui/Icon";
 import { TableView } from "~/components/table/TableView";
 import { TaskDrawer } from "~/components/task/TaskDrawer";
 import { taskService, PermissionError } from "~/services/task.service";
+import { projectService } from "~/services/project.service";
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
 import type { Task } from "~/models/task";
@@ -90,37 +91,32 @@ export default function TableRoute() {
 
   async function patchTask(taskId: string, patch: Record<string, unknown>) {
     try {
-      await taskService.updateTask(actorId, role, taskId, patch);
+      await taskService.updateTask(actorId, taskId, patch);
     } catch (e) {
       guard(e);
     }
   }
 
   async function updateProjectFields(fn: (fields: CustomField[]) => CustomField[]) {
-    await db.projects.update(project.id, {
-      customFields: fn(project.customFields ?? []),
-      updatedAt: new Date().toISOString(),
-    });
+    try {
+      await projectService.updateFields(project.id, actorId, fn(project.customFields ?? []));
+    } catch (e) {
+      if (!guard(e)) toast.error(t("updateFailed"));
+    }
   }
 
   async function deleteField(field: CustomField) {
     setPendingDeleteField(null);
-    await db.transaction("rw", [db.projects, db.tasks], async () => {
-      await db.projects.update(project.id, {
-        customFields: (project.customFields ?? []).filter((f) => f.id !== field.id),
-        updatedAt: new Date().toISOString(),
-      });
-      await db.tasks
-        .where("projectId")
-        .equals(project.id)
-        .filter((tk) => (tk.customValues ?? {})[field.id] !== undefined)
-        .modify((tk) => {
-          const values = { ...(tk.customValues ?? {}) };
-          delete values[field.id];
-          tk.customValues = values;
-        });
-    });
-    toast.success(t("deleted"));
+    try {
+      await projectService.updateFields(
+        project.id,
+        actorId,
+        (project.customFields ?? []).filter((f) => f.id !== field.id),
+      );
+      toast.success(t("deleted"));
+    } catch (e) {
+      if (!guard(e)) toast.error(t("updateFailed"));
+    }
   }
 
   return (
@@ -169,7 +165,7 @@ export default function TableRoute() {
               const firstColumn = project.statusColumns.find((c) => c.order === 0);
               if (!firstColumn) return;
               try {
-                await taskService.create(actorId, role, {
+                await taskService.create(actorId, {
                   id: uuid(),
                   projectId: project.id,
                   title,

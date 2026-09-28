@@ -1,5 +1,6 @@
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
+import { assertProjectPermission } from "~/auth/assert";
 import type { Milestone } from "~/models/milestone";
 
 export const milestoneService = {
@@ -9,7 +10,8 @@ export const milestoneService = {
     return rows.sort((a, b) => (a.date === b.date ? a.createdAt.localeCompare(b.createdAt) : a.date < b.date ? -1 : 1));
   },
 
-  async create(projectId: string, title: string, date: string): Promise<Milestone> {
+  async create(actorId: string, projectId: string, title: string, date: string): Promise<Milestone> {
+    await assertProjectPermission(projectId, actorId, "milestone:manage");
     const trimmed = title.trim();
     if (!trimmed) throw new Error("里程碑标题不能为空");
     if (!date) throw new Error("里程碑日期不能为空");
@@ -27,7 +29,10 @@ export const milestoneService = {
     return milestone;
   },
 
-  async update(id: string, patch: Partial<Pick<Milestone, "title" | "date" | "doneAt">>): Promise<void> {
+  async update(actorId: string, id: string, patch: Partial<Pick<Milestone, "title" | "date" | "doneAt">>): Promise<void> {
+    const milestone = await db.milestones.get(id);
+    if (!milestone) return;
+    await assertProjectPermission(milestone.projectId, actorId, "milestone:manage");
     if (patch.title !== undefined && !patch.title.trim()) {
       throw new Error("里程碑标题不能为空");
     }
@@ -38,7 +43,10 @@ export const milestoneService = {
     });
   },
 
-  async remove(id: string): Promise<void> {
+  async remove(actorId: string, id: string): Promise<void> {
+    const milestone = await db.milestones.get(id);
+    if (!milestone) return;
+    await assertProjectPermission(milestone.projectId, actorId, "milestone:manage");
     await db.milestones.delete(id);
   },
 

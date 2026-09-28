@@ -1,5 +1,6 @@
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
+import { assertProjectPermission } from "~/auth/assert";
 import { LABEL_COLORS, type Label } from "~/models/label";
 
 function nextColor(existing: Label[]): string {
@@ -13,7 +14,8 @@ export const labelService = {
     return db.labels.where("projectId").equals(projectId).toArray();
   },
 
-  async create(projectId: string, name: string, color?: string): Promise<Label> {
+  async create(actorId: string, projectId: string, name: string, color?: string): Promise<Label> {
+    await assertProjectPermission(projectId, actorId, "label:manage");
     const trimmed = name.trim();
     if (!trimmed) throw new Error("标签名称不能为空");
     const existing = await this.list(projectId);
@@ -31,7 +33,10 @@ export const labelService = {
     return label;
   },
 
-  async update(id: string, patch: Partial<Pick<Label, "name" | "color">>): Promise<void> {
+  async update(actorId: string, id: string, patch: Partial<Pick<Label, "name" | "color">>): Promise<void> {
+    const label = await db.labels.get(id);
+    if (!label) return;
+    await assertProjectPermission(label.projectId, actorId, "label:manage");
     if (patch.name !== undefined && !patch.name.trim()) {
       throw new Error("标签名称不能为空");
     }
@@ -42,7 +47,10 @@ export const labelService = {
   },
 
   /** 删除标签并从所有任务的 labels 数组中剥离（事务内原子完成） */
-  async remove(id: string): Promise<void> {
+  async remove(actorId: string, id: string): Promise<void> {
+    const label = await db.labels.get(id);
+    if (!label) return;
+    await assertProjectPermission(label.projectId, actorId, "label:manage");
     await db.transaction("rw", db.labels, db.tasks, async () => {
       await db.labels.delete(id);
       await db.tasks

@@ -1,5 +1,6 @@
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
+import { assertProjectPermission } from "~/auth/assert";
 import type { Task, TaskInput } from "~/models/task";
 import type { TaskTemplate } from "~/models/taskTemplate";
 
@@ -19,7 +20,8 @@ export const taskTemplateService = {
   },
 
   /** 把任务保存为模板（标题/描述/优先级/标签/子任务/重复规则） */
-  async createFromTask(task: Task, name?: string): Promise<TaskTemplate> {
+  async createFromTask(actorId: string, task: Task, name?: string): Promise<TaskTemplate> {
+    await assertProjectPermission(task.projectId, actorId, "template:manage");
     const tpl: TaskTemplate = {
       id: uuid(),
       projectId: task.projectId,
@@ -36,11 +38,18 @@ export const taskTemplateService = {
     return tpl;
   },
 
-  async remove(id: string): Promise<void> {
+  async remove(actorId: string, id: string): Promise<void> {
+    const tpl = await db.taskTemplates.get(id);
+    if (!tpl) return;
+    // 全局模板（projectId 为空）为应用级资产，不按项目鉴权；项目内模板按所属项目断言
+    if (tpl.projectId) await assertProjectPermission(tpl.projectId, actorId, "template:manage");
     await db.taskTemplates.delete(id);
   },
 
-  async rename(id: string, name: string): Promise<void> {
+  async rename(actorId: string, id: string, name: string): Promise<void> {
+    const tpl = await db.taskTemplates.get(id);
+    if (!tpl) return;
+    if (tpl.projectId) await assertProjectPermission(tpl.projectId, actorId, "template:manage");
     const trimmed = name.trim().slice(0, 100);
     if (!trimmed) throw new Error("模板名称不能为空");
     await db.taskTemplates.update(id, { name: trimmed });

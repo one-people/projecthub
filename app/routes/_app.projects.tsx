@@ -91,7 +91,8 @@ export default function ProjectsRoute() {
   async function deleteTemplate() {
     if (!pendingDeleteTpl) return;
     try {
-      await projectTemplateService.remove(pendingDeleteTpl.id);
+      const user = me ?? (await session.currentUser());
+      await projectTemplateService.remove(user.id, pendingDeleteTpl.id);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     }

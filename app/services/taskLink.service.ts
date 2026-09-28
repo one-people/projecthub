@@ -1,5 +1,6 @@
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
+import { assertProjectPermission } from "~/auth/assert";
 import type { TaskLink } from "~/models/taskLink";
 
 /** 关联操作的业务错误码（调用方按 i18n key 提示） */
@@ -38,12 +39,13 @@ export const taskLinkService = {
    * 添加关联。任意两个任务之间最多一条关联（不分方向与类型）；
    * blocks 类型额外做成环检测，防止 A→B→C→A 的循环依赖。
    */
-  async add(input: {
+  async add(actorId: string, input: {
     projectId: string;
     fromTaskId: string;
     toTaskId: string;
     type: TaskLink["type"];
   }): Promise<TaskLink> {
+    await assertProjectPermission(input.projectId, actorId, "task:update");
     if (input.fromTaskId === input.toTaskId) throw new LinkError("self");
     const links = await this.list(input.projectId);
     const pairExists = links.some(
@@ -60,7 +62,10 @@ export const taskLinkService = {
     return link;
   },
 
-  async remove(id: string): Promise<void> {
+  async remove(actorId: string, id: string): Promise<void> {
+    const link = await db.taskLinks.get(id);
+    if (!link) return;
+    await assertProjectPermission(link.projectId, actorId, "task:update");
     await db.taskLinks.delete(id);
   },
 

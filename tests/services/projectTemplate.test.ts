@@ -55,13 +55,13 @@ describe("projectTemplateService", () => {
 
   it("createFromProject 快照列/标签/字段/任务模板（标签 id 转名称）", async () => {
     const project = await seedProject("p1");
-    const label = await labelService.create("p1", "前端");
-    const task = await taskService.create("u1", "admin", {
+    const label = await labelService.create("u1", "p1", "前端");
+    const task = await taskService.create("u1", {
       id: uuid(), projectId: "p1", title: "周报", status: "c1", labels: [label.id],
     });
-    await taskTemplateService.createFromTask(task, "周报模板");
+    await taskTemplateService.createFromTask("u1", task, "周报模板");
 
-    const tpl = await projectTemplateService.createFromProject(project, "我的模板");
+    const tpl = await projectTemplateService.createFromProject("u1", project, "我的模板");
     expect(tpl.builtin).toBe(false);
     expect(tpl.columns).toEqual([
       { name: "待办", isDone: false }, { name: "进行中", isDone: false }, { name: "已完成", isDone: true },
@@ -74,12 +74,12 @@ describe("projectTemplateService", () => {
 
   it("instantiate 按模板创建项目：新 id、成员角色、标签映射、任务模板落库", async () => {
     const project = await seedProject("p1");
-    const label = await labelService.create("p1", "设计");
-    const task = await taskService.create("u1", "admin", {
+    const label = await labelService.create("u1", "p1", "设计");
+    const task = await taskService.create("u1", {
       id: uuid(), projectId: "p1", title: "评审", status: "c1", labels: [label.id],
     });
-    await taskTemplateService.createFromTask(task, "评审模板");
-    const tpl = await projectTemplateService.createFromProject(project, "快照");
+    await taskTemplateService.createFromTask("u1", task, "评审模板");
+    const tpl = await projectTemplateService.createFromProject("u1", project, "快照");
 
     const created = await projectTemplateService.instantiate(tpl, "新项目", "u9");
     expect(created.id).not.toBe("p1");
@@ -119,10 +119,10 @@ describe("projectTemplateService", () => {
   });
 
   it("remove 拒绝内置 id，可删除已保存模板", async () => {
-    await expect(projectTemplateService.remove("tpl-builtin-rd")).rejects.toThrow();
+    await expect(projectTemplateService.remove("u1", "tpl-builtin-rd")).rejects.toThrow();
     const project = await seedProject("p1");
-    const tpl = await projectTemplateService.createFromProject(project, "待删");
-    await projectTemplateService.remove(tpl.id);
+    const tpl = await projectTemplateService.createFromProject("u1", project, "待删");
+    await projectTemplateService.remove("u1", tpl.id);
     expect(await db.projectTemplates.count()).toBe(0);
   });
 });

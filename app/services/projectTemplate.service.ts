@@ -1,5 +1,6 @@
 import { db } from "~/repositories/db";
 import { uuid } from "~/lib/id";
+import { assertProjectPermission } from "~/auth/assert";
 import type { Locale } from "~/lib/i18n";
 import {
   projectTemplateSchema,
@@ -175,8 +176,9 @@ export const projectTemplateService = {
     return [blankTemplate(locale), ...BUILTIN_DEFS.map((d) => builtinToTemplate(d, locale)), ...saved];
   },
 
-  /** 把现有项目快照为模板（列/标签/自定义字段/本项目任务模板） */
-  async createFromProject(project: Project, name: string): Promise<ProjectTemplate> {
+  /** 把现有项目快照为模板（列/标签/自定义字段/本项目任务模板）；需来源项目 template:manage */
+  async createFromProject(actorId: string, project: Project, name: string): Promise<ProjectTemplate> {
+    await assertProjectPermission(project.id, actorId, "template:manage");
     const trimmed = name.trim() || project.name;
     const [labels, taskTpls] = await Promise.all([
       db.labels.where("projectId").equals(project.id).toArray(),
@@ -188,6 +190,7 @@ export const projectTemplateService = {
       name: trimmed,
       description: project.description,
       builtin: false,
+      sourceProjectId: project.id,
       columns: [...project.statusColumns]
         .sort((a, b) => a.order - b.order)
         .map((c) => ({ name: c.name, isDone: c.isDone })),
@@ -253,8 +256,15 @@ export const projectTemplateService = {
     return project;
   },
 
-  async remove(id: string): Promise<void> {
+  /** 删除已保存模板：有来源项目时按来源项目 template:manage 鉴权（来源已物理删除则放行） */
+  async remove(actorId: string, id: string): Promise<void> {
     if (id.startsWith("tpl-")) throw new Error("内置模板不可删除");
+    const row = await db.projectTemplates.get(id);
+    if (!row) return;
+    const sourceId = (row as { sourceProjectId?: string | null }).sourceProjectId ?? null;
+    if (sourceId && (await db.projects.get(sourceId))) {
+      await assertProjectPermission(sourceId, actorId, "template:manage");
+    }
     await db.projectTemplates.delete(id);
   },
 };

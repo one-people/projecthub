@@ -10,7 +10,7 @@ async function seed() {
   await db.projects.add({
     id: "p1", name: "项目", description: "", statusColumns: [
       { id: "c1", name: "待办", isDone: false, order: 0 },
-    ], customFields: [], ownerId: "u1", memberRoles: {}, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
+    ], customFields: [], ownerId: "u1", memberRoles: { u2: "guest", u3: "member", u4: "admin" }, deletedAt: null, createdAt: now, updatedAt: now, version: 0,
   });
   await db.tasks.add({
     id: "t1", projectId: "p1", title: "任务", descriptionRich: null, status: "c1",
@@ -32,7 +32,7 @@ describe("trashService", () => {
 
   it("deleteTask 软删并级联软删评论", async () => {
     await seed();
-    await trashService.deleteTask("u1", "member", "t1");
+    await trashService.deleteTask("u3", "t1");
     const task = await db.tasks.get("t1");
     const comment = await db.comments.get("m1");
     expect(task?.deletedAt).toBeTruthy();
@@ -41,17 +41,17 @@ describe("trashService", () => {
 
   it("guest 无删除权限", async () => {
     await seed();
-    await expect(trashService.deleteTask("u1", "guest", "t1")).rejects.toThrow(/权限/);
+    await expect(trashService.deleteTask("u2", "t1")).rejects.toThrow(/权限/);
   });
 
   it("admin 不能删除项目（仅所有者）", async () => {
     await seed();
-    await expect(trashService.deleteProject("u1", "admin", "p1")).rejects.toThrow(/权限/);
+    await expect(trashService.deleteProject("u4", "p1")).rejects.toThrow(/权限/);
   });
 
   it("deleteProject 级联软删任务并标记 deletedByProjectId", async () => {
     await seed();
-    await trashService.deleteProject("u1", "owner", "p1");
+    await trashService.deleteProject("u1", "p1");
     expect((await db.projects.get("p1"))?.deletedAt).toBeTruthy();
     const task = await db.tasks.get("t1");
     expect(task?.deletedAt).toBeTruthy();
@@ -60,8 +60,8 @@ describe("trashService", () => {
 
   it("restoreProject 级联恢复", async () => {
     await seed();
-    await trashService.deleteProject("u1", "owner", "p1");
-    await trashService.restoreProject("u1", "owner", "p1");
+    await trashService.deleteProject("u1", "p1");
+    await trashService.restoreProject("u1", "p1");
     expect((await db.projects.get("p1"))?.deletedAt).toBeNull();
     expect((await db.tasks.get("t1"))?.deletedAt).toBeNull();
     expect((await db.tasks.get("t1"))?.deletedByProjectId).toBeNull();
@@ -69,19 +69,19 @@ describe("trashService", () => {
 
   it("restoreTask 只恢复独立删除的任务", async () => {
     await seed();
-    await trashService.deleteProject("u1", "owner", "p1");
-    await expect(trashService.restoreTask("u1", "member", "t1")).rejects.toThrow(/所属项目/);
+    await trashService.deleteProject("u1", "p1");
+    await expect(trashService.restoreTask("u3", "t1")).rejects.toThrow(/所属项目/);
     // 复位为未删除状态，再验证独立删除路径
     await db.tasks.update("t1", { deletedAt: null, deletedByProjectId: null });
     await db.projects.update("p1", { deletedAt: null });
-    await trashService.deleteTask("u1", "member", "t1");
-    await trashService.restoreTask("u1", "member", "t1");
+    await trashService.deleteTask("u3", "t1");
+    await trashService.restoreTask("u3", "t1");
     expect((await db.tasks.get("t1"))?.deletedAt).toBeNull();
   });
 
   it("purgeTask 物理删除", async () => {
     await seed();
-    await trashService.deleteTask("u1", "member", "t1");
+    await trashService.deleteTask("u3", "t1");
     await trashService.purgeTask("t1");
     expect(await db.tasks.get("t1")).toBeUndefined();
     expect(await db.comments.get("m1")).toBeUndefined();

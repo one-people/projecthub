@@ -19,6 +19,8 @@ export const projectTemplateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().default(""),
   builtin: z.boolean().default(false),
+  /** 快照来源项目（内置模板为 null；删除模板时按来源项目鉴权） */
+  sourceProjectId: z.string().nullable().default(null),
   columns: z.array(z.object({ name: z.string(), isDone: z.boolean().default(false) })),
   labels: z.array(z.object({ name: z.string(), color: z.string() })),
   customFields: z.array(customFieldSchema).default([]),
