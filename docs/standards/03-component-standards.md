@@ -7,7 +7,7 @@
 ```
 app/components/
 ├── ui/         # 基础组件：Icon、Toast、Popover、ConfirmDialog（与业务无关，可复用）
-├── shell/      # 应用骨架：AppShell、AppRail、Breadcrumbs、GlobalSearch、ProjectPanel…
+├── shell/      # 应用骨架：AppShell、AppRail、Breadcrumbs、GlobalSearch…
 └── <domain>/   # 领域组件：board/ calendar/ list/ table/ timeline/ task/ stats/ comments/ editor/
 ```
 

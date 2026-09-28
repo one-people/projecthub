@@ -198,7 +198,6 @@ export const zhCN = {
 
   /* ===== Worktile 式重构 ===== */
   breadcrumbs: "面包屑",
-  togglePanel: "切换项目面板",
   newProject: "新建项目",
   roleOwner: "所有者",
   roleAdmin: "管理员",

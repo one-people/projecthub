@@ -7,7 +7,6 @@ import { can, resolveRole, type RoleId } from "~/auth/rbac";
 import { useI18n, t as translate } from "~/lib/i18n";
 import { ROLE_LABEL_KEY } from "~/lib/role-labels";
 import { Icon, type IconName } from "~/components/ui/Icon";
-import { usePanelOpen } from "~/components/shell/panel-context";
 import type { Project } from "~/models/project";
 import type { User } from "~/models/user";
 
@@ -20,14 +19,12 @@ export interface ProjectOutletContext {
   users: User[];
 }
 
-/** 项目空间共享外壳：项目名 + 成员头像组 + 视图 Tab（Worktile 式） */
+/** 项目空间共享外壳：项目名 + 成员头像组 + 常驻视图 Tab（横向，单一导航模式） */
 export default function ProjectLayout() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useI18n();
-  // 面板展开时视图导航在左侧面板里；收起面板才在页内兜底显示 Tab
-  const panelShown = usePanelOpen();
   const [state, setState] = useState<{ project: Project; role: RoleId | null; actorId: string; users: User[] } | null>(null);
   const [missing, setMissing] = useState(false);
 
@@ -91,7 +88,7 @@ export default function ProjectLayout() {
 
   return (
     <div className="project-layout">
-      <header className={panelShown ? "project-head project-head--panel" : "project-head"}>
+      <header className="project-head">
         <div className="project-head__row">
           <h1 className="project-head__name">{project.name}</h1>
           <span
@@ -108,20 +105,18 @@ export default function ProjectLayout() {
           </span>
           <span className="badge badge--role">{t(ROLE_LABEL_KEY[role])}</span>
         </div>
-        {!panelShown && (
-          <nav className="tabs project-head__tabs" aria-label={t("viewSwitch")}>
-            {tabs.map((tab) => {
-              const active =
-                location.pathname === `/projects/${project.id}` || location.pathname.startsWith(`${tab.to}/`) || location.pathname === tab.to;
-              return (
-                <Link key={tab.to} to={tab.to} className={`tabs__item${active ? " is-active" : ""}`}>
-                  <Icon name={tab.icon} size={15} />
-                  {tab.label}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
+        <nav className="tabs project-head__tabs" aria-label={t("viewSwitch")}>
+          {tabs.map((tab) => {
+            const active =
+              location.pathname === `/projects/${project.id}` || location.pathname.startsWith(`${tab.to}/`) || location.pathname === tab.to;
+            return (
+              <Link key={tab.to} to={tab.to} className={`tabs__item${active ? " is-active" : ""}`}>
+                <Icon name={tab.icon} size={15} />
+                {tab.label}
+              </Link>
+            );
+          })}
+        </nav>
       </header>
       <div className="project-layout__body">
         <Outlet context={{ project, role, actorId, users }} />

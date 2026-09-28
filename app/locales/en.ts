@@ -200,7 +200,6 @@ export const en: Dict = {
 
   /* ===== Worktile-style refactor ===== */
   breadcrumbs: "Breadcrumbs",
-  togglePanel: "Toggle project panel",
   newProject: "New project",
   roleOwner: "Owner",
   roleAdmin: "Admin",
