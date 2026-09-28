@@ -8,13 +8,17 @@ import { labelService } from "~/services/label.service";
 import { milestoneService } from "~/services/milestone.service";
 import { taskTemplateService } from "~/services/taskTemplate.service";
 import { projectTemplateService } from "~/services/projectTemplate.service";
+import { automationService } from "~/services/automation.service";
 import { LABEL_COLORS, type Label } from "~/models/label";
 import type { Milestone } from "~/models/milestone";
 import type { TaskTemplate } from "~/models/taskTemplate";
+import type { Automation } from "~/models/automation";
+import type { User } from "~/models/user";
 import { uuid } from "~/lib/id";
 import { useI18n, t as translate } from "~/lib/i18n";
 import type { Dict } from "~/locales/zh-CN";
 import { ROLE_LABEL_KEY } from "~/lib/role-labels";
+import { PRIORITY_LABEL_KEY } from "~/lib/priority";
 import { Icon } from "~/components/ui/Icon";
 import { useToast } from "~/components/ui/Toast";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
@@ -22,7 +26,7 @@ import type { ProjectOutletContext } from "~/routes/_app.projects_.$projectId";
 
 export const handle = { crumb: () => ({ label: translate("projectSettings") }) };
 
-type Tab = "basic" | "members" | "columns" | "labels" | "milestones" | "templates" | "danger";
+type Tab = "basic" | "members" | "columns" | "labels" | "milestones" | "templates" | "automations" | "danger";
 const ROLE_OPTIONS: RoleId[] = ["admin", "projectAdmin", "member", "guest"];
 
 const TAB_KEY: Record<Tab, keyof Dict> = {
@@ -32,8 +36,13 @@ const TAB_KEY: Record<Tab, keyof Dict> = {
   labels: "tabLabels",
   milestones: "tabMilestones",
   templates: "tabTemplates",
+  automations: "tabAutomations",
   danger: "tabDanger",
 };
+
+const TRIGGER_OPTIONS: Automation["trigger"]["type"][] = ["task_created", "status_entered", "task_completed"];
+const ACTION_OPTIONS: Automation["action"]["type"][] = ["assign", "set_priority", "move_to", "add_label"];
+const PRIORITY_OPTIONS: Array<"urgent" | "high" | "medium" | "low" | "none"> = ["urgent", "high", "medium", "low", "none"];
 
 export default function ProjectSettingsRoute() {
   const navigate = useNavigate();
@@ -57,6 +66,13 @@ export default function ProjectSettingsRoute() {
   const [taskTpls, setTaskTpls] = useState<TaskTemplate[]>([]);
   const [ptName, setPtName] = useState("");
   const [pendingDeleteTaskTpl, setPendingDeleteTaskTpl] = useState<TaskTemplate | null>(null);
+  const [automations, setAutomations] = useState<Automation[]>([]);
+  const [auName, setAuName] = useState("");
+  const [auTrigger, setAuTrigger] = useState<Automation["trigger"]["type"]>("task_created");
+  const [auColumn, setAuColumn] = useState("");
+  const [auAction, setAuAction] = useState<Automation["action"]["type"]>("assign");
+  const [auValue, setAuValue] = useState("");
+  const [pendingDeleteAutomation, setPendingDeleteAutomation] = useState<Automation | null>(null);
 
   useEffect(() => {
     setName((prev) => (prev ? prev : project.name));
@@ -86,6 +102,16 @@ export default function ProjectSettingsRoute() {
     ).subscribe((rows) => {
       rows.sort((a, b) => a.name.localeCompare(b.name));
       setTaskTpls(rows);
+    });
+    return () => sub.unsubscribe();
+  }, [project.id]);
+
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      db.automations.where("projectId").equals(project.id).toArray(),
+    ).subscribe((rows) => {
+      rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      setAutomations(rows);
     });
     return () => sub.unsubscribe();
   }, [project.id]);
@@ -241,6 +267,32 @@ export default function ProjectSettingsRoute() {
     }
   }
 
+  async function addAutomation() {
+    try {
+      await automationService.create(project.id, {
+        name: auName,
+        trigger: { type: auTrigger, columnId: auTrigger === "status_entered" ? auColumn : null },
+        action: { type: auAction, value: auAction === "set_priority" ? auValue || "none" : auValue || null },
+      });
+      setAuName("");
+      setAuValue("");
+      toast.success(t("saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("updateFailed"));
+    }
+  }
+
+  async function toggleAutomation(rule: Automation, enabled: boolean) {
+    await automationService.update(rule.id, { enabled });
+  }
+
+  async function deleteAutomation() {
+    if (!pendingDeleteAutomation) return;
+    await automationService.remove(pendingDeleteAutomation.id);
+    setPendingDeleteAutomation(null);
+    toast.success(t("deleted"));
+  }
+
   async function deleteProject() {
     if (confirmText !== current.name) return;
     await trashService.deleteProject(actorId, role, current.id);
@@ -259,7 +311,7 @@ export default function ProjectSettingsRoute() {
   return (
     <div className="page-pad">
       <nav className="tabs settings-tabs" aria-label={t("projectSettings")}>
-        {(["basic", "members", "columns", "labels", "milestones", "templates", "danger"] as Tab[]).map((k) => (
+        {(["basic", "members", "columns", "labels", "milestones", "templates", "automations", "danger"] as Tab[]).map((k) => (
           <button
             key={k}
             type="button"
@@ -579,6 +631,156 @@ export default function ProjectSettingsRoute() {
         </div>
       )}
 
+      {tab === "automations" && (
+        <section className="card">
+          <h2 className="section-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Icon name="zap" size={16} />
+            {t("tabAutomations")}
+          </h2>
+          <p className="hint">{t("automationHint")}</p>
+          <ul className="user-list">
+            {automations.map((rule) => {
+              const colName = rule.trigger.columnId
+                ? project.statusColumns.find((c) => c.id === rule.trigger.columnId)?.name ?? "?"
+                : "";
+              const assignee = rule.action.type === "assign"
+                ? users.find((u) => u.id === rule.action.value)?.name ?? "?"
+                : "";
+              const targetCol = rule.action.type === "move_to"
+                ? project.statusColumns.find((c) => c.id === rule.action.value)?.name ?? "?"
+                : "";
+              const label = rule.action.type === "add_label"
+                ? labels.find((l) => l.id === rule.action.value)
+                : undefined;
+              return (
+                <li key={rule.id} className="user-row">
+                  <input
+                    type="checkbox"
+                    checked={rule.enabled}
+                    disabled={!canManage}
+                    onChange={(e) => void toggleAutomation(rule, e.target.checked)}
+                    aria-label={t("automationToggleAria", { name: rule.name })}
+                  />
+                  <span style={{ minWidth: 120, fontWeight: 600, fontSize: 13 }}>{rule.name}</span>
+                  <span className="auto-rule">
+                    {rule.trigger.type === "task_created" && t("autoWhenCreated")}
+                    {rule.trigger.type === "task_completed" && t("autoWhenCompleted")}
+                    {rule.trigger.type === "status_entered" && t("autoWhenEntered", { column: colName })}
+                    {" → "}
+                    {rule.action.type === "assign" && t("autoThenAssign", { name: assignee })}
+                    {rule.action.type === "set_priority" && t("autoThenPriority", { priority: t(PRIORITY_LABEL_KEY[(rule.action.value ?? "none") as keyof typeof PRIORITY_LABEL_KEY]) })}
+                    {rule.action.type === "move_to" && t("autoThenMove", { column: targetCol })}
+                    {rule.action.type === "add_label" && (
+                      <span className="auto-rule__label">
+                        {label && <span className="label-dot" style={{ background: label.color }} />}
+                        {t("autoThenLabel", { name: label?.name ?? "?" })}
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ flex: 1 }} />
+                  <button
+                    className="btn btn--danger"
+                    disabled={!canManage}
+                    onClick={() => setPendingDeleteAutomation(rule)}
+                    aria-label={t("deleteAutomationAria", { name: rule.name })}
+                  >
+                    <Icon name="trash" size={14} />{t("actionDelete")}
+                  </button>
+                </li>
+              );
+            })}
+            {automations.length === 0 && <p className="empty">{t("noAutomations")}</p>}
+          </ul>
+          {canManage && (
+            <div className="auto-form">
+              <input
+                className="input"
+                style={{ maxWidth: 160 }}
+                value={auName}
+                onChange={(e) => setAuName(e.target.value)}
+                placeholder={t("automationName")}
+                aria-label={t("automationName")}
+              />
+              <select
+                className="input"
+                value={auTrigger}
+                onChange={(e) => { setAuTrigger(e.target.value as Automation["trigger"]["type"]); setAuColumn(""); }}
+                aria-label={t("automationTrigger")}
+              >
+                {TRIGGER_OPTIONS.map((tr) => (
+                  <option key={tr} value={tr}>
+                    {tr === "task_created" ? t("autoWhenCreated") : tr === "task_completed" ? t("autoWhenCompleted") : t("autoTriggerEntered")}
+                  </option>
+                ))}
+              </select>
+              {auTrigger === "status_entered" && (
+                <select
+                  className="input"
+                  value={auColumn}
+                  onChange={(e) => setAuColumn(e.target.value)}
+                  aria-label={t("automationColumn")}
+                >
+                  <option value="">{t("automationColumn")}</option>
+                  {sortedColumns.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
+              <select
+                className="input"
+                value={auAction}
+                onChange={(e) => { setAuAction(e.target.value as Automation["action"]["type"]); setAuValue(""); }}
+                aria-label={t("automationAction")}
+              >
+                {ACTION_OPTIONS.map((ac) => (
+                  <option key={ac} value={ac}>
+                    {ac === "assign" ? t("autoActionAssign") : ac === "set_priority" ? t("autoActionPriority") : ac === "move_to" ? t("autoActionMove") : t("autoActionLabel")}
+                  </option>
+                ))}
+              </select>
+              {auAction !== "set_priority" && (
+                <select
+                  className="input"
+                  value={auValue}
+                  onChange={(e) => setAuValue(e.target.value)}
+                  aria-label={t("automationTarget")}
+                >
+                  <option value="">{t("automationTarget")}</option>
+                  {auAction === "assign" && users.filter((u) => project.memberRoles[u.id]).map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                  {auAction === "move_to" && sortedColumns.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                  {auAction === "add_label" && labels.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              )}
+              {auAction === "set_priority" && (
+                <select
+                  className="input"
+                  value={auValue}
+                  onChange={(e) => setAuValue(e.target.value)}
+                  aria-label={t("automationTarget")}
+                >
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <option key={p} value={p}>{t(PRIORITY_LABEL_KEY[p])}</option>
+                  ))}
+                </select>
+              )}
+              <button
+                className="btn"
+                disabled={!auName.trim() || (auTrigger === "status_entered" && !auColumn) || (auAction !== "set_priority" && !auValue)}
+                onClick={() => void addAutomation()}
+              >
+                <Icon name="plus" size={15} />{t("add")}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
       {tab === "danger" && (
         <section className="danger-zone card">
           <h2 className="section-title" style={{ color: "var(--color-danger)" }}>{t("dangerZone")}</h2>
@@ -636,6 +838,14 @@ export default function ProjectSettingsRoute() {
         danger
         onConfirm={() => void deleteTaskTemplate()}
         onCancel={() => setPendingDeleteTaskTpl(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(pendingDeleteAutomation)}
+        title={t("deleteAutomationAria", { name: pendingDeleteAutomation?.name ?? "" })}
+        message={t("confirmDeleteAutomation")}
+        danger
+        onConfirm={() => void deleteAutomation()}
+        onCancel={() => setPendingDeleteAutomation(null)}
       />
     </div>
   );

@@ -2,9 +2,19 @@ import { taskRepository } from "~/repositories/task.repository";
 import { db } from "~/repositories/db";
 import { can, type RoleId } from "~/auth/rbac";
 import { uuid } from "~/lib/id";
+import { automationService, type AutomationEvent } from "~/services/automation.service";
 import type { Task, TaskInput } from "~/models/task";
 
 export class PermissionError extends Error {}
+
+/** 自动化规则失败不阻断任务主流程 */
+async function runAutomations(event: AutomationEvent): Promise<void> {
+  try {
+    await automationService.apply(event);
+  } catch {
+    // 忽略引擎异常（规则数据异常等），主操作已成功
+  }
+}
 
 /** 任务详情抽屉可编辑的字段（状态与完成态由服务端统一流转） */
 export interface TaskUpdatePatch {
@@ -83,6 +93,7 @@ export const taskService = {
   ): Promise<Task> {
     assertPermission(actorRole, "task:create");
     const task = await taskRepository.create(input);
+    await runAutomations({ projectId: task.projectId, type: "task_created", taskId: task.id });
     return task;
   },
 
@@ -109,6 +120,10 @@ export const taskService = {
       await spawnNextOccurrence(result);
     } else if (!targetColumn?.isDone && task.completedAt) {
       result = await taskRepository.update(taskId, { completedAt: null }, task.version);
+    }
+    await runAutomations({ projectId: original.projectId, type: "status_entered", columnId: targetStatus, taskId });
+    if (targetColumn?.isDone) {
+      await runAutomations({ projectId: original.projectId, type: "task_completed", taskId });
     }
     return result;
   },
@@ -142,6 +157,10 @@ export const taskService = {
       current = await taskRepository.update(taskId, next, current.version);
       changed.push("完成");
       await spawnNextOccurrence(current);
+      if (next.status) {
+        await runAutomations({ projectId: original.projectId, type: "status_entered", columnId: next.status, taskId });
+      }
+      await runAutomations({ projectId: original.projectId, type: "task_completed", taskId });
     }
     if (patch.completed === false && current.completedAt) {
       // 取消完成：若停留在完成列，则回到第一个未完成列
@@ -171,6 +190,10 @@ export const taskService = {
         current = await taskRepository.update(taskId, { completedAt: null }, current.version);
       }
       changed.push("状态");
+      await runAutomations({ projectId: original.projectId, type: "status_entered", columnId: patch.status, taskId });
+      if (targetColumn?.isDone) {
+        await runAutomations({ projectId: original.projectId, type: "task_completed", taskId });
+      }
     }
 
     // 其余字段只在真正变化时写库

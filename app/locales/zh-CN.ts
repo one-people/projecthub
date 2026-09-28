@@ -314,6 +314,31 @@ export const zhCN = {
   projectTemplateHint: "把当前项目的列、标签、自定义字段与任务模板存为模板，供以后新建项目使用",
   projectTemplateName: "模板名称",
   projectTemplateSaved: "项目已保存为模板",
+
+  /* ===== 自动化规则 ===== */
+  tabAutomations: "自动化",
+  automationHint: "满足条件时自动执行动作：任务创建 / 进入某列 / 完成时 → 指派 / 设优先级 / 移到列 / 加标签",
+  automationName: "规则名称",
+  automationTrigger: "触发条件",
+  automationColumn: "选择列",
+  automationAction: "执行动作",
+  automationTarget: "选择目标",
+  autoWhenCreated: "任务创建时",
+  autoWhenCompleted: "任务完成时",
+  autoWhenEntered: "进入「{column}」列时",
+  autoTriggerEntered: "进入某列时",
+  autoThenAssign: "指派给 {name}",
+  autoThenPriority: "设优先级为 {priority}",
+  autoThenMove: "移到「{column}」列",
+  autoThenLabel: "加标签 {name}",
+  autoActionAssign: "指派给…",
+  autoActionPriority: "设优先级…",
+  autoActionMove: "移到列…",
+  autoActionLabel: "加标签…",
+  noAutomations: "还没有自动化规则",
+  automationToggleAria: "启用/停用规则 {name}",
+  deleteAutomationAria: "删除规则 {name}",
+  confirmDeleteAutomation: "删除后不可恢复，确定删除该自动化规则？",
 } as const;
 
 export type Dict = Record<keyof typeof zhCN, string>;
