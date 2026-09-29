@@ -105,26 +105,29 @@ export default function FlowsRoute() {
       {flows === null ? (
         <p className="empty">{t("loading")}</p>
       ) : flows.length === 0 ? (
-        <div className="flows-empty card">
+        <div className="flows-empty">
           <Icon name="workflow" size={28} />
           <p>{t("flowsEmptyHint")}</p>
         </div>
       ) : (
         <ul className="flows-grid">
           {flows.map((f) => (
-            <li key={f.id} className="flows-card card">
+            <li key={f.id} className="flows-card">
               <button
                 type="button"
                 className="flows-card__open"
                 onClick={() => navigate(`/flows/${f.id}`)}
                 aria-label={t("openFlowAria", { name: f.name })}
               >
-                <span className="flows-card__diagram">
+                <span className="flows-card__preview" aria-hidden="true">
                   <Icon name="workflow" size={22} />
                 </span>
-                <span className="flows-card__name" title={f.name}>{f.name}</span>
-                <span className="hint">
-                  {t("flowNodeCount", { n: f.nodes.length })} · {fmt(f.updatedAt)}
+                <span className="flows-card__body">
+                  <span className="flows-card__name" title={f.name}>{f.name}</span>
+                  <span className="flows-card__meta">
+                    <span className="flows-card__badge">{t("flowNodeCount", { n: f.nodes.length })}</span>
+                    <span className="flows-card__time">{fmt(f.updatedAt)}</span>
+                  </span>
                 </span>
               </button>
               <span className="flows-card__actions">
