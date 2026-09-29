@@ -306,6 +306,7 @@ export const en: Dict = {
   zoomMonth: "Month",
   tlToday: "Today",
   tlNoDates: "No dates",
+  tlBarDays: "{n} d",
 
   /* ===== Milestones ===== */
   tabMilestones: "Milestones",

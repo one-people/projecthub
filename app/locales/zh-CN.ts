@@ -304,6 +304,7 @@ export const zhCN = {
   zoomMonth: "月",
   tlToday: "今天",
   tlNoDates: "未设置日期",
+  tlBarDays: "{n} 天",
 
   /* ===== 里程碑 ===== */
   tabMilestones: "里程碑",

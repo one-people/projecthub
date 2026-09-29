@@ -182,7 +182,9 @@ export function TimelineView({
     const endKey = isoToDateKey(task.dueDate ?? task.startDate!);
     const from = layout.xOf(startKey);
     const to = layout.xOf(endKey) + layout.px;
-    return { left: from, width: Math.max(layout.px, to - from) };
+    // 总天数按日历含首尾计（如 9/28→10/2 为 5 天），无负责人时展示在条带中央
+    const days = diffDays(new Date(`${startKey}T00:00:00`), new Date(`${endKey}T00:00:00`)) + 1;
+    return { left: from, width: Math.max(layout.px, to - from), days };
   }
 
   const todayX = layout.xOf(todayKeyStr);
@@ -283,7 +285,7 @@ export function TimelineView({
               const hasDates = Boolean(task.startDate || task.dueDate);
               const geom = hasDates ? barGeom(task) : null;
               const done = Boolean(task.completedAt);
-              // 负责人名居中标在条带中间；条带过窄（<32px）时放下不显示
+              // 条带中央优先标负责人名，无负责人则标总天数；条带过窄（<32px）时放下不显示
               const assignee = task.assigneeId ? assigneeNames[task.assigneeId] : undefined;
               return (
                 <div key={task.id} className="tl__row" style={{ top: i * ROW_H, height: ROW_H }}>
@@ -310,8 +312,10 @@ export function TimelineView({
                         title={`${task.title}${task.dueDate ? ` · ${task.dueDate.slice(0, 10)}` : ""}`}
                         aria-label={task.title}
                       >
-                        {assignee && geom.width >= 32 && (
-                          <span className="tl__bar-label">{assignee}</span>
+                        {geom.width >= 32 && (
+                          <span className="tl__bar-label">
+                            {assignee ?? t("tlBarDays", { n: geom.days })}
+                          </span>
                         )}
                       </button>
                     ) : (

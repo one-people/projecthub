@@ -2993,7 +2993,7 @@ select.input {
 }
 .tl__bar--sub .tl__bar-label { font-size: 10px; font-weight: 500; }
 
-/* 条带内居中的负责人名 */
+/* 条带内居中文字：负责人名，无负责人时为总天数 */
 .tl__bar-label {
   max-width: 100%;
   overflow: hidden;
