@@ -21,10 +21,9 @@ export const flowEdgeSchema = z.object({
   label: z.string().max(40).default(""), // 分支条件（如 是/否）
 });
 
-/** 每个项目一张流程图（首次进入自动创建），节点/连线整存整取 */
+/** 应用级流程图文档（独立菜单模块，不挂项目），节点/连线整存整取 */
 export const flowSchema = z.object({
   id: z.string(),
-  projectId: z.string(),
   name: z.string().min(1).max(200),
   nodes: z.array(flowNodeSchema).default([]),
   edges: z.array(flowEdgeSchema).default([]),

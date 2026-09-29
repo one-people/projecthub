@@ -118,6 +118,16 @@ class ProjectHubDB extends Dexie {
     this.version(10).stores({
       flows: "id, projectId",
     });
+    // v11：流程图改为独立应用级模块 —— 去掉 projectId 归属，旧数据原地升级为独立文档
+    this.version(11)
+      .stores({
+        flows: "id",
+      })
+      .upgrade(async (tx) => {
+        await tx.table("flows").toCollection().modify((row: Record<string, unknown>) => {
+          delete row.projectId;
+        });
+      });
   }
 }
 

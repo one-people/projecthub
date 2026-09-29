@@ -9,15 +9,12 @@ import { Icon } from "~/components/ui/Icon";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { useToast } from "~/components/ui/Toast";
 import { useI18n } from "~/lib/i18n";
-import { PermissionError } from "~/auth/assert";
 import { FLOW_NODE_SIZE, flowService } from "~/services/flow.service";
 import { flowNodeKinds, type Flow, type FlowNode, type FlowNodeKind } from "~/models/flow";
 
 export interface FlowViewProps {
   flow: Flow | null;
-  projectId: string;
-  actorId: string;
-  canEdit: boolean;
+  flowId: string;
 }
 
 /** 画布逻辑尺寸（未缩放坐标）；滚动/缩放都在视口层完成 */
@@ -81,7 +78,7 @@ const KIND_LABEL_KEY: Record<FlowNodeKind, Parameters<ReturnType<typeof useI18n>
  * 节点为绝对定位 HTML（文字编辑/无障碍天然可用），连线为底层 SVG；
  * 拖动过程只写本地草稿坐标，松手才落库，避免高频 IndexedDB 写。
  */
-export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
+export function FlowView({ flow, flowId }: FlowViewProps) {
   const { t } = useI18n();
   const toast = useToast();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -99,7 +96,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
 
   function guard(e: unknown) {
-    toast.error(e instanceof PermissionError ? e.message : t("updateFailed"));
+    toast.error(e instanceof Error && e.message ? e.message : t("updateFailed"));
   }
 
   /** 屏幕坐标 → 画布逻辑坐标（除以缩放） */
@@ -130,7 +127,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
   async function addNodeAt(kind: FlowNodeKind, at: Pt) {
     const size = FLOW_NODE_SIZE[kind];
     try {
-      await flowService.addNode(actorId, projectId, {
+      await flowService.addNode(flowId, {
         kind,
         x: snap(at.x - size.w / 2),
         y: snap(at.y - size.h / 2),
@@ -145,7 +142,6 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
 
   /** 形状库：点击在视口中心新建；按住拖到画布指定位置新建 */
   function palettePointerDown(e: ReactPointerEvent<HTMLButtonElement>, kind: FlowNodeKind) {
-    if (!canEdit) return;
     e.preventDefault();
     const startX = e.clientX;
     const startY = e.clientY;
@@ -169,7 +165,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
 
   /** 节点拖动：本地草稿跟随，松手一次性落库 */
   function nodePointerDown(e: ReactPointerEvent<HTMLDivElement>, node: FlowNode) {
-    if (!canEdit || editingNodeId === node.id) return;
+    if (editingNodeId === node.id) return;
     e.preventDefault();
     viewportRef.current?.focus();
     setSel({ type: "node", id: node.id });
@@ -188,7 +184,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       setDraftPos(null);
-      if (moved) void flowService.moveNode(actorId, projectId, node.id, last.x, last.y).catch(guard);
+      if (moved) void flowService.moveNode(flowId, node.id, last.x, last.y).catch(guard);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -196,7 +192,6 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
 
   /** 端口拖出连线：落到节点上连接；落到空白处自动新建「处理」节点并连接 */
   function portPointerDown(e: ReactPointerEvent<HTMLSpanElement>, node: FlowNode, side: Side) {
-    if (!canEdit) return;
     e.preventDefault();
     e.stopPropagation();
     const p0 = anchorOf(node, side);
@@ -221,10 +216,10 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
       );
       try {
         if (hit && hit.id !== node.id) {
-          await flowService.connect(actorId, projectId, node.id, hit.id);
+          await flowService.connect(flowId, node.id, hit.id);
         } else if (!hit && pt.x >= 0 && pt.y >= 0 && pt.x <= CANVAS_W && pt.y <= CANVAS_H) {
           const size = FLOW_NODE_SIZE.process;
-          const created = await flowService.addNode(actorId, projectId, {
+          const created = await flowService.addNode(flowId, {
             kind: "process",
             x: snap(pt.x - size.w / 2),
             y: snap(pt.y - size.h / 2),
@@ -232,7 +227,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
             h: size.h,
             text: t("flowNodeProcess"),
           });
-          await flowService.connect(actorId, projectId, node.id, created.id);
+          await flowService.connect(flowId, node.id, created.id);
         }
       } catch (err) {
         guard(err);
@@ -259,8 +254,8 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
     const target = confirmDel;
     setConfirmDel(null);
     try {
-      if (target.type === "node") await flowService.removeNode(actorId, projectId, target.id);
-      else await flowService.removeEdge(actorId, projectId, target.id);
+      if (target.type === "node") await flowService.removeNode(flowId, target.id);
+      else await flowService.removeEdge(flowId, target.id);
       setSel(null);
     } catch (e) {
       guard(e);
@@ -290,7 +285,6 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
               key={kind}
               type="button"
               className="flow-shape"
-              disabled={!canEdit}
               aria-label={t("flowAddNodeAria", { kind: t(KIND_LABEL_KEY[kind]) })}
               onPointerDown={(e) => palettePointerDown(e, kind)}
             >
@@ -305,7 +299,6 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
       <div className="flow__main">
         <div className="flow__toolbar">
           <span className="flow__count">{t("flowNodeCount", { n: nodes.length })}</span>
-          {!canEdit && <span className="flow__readonly">{t("flowReadonly")}</span>}
           <div className="flow__toolbar-actions">
             <div className="flow__zoom" role="group" aria-label={t("flowZoomReset")}>
               <button
@@ -331,7 +324,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
             <button
               type="button"
               className="flow__delete"
-              disabled={!sel || !canEdit}
+              disabled={!sel}
               onClick={() => sel && setConfirmDel(sel)}
               title={!sel ? t("flowSelectToDelete") : undefined}
             >
@@ -374,7 +367,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
                         className="flow-edge__hit"
                         d={g.d}
                         onPointerDown={() => setSel({ type: "edge", id: ed.id })}
-                        onDoubleClick={() => canEdit && setEditingEdgeId(ed.id)}
+                        onDoubleClick={() => setEditingEdgeId(ed.id)}
                       />
                       <path className="flow-edge__line" d={g.d} markerEnd="url(#flow-arrow)" />
                       {ed.label && (
@@ -399,7 +392,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
                     className={`flow-node flow-node--${node.kind}${selected ? " is-selected" : ""}${dragging ? " is-dragging" : ""}`}
                     style={{ left: x, top: y, width: node.w, height: node.h }}
                     onPointerDown={(e) => nodePointerDown(e, node)}
-                    onDoubleClick={() => canEdit && setEditingNodeId(node.id)}
+                    onDoubleClick={() => setEditingNodeId(node.id)}
                   >
                     {editingNodeId === node.id ? (
                       <input
@@ -412,7 +405,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
                             const v = e.currentTarget.value.trim();
                             setEditingNodeId(null);
                             if (v && v !== node.text) {
-                              void flowService.renameNode(actorId, projectId, node.id, v).catch(guard);
+                              void flowService.renameNode(flowId, node.id, v).catch(guard);
                             }
                           } else if (e.key === "Escape") {
                             setEditingNodeId(null);
@@ -424,8 +417,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
                     ) : (
                       <span className="flow-node__text">{node.text}</span>
                     )}
-                    {canEdit &&
-                      editingNodeId !== node.id &&
+                    {editingNodeId !== node.id &&
                       SIDES.map((side) => (
                         <span
                           key={side}
@@ -457,7 +449,7 @@ export function FlowView({ flow, projectId, actorId, canEdit }: FlowViewProps) {
                         if (e.key === "Enter") {
                           const v = e.currentTarget.value;
                           setEditingEdgeId(null);
-                          void flowService.setEdgeLabel(actorId, projectId, ed.id, v).catch(guard);
+                          void flowService.setEdgeLabel(flowId, ed.id, v).catch(guard);
                         } else if (e.key === "Escape") {
                           setEditingEdgeId(null);
                         }

@@ -3192,14 +3192,7 @@ select.input {
 .avatar--sm { width: 22px; height: 22px; font-size: 11px; }
 .checklist-input { width: 100%; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--color-text); }
 
-/* ===== 流程图（Worktile 风格：形状库 + 点阵画布 + 箭头连线） ===== */
-.flow-page {
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-4) 20px var(--space-5);
-  min-height: 0;
-}
-
+/* ===== 流程图画布（Worktile 风格：形状库 + 点阵画布 + 箭头连线） ===== */
 .flow {
   display: flex;
   gap: var(--space-3);
@@ -3284,13 +3277,6 @@ select.input {
 
 .flow__count { font-size: 12px; color: var(--color-text-muted); }
 
-.flow__readonly {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-full);
-  padding: 2px var(--space-2);
-}
 
 .flow__toolbar-actions {
   margin-left: auto;
@@ -3500,3 +3486,154 @@ select.input {
 .flow-port--bottom { left: 50%; bottom: 0; transform: translate(-50%, 50%); }
 .flow-port--left { left: 0; top: 50%; transform: translate(-50%, -50%); }
 .flow-port--right { right: 0; top: 50%; transform: translate(50%, -50%); }
+
+/* ===== 流程图模块（独立菜单：列表 + 编辑页） ===== */
+.flows-create {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.flows-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.flows-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.flows-grid {
+  grid-area: main;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flows-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.flows-card__open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flows-card__diagram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.flows-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flows-card__actions {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.flows-card:hover .flows-card__actions,
+.flows-card:focus-within .flows-card__actions {
+  opacity: 1;
+}
+
+.flows-card__actions .icon-btn {
+  width: 26px;
+  height: 26px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+.flows-card__actions .icon-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.flows-card__actions .icon-btn:last-child:hover {
+  color: var(--color-danger);
+}
+
+.flow-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-3) 20px var(--space-4);
+}
+
+.flow-page__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 30px;
+}
+
+.flow-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.flow-page__back:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.flow-page__back:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.flow-page__name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
