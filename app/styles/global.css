@@ -3405,6 +3405,8 @@ select.input {
 
 /* ---------- 画布视口（滚动/缩放容器） ---------- */
 .flow__viewport {
+  /* 定位上下文：空态提示锚定到可视区而非 2400×1600 画布（否则落到屏幕外） */
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;

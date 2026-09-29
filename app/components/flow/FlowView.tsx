@@ -507,13 +507,14 @@ export function FlowView({ flow, flowId }: FlowViewProps) {
                   );
                 })()}
 
-              {nodes.length === 0 && (
-                <div className="flow__empty">
-                  <p>{t("flowEmptyHint")}</p>
-                </div>
-              )}
             </div>
           </div>
+          {/* 空态提示挂在视口层：若留在画布内会被 2400×1600 的 flex 居中推到可视区外 */}
+          {nodes.length === 0 && (
+            <div className="flow__empty">
+              <p>{t("flowEmptyHint")}</p>
+            </div>
+          )}
         </div>
       </div>
 
