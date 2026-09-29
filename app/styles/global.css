@@ -3191,3 +3191,312 @@ select.input {
 .user-list__name { min-width: 72px; font-weight: 600; font-size: 13px; }
 .avatar--sm { width: 22px; height: 22px; font-size: 11px; }
 .checklist-input { width: 100%; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--color-text); }
+
+/* ===== 流程图（Worktile 风格：形状库 + 点阵画布 + 箭头连线） ===== */
+.flow-page {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) 20px var(--space-5);
+  min-height: 0;
+}
+
+.flow {
+  display: flex;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+}
+
+.flow__palette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 148px;
+  flex-shrink: 0;
+  padding: var(--space-3);
+}
+
+.flow__palette-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.flow__palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.flow-shape {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: grab;
+}
+.flow-shape:hover { border-color: var(--color-border); background: var(--color-surface-muted); }
+.flow-shape:disabled { opacity: 0.5; cursor: not-allowed; }
+.flow-shape:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+/* 形状缩略预览：与画布节点同形 */
+.flow-shape__preview {
+  width: 26px;
+  height: 14px;
+  flex-shrink: 0;
+  background: var(--color-surface-muted);
+  border: 1.5px solid var(--color-border-strong);
+}
+
+.flow-shape__preview--start,
+.flow-shape__preview--end { border-radius: var(--radius-full); background: var(--color-primary-soft); border-color: var(--color-primary); }
+.flow-shape__preview--process { border-radius: var(--radius-sm); }
+.flow-shape__preview--decision { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: var(--color-primary-soft); border-color: var(--color-primary); }
+.flow-shape__preview--io { clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%); }
+
+.flow__tips {
+  margin: auto 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.flow__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.flow__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.flow__count { font-size: 12px; color: var(--color-text-muted); }
+
+.flow__readonly {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-full);
+  padding: 2px var(--space-2);
+}
+
+.flow__toolbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.flow__zoom {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.flow__zoom button {
+  min-width: 28px;
+  height: 26px;
+  border: 0;
+  background: var(--color-surface);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.flow__zoom button:hover:not(:disabled) { background: var(--color-surface-muted); }
+.flow__zoom button:disabled { opacity: 0.4; cursor: not-allowed; }
+.flow__zoom button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.flow__zoom-value { min-width: 48px; }
+
+.flow__delete {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 26px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.flow__delete:hover:not(:disabled) { border-color: var(--color-danger); color: var(--color-danger); }
+.flow__delete:disabled { opacity: 0.5; cursor: not-allowed; }
+.flow__delete:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+
+.flow__viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.flow__viewport:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+.flow__scaler { position: relative; }
+
+.flow__canvas {
+  position: relative;
+  transform-origin: 0 0;
+
+  /* 点阵底纹：Worktile 白板的网格点 */
+  background-image: radial-gradient(circle, var(--color-border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.flow__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.flow__empty p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* 连线层铺满画布，节点 HTML 叠加其上 */
+.flow__edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.flow-edge__line {
+  fill: none;
+  stroke: var(--color-border-strong);
+  stroke-width: 1.5;
+}
+
+.flow-edge__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.flow-edge.is-selected .flow-edge__line { stroke: var(--color-primary); stroke-width: 2; }
+.flow-edge__line.is-draft { stroke-dasharray: 5 4; stroke: var(--color-primary); }
+
+.flow-edge__label {
+  font-size: 11px;
+  fill: var(--color-text-secondary);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 4px;
+}
+
+.flow-edge-editor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  padding: 2px var(--space-1);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 12px;
+  color: var(--color-text);
+  z-index: 3;
+}
+
+/* 节点：HTML 定位保证文字编辑/无障碍可用 */
+.flow-node {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1) var(--space-2);
+  box-sizing: border-box;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  font-size: 13px;
+  color: var(--color-text);
+  text-align: center;
+  cursor: grab;
+  user-select: none;
+}
+.flow-node.is-dragging { cursor: grabbing; box-shadow: var(--shadow-md); z-index: 2; }
+.flow-node.is-selected { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); }
+
+.flow-node--start,
+.flow-node--end {
+  border-radius: var(--radius-full);
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-weight: 600;
+}
+
+.flow-node--decision {
+  /* 菱形：clip-path 裁剪，文字区域收缩避免出界 */
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  padding: var(--space-1) 34px;
+}
+.flow-node--io { clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+
+.flow-node__text {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.flow-node__input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: none;
+  font: inherit;
+  text-align: center;
+  color: var(--color-text);
+}
+
+/* 悬停出现的四个连线端口 */
+.flow-port {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-primary);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  cursor: crosshair;
+  z-index: 2;
+}
+.flow-node:hover .flow-port { opacity: 1; }
+.flow-port--top { left: 50%; top: 0; transform: translate(-50%, -50%); }
+.flow-port--bottom { left: 50%; bottom: 0; transform: translate(-50%, 50%); }
+.flow-port--left { left: 0; top: 50%; transform: translate(-50%, -50%); }
+.flow-port--right { right: 0; top: 50%; transform: translate(50%, -50%); }

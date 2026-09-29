@@ -181,7 +181,12 @@ const add = (rule, file, line, msg) =>
 // R8 图标收敛（01-ui §7）：业务组件不得散落 <svg>（数据可视化白名单除外）
 // ---------------------------------------------------------------
 {
-  const VIZ_WHITELIST = ["app/components/timeline/TimelineView.tsx", "app/components/stats/StatsView.tsx"];
+  // FlowView 为流程图连线层（SVG 边/箭头随数据实时计算），属数据可视化面
+  const VIZ_WHITELIST = [
+    "app/components/timeline/TimelineView.tsx",
+    "app/components/stats/StatsView.tsx",
+    "app/components/flow/FlowView.tsx",
+  ];
   for (const f of walk(APP, [".tsx"])) {
     const r = rel(f);
     if (r === "app/components/ui/Icon.tsx" || VIZ_WHITELIST.includes(r)) continue;

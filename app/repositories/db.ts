@@ -9,6 +9,7 @@ import type { Milestone } from "~/models/milestone";
 import type { Automation } from "~/models/automation";
 import type { ProjectTemplate } from "~/models/projectTemplate";
 import type { TaskTemplate } from "~/models/taskTemplate";
+import type { Flow } from "~/models/flow";
 
 export interface Preference {
   key: string;
@@ -27,6 +28,7 @@ class ProjectHubDB extends Dexie {
   automations!: EntityTable<Automation, "id">;
   projectTemplates!: EntityTable<ProjectTemplate, "id">;
   taskTemplates!: EntityTable<TaskTemplate, "id">;
+  flows!: EntityTable<Flow, "id">;
 
   constructor() {
     super("projecthub");
@@ -111,6 +113,10 @@ class ProjectHubDB extends Dexie {
       await tx.table("tasks").toCollection().modify((row: Record<string, unknown>) => {
         if (row.deletedByParentTaskId === undefined) row.deletedByParentTaskId = null;
       });
+    });
+    // v10：流程图模块
+    this.version(10).stores({
+      flows: "id, projectId",
     });
   }
 }
