@@ -305,6 +305,13 @@ export const zhCN = {
   tlToday: "今天",
   tlNoDates: "未设置日期",
   tlBarDays: "{n} 天",
+  holNewYear: "元旦",
+  holSpringFestival: "春节",
+  holQingming: "清明节",
+  holLaborDay: "劳动节",
+  holDragonBoat: "端午节",
+  holMidAutumn: "中秋节",
+  holNationalDay: "国庆节",
 
   /* ===== 里程碑 ===== */
   tabMilestones: "里程碑",

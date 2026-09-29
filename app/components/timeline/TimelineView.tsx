@@ -4,6 +4,7 @@ import type { Task } from "~/models/task";
 import type { TaskLink } from "~/models/taskLink";
 import type { Milestone } from "~/models/milestone";
 import { dateKey, isoToDateKey } from "~/lib/calendar";
+import { countHolidays } from "~/lib/holidays";
 import { statusColor } from "~/lib/list-view";
 import { useI18n } from "~/lib/i18n";
 
@@ -182,8 +183,13 @@ export function TimelineView({
     const endKey = isoToDateKey(task.dueDate ?? task.startDate!);
     const from = layout.xOf(startKey);
     const to = layout.xOf(endKey) + layout.px;
-    // 总天数按日历含首尾计（如 9/28→10/2 为 5 天），无负责人时展示在条带中央
-    const days = diffDays(new Date(`${startKey}T00:00:00`), new Date(`${endKey}T00:00:00`)) + 1;
+    // 天数 = 日历含首尾（如 9/28→10/2 为 5 天）再扣除区间内法定节假日；
+    // 条带宽度仍按日历跨度绘制，扣减只影响标签上的数字
+    const days = Math.max(
+      0,
+      diffDays(new Date(`${startKey}T00:00:00`), new Date(`${endKey}T00:00:00`)) + 1
+        - countHolidays(startKey, endKey),
+    );
     return { left: from, width: Math.max(layout.px, to - from), days };
   }
 
@@ -285,7 +291,8 @@ export function TimelineView({
               const hasDates = Boolean(task.startDate || task.dueDate);
               const geom = hasDates ? barGeom(task) : null;
               const done = Boolean(task.completedAt);
-              // 条带中央优先标负责人名，无负责人则标总天数；条带过窄（<32px）时放下不显示
+              // 条带中央标“负责人 + 天数”，无负责人只标天数（天数已扣法定节假日）；
+              // 条带过窄（<32px）时放下不显示
               const assignee = task.assigneeId ? assigneeNames[task.assigneeId] : undefined;
               return (
                 <div key={task.id} className="tl__row" style={{ top: i * ROW_H, height: ROW_H }}>
@@ -314,7 +321,9 @@ export function TimelineView({
                       >
                         {geom.width >= 32 && (
                           <span className="tl__bar-label">
-                            {assignee ?? t("tlBarDays", { n: geom.days })}
+                            {assignee
+                              ? `${assignee} ${t("tlBarDays", { n: geom.days })}`
+                              : t("tlBarDays", { n: geom.days })}
                           </span>
                         )}
                       </button>

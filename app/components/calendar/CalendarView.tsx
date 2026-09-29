@@ -2,6 +2,7 @@ import { useState, type DragEvent } from "react";
 import { Icon } from "~/components/ui/Icon";
 import { PRIORITY_META } from "~/lib/priority";
 import { isOverdue, localMidnightIso, type CalendarDay } from "~/lib/calendar";
+import { holidayKeyOf } from "~/lib/holidays";
 import type { Task } from "~/models/task";
 import { useI18n } from "~/lib/i18n";
 
@@ -87,6 +88,7 @@ export function CalendarView({
         <div className="cal-grid__days">
           {days.map((d) => {
             const dayTasks = tasksByDay.get(d.key) ?? [];
+            const holiday = holidayKeyOf(d.key);
             return (
               <div
                 key={d.key}
@@ -107,6 +109,8 @@ export function CalendarView({
               >
                 <div className="cal-day__head">
                   <span className="cal-day__num">{d.date.getDate()}</span>
+                  {/* 法定节假日名称提示，沿用中文日历“节日标红”的习惯 */}
+                  {holiday && <span className="cal-day__holiday">{t(holiday)}</span>}
                   {canCreate && d.inMonth && (
                     <button
                       type="button"

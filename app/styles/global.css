@@ -2639,7 +2639,20 @@ select.input {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-1);
   min-height: 22px;
+}
+
+/* 法定节假日名称：紧挨日期数字，红色沿用节日标红习惯 */
+.cal-day__holiday {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-danger);
 }
 
 .cal-day__num {

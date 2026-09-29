@@ -307,6 +307,13 @@ export const en: Dict = {
   tlToday: "Today",
   tlNoDates: "No dates",
   tlBarDays: "{n} d",
+  holNewYear: "New Year's Day",
+  holSpringFestival: "Spring Festival",
+  holQingming: "Qingming Festival",
+  holLaborDay: "Labor Day",
+  holDragonBoat: "Dragon Boat Festival",
+  holMidAutumn: "Mid-Autumn Festival",
+  holNationalDay: "National Day",
 
   /* ===== Milestones ===== */
   tabMilestones: "Milestones",
