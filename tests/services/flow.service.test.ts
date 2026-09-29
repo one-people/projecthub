@@ -1,7 +1,8 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "~/repositories/db";
-import { flowService } from "~/services/flow.service";
+import { flowService, FLOW_NODE_SIZE } from "~/services/flow.service";
+import { flowNodeKinds } from "~/models/flow";
 
 describe("flowService（应用级独立模块）", () => {
   beforeEach(async () => {
@@ -93,6 +94,14 @@ describe("flowService（应用级独立模块）", () => {
     await expect(
       flowService.addNode("ghost", { kind: "process", x: 0, y: 0, w: 144, h: 56, text: "A" }),
     ).rejects.toThrow(/不存在或已被删除/);
+  });
+
+  it("形状库完整：每种 kind 都有默认尺寸且为正数", () => {
+    for (const kind of flowNodeKinds) {
+      const size = FLOW_NODE_SIZE[kind];
+      expect(size.w).toBeGreaterThan(0);
+      expect(size.h).toBeGreaterThan(0);
+    }
   });
 
   it("多文档互不干扰（独立文档，不挂项目）", async () => {

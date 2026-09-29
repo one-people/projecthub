@@ -10,7 +10,7 @@ import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { useToast } from "~/components/ui/Toast";
 import { useI18n } from "~/lib/i18n";
 import { FLOW_NODE_SIZE, flowService } from "~/services/flow.service";
-import { flowNodeKinds, type Flow, type FlowNode, type FlowNodeKind } from "~/models/flow";
+import { type Flow, type FlowNode, type FlowNodeKind } from "~/models/flow";
 
 export interface FlowViewProps {
   flow: Flow | null;
@@ -69,9 +69,40 @@ const KIND_LABEL_KEY: Record<FlowNodeKind, Parameters<ReturnType<typeof useI18n>
   start: "flowNodeStart",
   end: "flowNodeEnd",
   process: "flowNodeProcess",
+  rounded: "flowNodeRounded",
   decision: "flowNodeDecision",
   io: "flowNodeIO",
+  connector: "flowNodeConnector",
+  offpage: "flowNodeOffpage",
+  document: "flowNodeDocument",
+  multiDoc: "flowNodeMultiDoc",
+  database: "flowNodeDatabase",
+  internalStorage: "flowNodeInternalStorage",
+  display: "flowNodeDisplay",
+  manualInput: "flowNodeManualInput",
+  predefined: "flowNodePredefined",
+  preparation: "flowNodePreparation",
+  merge: "flowNodeMerge",
+  delay: "flowNodeDelay",
+  summing: "flowNodeSumming",
+  annotation: "flowNodeAnnotation",
 };
+
+/** 形状库分组（对齐 Worktile：基础 / 数据 / 流程控制） */
+const PALETTE_GROUPS: { labelKey: Parameters<ReturnType<typeof useI18n>["t"]>[0]; kinds: FlowNodeKind[] }[] = [
+  {
+    labelKey: "flowGroupBasic",
+    kinds: ["start", "end", "process", "rounded", "decision", "io", "connector", "offpage"],
+  },
+  {
+    labelKey: "flowGroupData",
+    kinds: ["document", "multiDoc", "database", "internalStorage", "display", "manualInput"],
+  },
+  {
+    labelKey: "flowGroupFlow",
+    kinds: ["predefined", "preparation", "merge", "delay", "summing", "annotation"],
+  },
+];
 
 /**
  * 逻辑流程图画布（Worktile 风格：左侧形状库 + 点阵画布 + 箭头连线）。
@@ -278,22 +309,31 @@ export function FlowView({ flow, flowId }: FlowViewProps) {
   return (
     <div className="flow">
       <aside className="flow__palette card" aria-label={t("flowPaletteTitle")}>
-        <h3 className="flow__palette-title">{t("flowPaletteTitle")}</h3>
-        <div className="flow__palette-list">
-          {flowNodeKinds.map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              className="flow-shape"
-              aria-label={t("flowAddNodeAria", { kind: t(KIND_LABEL_KEY[kind]) })}
-              onPointerDown={(e) => palettePointerDown(e, kind)}
-            >
-              <span className={`flow-shape__preview flow-shape__preview--${kind}`} />
-              <span className="flow-shape__name">{t(KIND_LABEL_KEY[kind])}</span>
-            </button>
-          ))}
+        <div className="flow__palette-head">
+          <h3 className="flow__palette-title">{t("flowPaletteTitle")}</h3>
         </div>
-        <p className="flow__tips">{t("flowTips")}</p>
+        <div className="flow__palette-scroll">
+          {PALETTE_GROUPS.map((group) => (
+            <div key={group.labelKey} className="flow__palette-group">
+              <p className="flow__palette-group-label">{t(group.labelKey)}</p>
+              <div className="flow__palette-list">
+                {group.kinds.map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    className="flow-shape"
+                    aria-label={t("flowAddNodeAria", { kind: t(KIND_LABEL_KEY[kind]) })}
+                    onPointerDown={(e) => palettePointerDown(e, kind)}
+                  >
+                    <span className={`flow-shape__preview flow-shape__preview--${kind}`} />
+                    <span className="flow-shape__name">{t(KIND_LABEL_KEY[kind])}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p className="flow__tips">{t("flowTips")}</p>
+        </div>
       </aside>
 
       <div className="flow__main">
@@ -370,16 +410,24 @@ export function FlowView({ flow, flowId }: FlowViewProps) {
                         onDoubleClick={() => setEditingEdgeId(ed.id)}
                       />
                       <path className="flow-edge__line" d={g.d} markerEnd="url(#flow-arrow)" />
-                      {ed.label && (
-                        <text className="flow-edge__label" x={g.mid.x} y={g.mid.y} dy="-0.4em" textAnchor="middle">
-                          {ed.label}
-                        </text>
-                      )}
                     </g>,
                   ];
                 })}
                 {drawPath && <path className="flow-edge__line is-draft" d={drawPath} markerEnd="url(#flow-arrow)" />}
               </svg>
+
+              {/* 连线标签 pill：HTML 层渲染（SVG text 难以做圆角底），命中交给下层加宽路径 */}
+              {edges.flatMap((ed) => {
+                const from = nodeById.get(ed.from);
+                const to = nodeById.get(ed.to);
+                if (!from || !to || !ed.label) return [];
+                const g = edgeGeom(from, to);
+                return [
+                  <span key={ed.id} className="flow-edge-chip" style={{ left: g.mid.x, top: g.mid.y - 14 }}>
+                    {ed.label}
+                  </span>,
+                ];
+              })}
 
               {nodes.map((node) => {
                 const dragging = draftPos?.id === node.id;

@@ -120,11 +120,26 @@ export const flowService = {
   },
 };
 
-/** 供 palette/快捷创建使用的默认尺寸（px，画布坐标） */
+/** 供 palette/快捷创建使用的默认尺寸（px，画布坐标）；与形状观感匹配（如菱形更宽、圆更小） */
 export const FLOW_NODE_SIZE: Record<FlowNodeKind, { w: number; h: number }> = {
-  start: { w: 96, h: 40 },
-  end: { w: 96, h: 40 },
-  process: { w: 144, h: 56 },
-  decision: { w: 128, h: 88 },
-  io: { w: 144, h: 56 },
+  start: { w: 96, h: 44 },
+  end: { w: 96, h: 44 },
+  process: { w: 148, h: 56 },
+  rounded: { w: 148, h: 56 },
+  decision: { w: 140, h: 96 },
+  io: { w: 152, h: 56 },
+  connector: { w: 64, h: 64 },
+  offpage: { w: 108, h: 68 },
+  document: { w: 144, h: 64 },
+  multiDoc: { w: 140, h: 60 },
+  database: { w: 116, h: 68 },
+  internalStorage: { w: 132, h: 64 },
+  display: { w: 144, h: 56 },
+  manualInput: { w: 148, h: 56 },
+  predefined: { w: 152, h: 56 },
+  preparation: { w: 148, h: 62 },
+  merge: { w: 132, h: 56 },
+  delay: { w: 124, h: 52 },
+  summing: { w: 72, h: 72 },
+  annotation: { w: 132, h: 56 },
 };

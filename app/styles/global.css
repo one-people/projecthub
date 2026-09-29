@@ -3192,7 +3192,7 @@ select.input {
 .avatar--sm { width: 22px; height: 22px; font-size: 11px; }
 .checklist-input { width: 100%; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--color-text); }
 
-/* ===== 流程图画布（Worktile 风格：形状库 + 点阵画布 + 箭头连线） ===== */
+/* ===== 流程图画布（Worktile 风格：分组形状库 + 点阵画布 + 箭头连线） ===== */
 .flow {
   display: flex;
   gap: var(--space-3);
@@ -3200,66 +3200,103 @@ select.input {
   min-height: 0;
 }
 
+/* ---------- 左侧形状库：分组 + 滚动 ---------- */
 .flow__palette {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  width: 148px;
+  width: 168px;
   flex-shrink: 0;
-  padding: var(--space-3);
+  padding: 0;
+  overflow: hidden;
+}
+
+.flow__palette-head {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .flow__palette-title {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
+}
+
+.flow__palette-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+}
+
+.flow__palette-group + .flow__palette-group {
+  margin-top: var(--space-3);
+}
+
+.flow__palette-group-label {
+  margin: 0 0 var(--space-1) var(--space-1);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
 }
 
 .flow__palette-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
 }
 
 .flow-shape {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
+  padding: 5px var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: none;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   cursor: grab;
+  transition: background var(--transition), border-color var(--transition);
 }
-.flow-shape:hover { border-color: var(--color-border); background: var(--color-surface-muted); }
-.flow-shape:disabled { opacity: 0.5; cursor: not-allowed; }
-.flow-shape:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
 
-/* 形状缩略预览：与画布节点同形 */
+.flow-shape:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.flow-shape:active { cursor: grabbing; }
+
+.flow-shape:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* 形状缩略预览：与画布节点同形（几何规则与节点选择器合并声明，见下） */
 .flow-shape__preview {
-  width: 26px;
-  height: 14px;
+  width: 34px;
+  height: 20px;
   flex-shrink: 0;
   background: var(--color-surface-muted);
   border: 1.5px solid var(--color-border-strong);
 }
 
-.flow-shape__preview--start,
-.flow-shape__preview--end { border-radius: var(--radius-full); background: var(--color-primary-soft); border-color: var(--color-primary); }
-.flow-shape__preview--process { border-radius: var(--radius-sm); }
-.flow-shape__preview--decision { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: var(--color-primary-soft); border-color: var(--color-primary); }
-.flow-shape__preview--io { clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%); }
+.flow-shape__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .flow__tips {
-  margin: auto 0 0;
+  margin: var(--space-3) var(--space-1) 0;
   font-size: 11px;
   line-height: 1.6;
   color: var(--color-text-muted);
 }
 
+/* ---------- 主区：工具栏 + 画布 ---------- */
 .flow__main {
   display: flex;
   flex-direction: column;
@@ -3273,10 +3310,22 @@ select.input {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 38px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
-.flow__count { font-size: 12px; color: var(--color-text-muted); }
-
+.flow__count {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
 
 .flow__toolbar-actions {
   margin-left: auto;
@@ -3294,18 +3343,32 @@ select.input {
 }
 
 .flow__zoom button {
-  min-width: 28px;
+  min-width: 30px;
   height: 26px;
   border: 0;
   background: var(--color-surface);
   font-size: 13px;
+  line-height: 1;
   color: var(--color-text-secondary);
   cursor: pointer;
 }
-.flow__zoom button:hover:not(:disabled) { background: var(--color-surface-muted); }
-.flow__zoom button:disabled { opacity: 0.4; cursor: not-allowed; }
-.flow__zoom button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-.flow__zoom-value { min-width: 48px; }
+
+.flow__zoom button:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.flow__zoom button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.flow__zoom button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.flow__zoom-value { min-width: 50px; }
 
 .flow__delete {
   display: inline-flex;
@@ -3319,11 +3382,25 @@ select.input {
   font-size: 12px;
   color: var(--color-text-secondary);
   cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
 }
-.flow__delete:hover:not(:disabled) { border-color: var(--color-danger); color: var(--color-danger); }
-.flow__delete:disabled { opacity: 0.5; cursor: not-allowed; }
-.flow__delete:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 
+.flow__delete:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.flow__delete:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.flow__delete:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* ---------- 画布视口（滚动/缩放容器） ---------- */
 .flow__viewport {
   flex: 1;
   min-height: 0;
@@ -3331,8 +3408,13 @@ select.input {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm) inset;
 }
-.flow__viewport:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+.flow__viewport:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
 
 .flow__scaler { position: relative; }
 
@@ -3340,9 +3422,10 @@ select.input {
   position: relative;
   transform-origin: 0 0;
 
-  /* 点阵底纹：Worktile 白板的网格点 */
+  /* 点阵底纹：Worktile 白板网格点 */
   background-image: radial-gradient(circle, var(--color-border) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-position: -1px -1px;
+  background-size: 22px 22px;
 }
 
 .flow__empty {
@@ -3356,15 +3439,19 @@ select.input {
 
 .flow__empty p {
   margin: 0;
-  font-size: 13px;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-6);
   border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 13px;
 }
 
-/* 连线层铺满画布，节点 HTML 叠加其上 */
+/* ---------- 连线层（SVG 铺满画布，节点 HTML 叠加其上） ---------- */
 .flow__edges {
   position: absolute;
   inset: 0;
@@ -3375,32 +3462,47 @@ select.input {
 
 .flow-edge__line {
   fill: none;
-  stroke: var(--color-border-strong);
+  stroke: var(--color-text-muted);
   stroke-width: 1.5;
 }
 
 .flow-edge__hit {
   fill: none;
   stroke: transparent;
-  stroke-width: 14;
+  stroke-width: 16;
   pointer-events: stroke;
   cursor: pointer;
 }
-.flow-edge.is-selected .flow-edge__line { stroke: var(--color-primary); stroke-width: 2; }
-.flow-edge__line.is-draft { stroke-dasharray: 5 4; stroke: var(--color-primary); }
 
-.flow-edge__label {
+.flow-edge.is-selected .flow-edge__line {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.flow-edge__line.is-draft {
+  stroke: var(--color-primary);
+  stroke-dasharray: 6 4;
+}
+
+/* 连线标签 pill（HTML 层）：浮于线上方，命中交给下层加宽路径 */
+.flow-edge-chip {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 1px var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
   font-size: 11px;
-  fill: var(--color-text-secondary);
-  paint-order: stroke;
-  stroke: var(--color-surface);
-  stroke-width: 4px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .flow-edge-editor {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 120px;
+  width: 128px;
   padding: 2px var(--space-1);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm);
@@ -3410,43 +3512,36 @@ select.input {
   z-index: 3;
 }
 
-/* 节点：HTML 定位保证文字编辑/无障碍可用 */
+/* ---------- 节点：绝对定位 HTML（文字编辑/无障碍可用） ---------- */
 .flow-node {
   position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-1) var(--space-2);
   box-sizing: border-box;
+  padding: var(--space-1) var(--space-3);
   background: var(--color-surface);
   border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
   font-size: 13px;
   color: var(--color-text);
   text-align: center;
   cursor: grab;
   user-select: none;
-}
-.flow-node.is-dragging { cursor: grabbing; box-shadow: var(--shadow-md); z-index: 2; }
-.flow-node.is-selected { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); }
-
-.flow-node--start,
-.flow-node--end {
-  border-radius: var(--radius-full);
-  border-color: var(--color-primary);
-  background: var(--color-primary-soft);
-  font-weight: 600;
+  transition: border-color var(--transition);
 }
 
-.flow-node--decision {
-  /* 菱形：clip-path 裁剪，文字区域收缩避免出界 */
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary);
-  padding: var(--space-1) 34px;
+.flow-node:hover { border-color: var(--color-primary); }
+
+.flow-node.is-dragging {
+  cursor: grabbing;
+  z-index: 2;
 }
-.flow-node--io { clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+
+/* 选中态用 drop-shadow 描边：clip-path 裁剪的形状 box-shadow 会被裁掉，drop-shadow 贴合轮廓 */
+.flow-node.is-selected {
+  filter: drop-shadow(0 0 1.5px var(--color-primary)) drop-shadow(0 0 1.5px var(--color-primary));
+}
 
 .flow-node__text {
   display: block;
@@ -3481,11 +3576,266 @@ select.input {
   cursor: crosshair;
   z-index: 2;
 }
+
 .flow-node:hover .flow-port { opacity: 1; }
+
 .flow-port--top { left: 50%; top: 0; transform: translate(-50%, -50%); }
 .flow-port--bottom { left: 50%; bottom: 0; transform: translate(-50%, 50%); }
 .flow-port--left { left: 0; top: 50%; transform: translate(-50%, -50%); }
 .flow-port--right { right: 0; top: 50%; transform: translate(50%, -50%); }
+
+/* ---------- 20 种形状几何（.flow-node--* 画布节点 与 .flow-shape__preview--* 缩略图共用规则） ---------- */
+
+/* 起止：胶囊，主色底强调 */
+.flow-node--start,
+.flow-node--end,
+.flow-shape__preview--start,
+.flow-shape__preview--end {
+  border-radius: var(--radius-full);
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-weight: 600;
+}
+
+/* 圆角处理 */
+.flow-node--rounded,
+.flow-shape__preview--rounded { border-radius: var(--radius-lg); }
+
+/* 判断：菱形（clip 形状统一走主色浅底，描边会被裁掉） */
+.flow-node--decision,
+.flow-shape__preview--decision {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.flow-node--decision { padding: var(--space-1) 32px; }
+
+/* 输入/输出：平行四边形 */
+.flow-node--io,
+.flow-shape__preview--io {
+  clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.flow-shape__preview--io { clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+
+/* 连接符：圆 */
+.flow-node--connector,
+.flow-shape__preview--connector {
+  border-radius: 50%;
+  padding: var(--space-1) var(--space-2);
+}
+
+/* 页外连接：五边形（下尖） */
+.flow-node--offpage,
+.flow-shape__preview--offpage {
+  clip-path: polygon(0 0, 100% 0, 100% 66%, 50% 100%, 0 66%);
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.flow-node--offpage { padding-bottom: var(--space-3); }
+
+/* 文档：波浪底 */
+.flow-node--document,
+.flow-shape__preview--document {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), 72% 100%, 48% calc(100% - 9px), 24% 100%, 0 calc(100% - 9px));
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.flow-node--document { padding-bottom: var(--space-2); }
+
+/* 多文档：三层叠纸（前置伪元素错位） */
+.flow-node--multiDoc,
+.flow-shape__preview--multiDoc {
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.flow-node--multiDoc::before,
+.flow-node--multiDoc::after,
+.flow-shape__preview--multiDoc::before,
+.flow-shape__preview--multiDoc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.flow-node--multiDoc::before,
+.flow-shape__preview--multiDoc::before {
+  transform: translate(-8px, -8px);
+  z-index: -2;
+}
+
+.flow-node--multiDoc::after,
+.flow-shape__preview--multiDoc::after {
+  transform: translate(-4px, -4px);
+  z-index: -1;
+}
+
+.flow-node--multiDoc { overflow: visible; }
+
+/* 数据库：圆柱（上椭圆肩） */
+.flow-node--database,
+.flow-shape__preview--database {
+  border-radius: 26px 26px var(--radius-sm) var(--radius-sm) / 34px 34px var(--radius-sm) var(--radius-sm);
+  padding-top: calc(var(--space-1) + 6px);
+}
+
+.flow-node--database::after,
+.flow-shape__preview--database::after {
+  content: "";
+  position: absolute;
+  left: 1.5px;
+  right: 1.5px;
+  top: 30%;
+  height: 0;
+  border-top: 1.5px solid var(--color-border-strong);
+  border-radius: 50%;
+}
+
+/* 内部存储：矩形 + 内嵌上/左分隔线 */
+.flow-node--internalStorage::before,
+.flow-shape__preview--internalStorage::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 14px;
+  width: 0;
+  border-left: 1.5px solid var(--color-border-strong);
+}
+
+.flow-node--internalStorage::after,
+.flow-shape__preview--internalStorage::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 14px;
+  height: 0;
+  border-top: 1.5px solid var(--color-border-strong);
+}
+
+.flow-node--internalStorage { padding-left: calc(var(--space-3) + 4px); }
+
+.flow-shape__preview--internalStorage::before { left: 6px; }
+.flow-shape__preview--internalStorage::after { top: 6px; }
+
+/* 显示：左圆弧 */
+.flow-node--display,
+.flow-shape__preview--display {
+  border-radius: var(--radius-full) var(--radius-sm) var(--radius-sm) var(--radius-full) / var(--radius-full) var(--radius-sm) var(--radius-sm) var(--radius-full);
+  padding: var(--space-1) var(--space-3) var(--space-1) calc(var(--space-3) + 2px);
+}
+
+/* 手动输入：顶边斜切 */
+.flow-node--manualInput,
+.flow-shape__preview--manualInput {
+  clip-path: polygon(0 100%, 100% 100%, 100% 0, 14% 26%);
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.flow-node--manualInput { padding-top: calc(var(--space-1) + 4px); }
+
+.flow-shape__preview--manualInput { clip-path: polygon(0 100%, 100% 100%, 100% 0, 20% 34%); }
+
+/* 子流程：双边线矩形 */
+.flow-node--predefined::before,
+.flow-node--predefined::after,
+.flow-shape__preview--predefined::before,
+.flow-shape__preview--predefined::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1.5px solid var(--color-border-strong);
+}
+
+.flow-node--predefined::before,
+.flow-shape__preview--predefined::before { left: 10px; }
+
+.flow-node--predefined::after,
+.flow-shape__preview--predefined::after { right: 10px; }
+
+.flow-node--predefined { padding-left: calc(var(--space-2) + 6px); padding-right: calc(var(--space-2) + 6px); }
+
+/* 预设：六边形 */
+.flow-node--preparation,
+.flow-shape__preview--preparation {
+  clip-path: polygon(24% 0, 76% 0, 100% 50%, 76% 100%, 24% 100%, 0 50%);
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.flow-node--preparation { padding-left: calc(var(--space-2) + 8px); padding-right: calc(var(--space-2) + 8px); }
+
+.flow-shape__preview--preparation { clip-path: polygon(30% 0, 70% 0, 100% 50%, 70% 100%, 30% 100%, 0 50%); }
+
+/* 合并：倒梯形 */
+.flow-node--merge,
+.flow-shape__preview--merge {
+  clip-path: polygon(0 0, 100% 0, 78% 100%, 22% 100%);
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.flow-node--merge { padding-left: var(--space-4); padding-right: var(--space-4); }
+
+.flow-shape__preview--merge { clip-path: polygon(0 0, 100% 0, 84% 100%, 16% 100%); }
+
+/* 延迟：右半圆 D 形 */
+.flow-node--delay,
+.flow-shape__preview--delay {
+  border-radius: var(--radius-sm) 999px 999px var(--radius-sm) / var(--radius-sm) 999px 999px var(--radius-sm);
+  padding-right: calc(var(--space-3) + 2px);
+}
+
+/* 汇总连接：圆 + 交叉线（两层线性渐变画 X） */
+.flow-node--summing,
+.flow-shape__preview--summing {
+  border-radius: 50%;
+  padding: var(--space-1) var(--space-2);
+  background-image:
+    linear-gradient(45deg, transparent calc(50% - 0.75px), var(--color-border-strong) calc(50% - 0.75px), var(--color-border-strong) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.75px), var(--color-border-strong) calc(50% - 0.75px), var(--color-border-strong) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+}
+
+/* 批注：左侧方括号 */
+.flow-node--annotation,
+.flow-shape__preview--annotation {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.flow-node--annotation::before,
+.flow-shape__preview--annotation::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  border: 1.5px solid var(--color-border-strong);
+  border-right: 0;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.flow-node--annotation { padding-left: calc(var(--space-2) + 6px); }
+
+.flow-node--annotation .flow-node__text { font-style: italic; }
 
 /* ===== 流程图模块（独立菜单：列表 + 编辑页） ===== */
 .flows-create {
