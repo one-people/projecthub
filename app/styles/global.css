@@ -3274,8 +3274,11 @@ select.input {
   outline-offset: -2px;
 }
 
-/* 形状缩略预览：与画布节点同形（几何规则与节点选择器合并声明，见下） */
+/* 形状缩略预览：与画布节点同形（几何规则与节点选择器合并声明，见下）。
+   必须建立定位上下文——database/internalStorage 等形状靠绝对定位伪元素画内嵌线，
+   若不锚定会逃逸到页面级，变成横贯页面的直线，且 multiDoc/批注（本体透明）整个不显示 */
 .flow-shape__preview {
+  position: relative;
   width: 34px;
   height: 20px;
   flex-shrink: 0;
@@ -3654,6 +3657,9 @@ select.input {
   background: none;
   border: 0;
   border-radius: 0;
+
+  /* 隔离层叠上下文：叠纸的负 z-index 伪元素不逃到按钮 hover 底色之后 */
+  isolation: isolate;
 }
 
 .flow-node--multiDoc::before,
