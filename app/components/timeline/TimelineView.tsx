@@ -194,6 +194,13 @@ export function TimelineView({
   }
 
   const todayX = layout.xOf(todayKeyStr);
+  // “今日”所在底部刻度格的 key（日=当天 / 周=所在周一 / 月=所在月），用于表头高亮
+  const todayDate = new Date(`${todayKeyStr}T00:00:00`);
+  const todaySpanKey = zoom === "day"
+    ? todayKeyStr
+    : zoom === "week"
+      ? `w${dateKey(startOfWeekMonday(todayDate))}`
+      : `m${todayDate.getFullYear()}-${todayDate.getMonth()}`;
   const msLaneH = milestones.length > 0 ? MS_H : 0;
   const bodyH = rows.length * ROW_H;
   const frameTop = HEADER_H + msLaneH;
@@ -233,7 +240,7 @@ export function TimelineView({
                 {layout.bottom.map((s) => (
                   <div
                     key={s.key}
-                    className={`tl__span tl__span--bottom${s.weekend ? " is-weekend" : ""}`}
+                    className={`tl__span tl__span--bottom${s.weekend ? " is-weekend" : ""}${s.key === todaySpanKey ? " is-today" : ""}`}
                     style={{ width: s.days * layout.px }}
                     title={s.key}
                   >
@@ -267,6 +274,7 @@ export function TimelineView({
                         title={`${ms.title} · ${key}${done ? " ✓" : ""}`}
                       />
                       <span className="tl__ms-title">{ms.title}</span>
+                      <span className="tl__ms-date">{key}</span>
                     </span>
                   );
                 })}
@@ -286,6 +294,15 @@ export function TimelineView({
               ))}
             </div>
 
+            {/* 里程碑参考线：与上方菱形同 x，贯穿任务区；+6 为菱形半宽，对齐其视觉中心 */}
+            {milestones.map((ms) => (
+              <div
+                key={`msg-${ms.id}`}
+                className="tl__ms-guide"
+                style={{ left: NAME_W + layout.xOf(isoToDateKey(ms.date)) + layout.px / 2 + 6 }}
+              />
+            ))}
+
             {rows.map((row, i) => {
               const task = row.task;
               const hasDates = Boolean(task.startDate || task.dueDate);
@@ -302,6 +319,13 @@ export function TimelineView({
                     onClick={() => onOpenTask(task)}
                     title={task.title}
                   >
+                    {row.sub ? null : (
+                      <span
+                        className="tl__name-dot"
+                        style={{ background: statusColor(task.status) }}
+                        aria-hidden
+                      />
+                    )}
                     {task.title}
                   </button>
                   <div className="tl__lane">

@@ -2855,46 +2855,63 @@ select.input {
   padding: var(--space-4) 20px var(--space-5);
   min-height: 0;
 }
-.tl-toolbar { display: flex; align-items: center; gap: 10px; }
+.tl-toolbar { display: flex; align-items: center; gap: var(--space-2); }
 
+/* 缩放档位：胶囊分段控件 */
 .tl-toolbar__zoom {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   background: var(--color-surface-muted);
+  box-shadow: inset 0 0 0 1px var(--color-border);
 }
 
 .tl-toolbar__zoom-btn {
   border: 0;
   padding: var(--space-1) 14px;
-  border-radius: 5px;
+  border-radius: var(--radius-full);
   background: none;
   font: inherit;
   font-size: 12px;
   color: var(--color-text-secondary);
   cursor: pointer;
+  transition: color var(--transition), background var(--transition);
 }
+
+.tl-toolbar__zoom-btn:hover { color: var(--color-text); }
 
 .tl-toolbar__zoom-btn.is-active {
   background: var(--color-surface);
   color: var(--color-primary);
-  font-weight: 500;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 .tl-toolbar__spacer { flex: 1; }
-.tl-toolbar__count { font-size: 12px; color: var(--color-text-muted); }
-.tl { overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+
+/* 任务计数：胶囊化，与分段控件同语言 */
+.tl-toolbar__count {
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tl { overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
 .tl__inner { position: relative; }
 .tl__sticky { position: sticky; left: 0; z-index: 4; background: var(--color-surface); }
 
+/* 表头：表面→次级表面的纵向渐变，与任务区拉开层次 */
 .tl__header {
   display: flex;
   position: sticky;
   top: 0;
   z-index: 6;
   border-bottom: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-muted));
 }
 
 .tl__corner {
@@ -2905,31 +2922,49 @@ select.input {
   width: 232px;
   box-sizing: border-box;
   border-right: 1px solid var(--color-border-strong);
+
+  /* sticky 角格与表头同渐变，避免横向滚动时露出刻度区 */
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-muted));
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--color-text-muted);
 }
 .tl__scale { flex-shrink: 0; }
 .tl__scale-top, .tl__scale-bottom { display: flex; }
-.tl__scale-top { height: 26px; border-bottom: 1px solid var(--color-border); }
+.tl__scale-top { height: 26px; border-bottom: 1px solid color-mix(in srgb, var(--color-border-strong) 60%, transparent); }
 .tl__scale-bottom { height: 30px; }
 .tl__span { flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
+/* 刻度分隔线整体调淡，避免与数据层抢视觉 */
 .tl__span--top {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   color: var(--color-text-secondary);
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid color-mix(in srgb, var(--color-border-strong) 50%, transparent);
+  font-variant-numeric: tabular-nums;
 }
 
 .tl__span--bottom {
   font-size: 11px;
   color: var(--color-text-muted);
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid color-mix(in srgb, var(--color-border-strong) 40%, transparent);
+  font-variant-numeric: tabular-nums;
 }
-.tl__span--bottom.is-weekend { background: var(--color-surface-muted); }
+
+.tl__span--bottom.is-weekend {
+  background: color-mix(in srgb, var(--color-surface-muted) 65%, transparent);
+  color: var(--color-text-faint);
+}
+
+/* 今日所在刻度格：品牌色浅底，标记“现在” */
+.tl__span--bottom.is-today {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
 .tl__body { position: relative; }
 
 .tl__grid {
@@ -2940,10 +2975,35 @@ select.input {
   pointer-events: none;
   z-index: 0;
 }
-.tl__grid-col { flex-shrink: 0; height: 100%; border-right: 1px solid var(--color-border); }
-.tl__grid-col.is-weekend { background: var(--color-surface-muted); }
-.tl__row { position: absolute; left: 0; right: 0; display: flex; border-bottom: 1px solid var(--color-border); }
-.tl__row:hover { background: color-mix(in srgb, var(--color-primary) 3%, transparent); }
+.tl__grid-col { flex-shrink: 0; height: 100%; border-right: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent); }
+.tl__grid-col.is-weekend { background: color-mix(in srgb, var(--color-surface-muted) 55%, transparent); }
+
+/* 里程碑参考线：虚线贯穿任务区，与菱形对齐 */
+.tl__ms-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed color-mix(in srgb, var(--color-primary) 30%, transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tl__row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+  transition: background var(--motion-fast);
+}
+
+/* 斑马纹：弱化长列表的行迷失感 */
+.tl__row:nth-child(odd) { background: color-mix(in srgb, var(--color-surface-muted) 30%, transparent); }
+.tl__row:hover { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
+
+/* 名称格是不透明 sticky 白底，悬停单独点亮避免整行高亮被割裂 */
+.tl__row:hover .tl__name { background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface)); }
 
 .tl__name {
   flex-shrink: 0;
@@ -2951,8 +3011,10 @@ select.input {
   box-sizing: border-box;
   padding: 0 var(--space-3);
   border: 0;
-  border-right: 1px solid var(--color-border);
-  background: none;
+  border-right: 1px solid color-mix(in srgb, var(--color-border-strong) 60%, transparent);
+
+  /* sticky 吸顶列必须不透明，否则横向滚动时条带会透出来；不写 position（会覆盖 .tl__sticky 的 sticky） */
+  background: var(--color-surface);
   font: inherit;
   font-size: 13px;
   text-align: left;
@@ -2962,7 +3024,21 @@ select.input {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* 名称列同步斑马纹（不透明合成，保证横向滚动遮挡正确） */
+.tl__row:nth-child(odd) .tl__name { background: color-mix(in srgb, var(--color-surface-muted) 30%, var(--color-surface)); }
+
+/* 名称前状态色点：与条带同色，建立“行 ↔ 条带”的视觉关联 */
+.tl__name-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: var(--radius-full);
+  vertical-align: middle;
+}
 .tl__name.is-done { text-decoration: line-through; color: var(--color-text-muted); }
+.tl__name.is-done .tl__name-dot { opacity: 0.4; }
 .tl__name:hover { color: var(--color-primary); }
 
 /* 子任务行：缩进 + 前置拐角图标，弱化层级感 */
@@ -2976,10 +3052,13 @@ select.input {
   content: "↳";
   position: absolute;
   left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--color-text-faint);
 }
 .tl__lane { position: relative; flex: 1; }
 
+/* 条带：药丸圆角 + 上下渐变（同色系明度微差），替代平涂色块 */
 .tl__bar {
   position: absolute;
   top: 50%;
@@ -2988,23 +3067,52 @@ select.input {
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--bar-c) 72%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-c) 90%, transparent);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bar-c) 88%, transparent),
+    color-mix(in srgb, var(--bar-c) 66%, transparent)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-c) 95%, transparent);
   cursor: pointer;
   padding: 0;
-  transition: filter var(--transition);
+  transition: filter var(--transition), box-shadow var(--transition);
 }
-.tl__bar:hover { filter: brightness(1.12); }
-.tl__bar.is-done { background: color-mix(in srgb, var(--bar-c) 30%, transparent); }
+
+/* 悬浮：提亮 + 同色光环，暗示可点击 */
+.tl__bar:hover {
+  filter: brightness(1.1);
+  box-shadow:
+    inset 0 0 0 1px var(--bar-c),
+    0 0 0 3px color-mix(in srgb, var(--bar-c) 16%, transparent);
+}
 
 /* 子任务条带：更细更淡，与父任务行区分 */
 .tl__bar--sub {
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--bar-c) 50%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-c) 70%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bar-c) 62%, transparent),
+    color-mix(in srgb, var(--bar-c) 44%, transparent)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-c) 75%, transparent);
 }
 .tl__bar--sub .tl__bar-label { font-size: 10px; font-weight: 500; }
+
+/* 完成态：斜纹薄纱表示“已归档的跨度”（放在子任务规则之后，保证斜纹优先） */
+.tl__bar.is-done {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bar-c) 30%, transparent) 0 6px,
+    color-mix(in srgb, var(--bar-c) 12%, transparent) 6px 12px
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-c) 50%, transparent);
+}
+
+.tl__bar.is-done:hover {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--bar-c) 70%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--bar-c) 14%, transparent);
+}
 
 /* 条带内居中文字：负责人名，无负责人时为总天数 */
 .tl__bar-label {
@@ -3017,33 +3125,42 @@ select.input {
   font-weight: 600;
   line-height: 1;
   color: var(--color-on-fill);
-  text-shadow: 0 1px 2px rgb(0 0 0 / 30%);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--color-inverse-surface) 35%, transparent);
+  font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
 
-/* 完成态条带为淡色填充，白字对比不足 → 换用状态色文字 */
+/* 完成态条带为淡色斜纹，白字对比不足 → 混入正文色保证双主题可读 */
 .tl__bar.is-done .tl__bar-label {
-  color: var(--bar-c);
+  color: color-mix(in srgb, var(--bar-c) 80%, var(--color-text));
   text-shadow: none;
 }
 
+/* 无日期任务：虚线胶囊代替裸文本 */
 .tl__nodate {
   position: absolute;
-  left: 8px;
+  left: var(--space-2);
   top: 50%;
   transform: translateY(-50%);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  border: 1px dashed var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-surface-muted) 55%, transparent);
   font-size: 11px;
   color: var(--color-text-muted);
   font-style: normal;
 }
 .tl__deps { position: absolute; top: 0; pointer-events: none; z-index: 2; }
-.tl__dep { stroke: var(--color-text-faint); stroke-width: 1.2; opacity: 0.7; }
+.tl__dep { stroke: var(--color-text-faint); stroke-width: 1.2; stroke-linejoin: round; opacity: 0.65; }
 
+/* 今日线：品牌色竖线 + 光晕，标签为悬浮胶囊 */
 .tl__today {
   position: absolute;
   top: 0;
   width: 0;
   border-left: 2px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
   z-index: 3;
   pointer-events: none;
 }
@@ -3053,11 +3170,14 @@ select.input {
   top: 0;
   display: inline-block;
   margin-left: -14px;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
   background: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-primary-contrast);
   font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow-sm);
 }
 
 /* ===== 时间线里程碑泳道 ===== */
@@ -3065,13 +3185,17 @@ select.input {
   position: relative;
   display: flex;
   border-bottom: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-primary) 2%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-primary) 3%, var(--color-surface));
 }
 
 .tl__ms-name {
   font-size: 11px;
+  font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
+
+  /* sticky 名格与泳道同底色（不透明），滚动时不露条带 */
+  background: color-mix(in srgb, var(--color-primary) 3%, var(--color-surface));
 }
 .tl__ms-lane { position: relative; flex-shrink: 0; }
 
@@ -3085,18 +3209,20 @@ select.input {
 }
 
 .tl__ms-diamond {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   padding: 0;
   border: 2px solid var(--color-primary);
-  border-radius: 2px;
+  border-radius: 3px;
   background: var(--color-surface);
   transform: rotate(45deg);
   cursor: pointer;
   flex-shrink: 0;
+  transition: transform var(--motion-fast);
 }
 .tl__ms-diamond:disabled { cursor: default; }
-.tl__ms-diamond:hover:not(:disabled) { filter: brightness(1.15); }
+.tl__ms-diamond:hover:not(:disabled) { filter: brightness(1.15); transform: rotate(45deg) scale(1.18); }
+.tl__ms-diamond:focus-visible { outline-offset: 3px; }
 .tl__ms-item.is-done .tl__ms-diamond { background: var(--color-primary); }
 .tl__ms-item.is-overdue .tl__ms-diamond { border-color: var(--color-danger); }
 .tl__ms-item.is-overdue.is-done .tl__ms-diamond { background: var(--color-danger); border-color: var(--color-danger); }
@@ -3108,10 +3234,24 @@ select.input {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
-  color: var(--color-text-muted);
-  transform: translateX(4px);
+  font-weight: 500;
+  color: var(--color-text-secondary);
 }
+
+/* 里程碑日期胶囊：默认中性，过期未完成转危险色（语义与菱形一致） */
+.tl__ms-date {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tl__ms-item.is-overdue .tl__ms-date { background: var(--color-danger-soft); color: var(--color-danger); }
 .tl__ms-item.is-done .tl__ms-title { text-decoration: line-through; }
+.tl__ms-item.is-done .tl__ms-date { opacity: 0.6; }
 
 /* ===== 看板列头完成进度条 ===== */
 .board-column__progress {
