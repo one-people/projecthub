@@ -1,11 +1,11 @@
 # ProjectHub — 基于 Remix 3 的纯前端项目管理应用
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![CI](https://github.com/one-people/projecthub/actions/workflows/ci.yml/badge.svg)](https://github.com/one-people/projecthub/actions/workflows/ci.yml)
-[![Deploy](https://github.com/one-people/projecthub/actions/workflows/deploy.yml/badge.svg)](https://github.com/one-people/projecthub/actions/workflows/deploy.yml)
+[![CI](https://github.com/it-alone/projecthub/actions/workflows/ci.yml/badge.svg)](https://github.com/it-alone/projecthub/actions/workflows/ci.yml)
+[![Deploy](https://github.com/it-alone/projecthub/actions/workflows/deploy.yml/badge.svg)](https://github.com/it-alone/projecthub/actions/workflows/deploy.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
 
-> **在线体验：<https://one-people.github.io/projecthub/>** —— 纯前端应用，数据仅存于你当前浏览器的 IndexedDB。
+> **在线体验：<https://it-alone.github.io/projecthub/>** —— 纯前端应用，数据仅存于你当前浏览器的 IndexedDB。
 
 <!-- TODO: 应用截图占位（看板视图 / 表格视图 / 任务详情弹窗），项目初始化后补充 -->
 <!-- <p align="center"><img src="./docs/screenshots/board.png" width="800" alt="看板视图"></p> -->
