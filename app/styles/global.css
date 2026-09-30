@@ -3153,7 +3153,7 @@ select.input {
 .tl__deps { position: absolute; top: 0; pointer-events: none; z-index: 2; }
 .tl__dep { stroke: var(--color-text-faint); stroke-width: 1.2; stroke-linejoin: round; opacity: 0.65; }
 
-/* 今日线：品牌色竖线 + 光晕，标签为悬浮胶囊 */
+/* 今日线：任务区只保留竖线 + 光晕（无文字，不遮挡条带） */
 .tl__today {
   position: absolute;
   top: 0;
@@ -3165,11 +3165,11 @@ select.input {
   pointer-events: none;
 }
 
-.tl__today-label {
-  position: sticky;
-  top: 0;
-  display: inline-block;
-  margin-left: -14px;
+/* 今日徽标：钉在表头顶部刻度带内（26px 高的月份行），随吸顶表头常驻，不占任务行空间 */
+.tl__today-chip {
+  position: absolute;
+  top: var(--space-1);
+  transform: translateX(-50%);
   padding: 2px 10px;
   border-radius: var(--radius-full);
   background: var(--color-primary);
@@ -3177,7 +3177,9 @@ select.input {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   box-shadow: var(--shadow-sm);
+  pointer-events: none;
 }
 
 /* ===== 时间线里程碑泳道 ===== */

@@ -249,6 +249,10 @@ export function TimelineView({
                 ))}
               </div>
             </div>
+            {/* 今日徽标：钉在表头刻度带内随表头吸顶，不再悬浮遮挡任务行 */}
+            {todayX >= 0 && todayX <= layout.totalWidth && (
+              <span className="tl__today-chip" style={{ left: NAME_W + todayX }}>{t("tlToday")}</span>
+            )}
           </div>
 
           {milestones.length > 0 && (
@@ -393,9 +397,7 @@ export function TimelineView({
             <div
               className="tl__today"
               style={{ top: frameTop, left: NAME_W + todayX, height: Math.max(bodyH, 1) }}
-            >
-              <span className="tl__today-label">{t("tlToday")}</span>
-            </div>
+            />
           )}
         </div>
       </div>
